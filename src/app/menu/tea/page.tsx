@@ -9,7 +9,7 @@ import { supabase } from '../../../lib/supabase';
 
 // ❗ ИСПРАВЛЕННЫЙ СЛОВАРЬ (добавлены единички и точные названия файлов) ❗
 const slugMap: Record<string, string> = {
-  'нутелла': 'nutella1',
+  'нутелла': 'nutella',
   'орео': 'oreo1', 
   'бабл милк ти': 'bubble-milk1',
   'молочная черника': 'blueberry',
