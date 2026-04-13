@@ -22,7 +22,7 @@ export default function NutellaPage() {
 
   // ❗ НАСТРОЙКИ НАПИТКА ❗
   const settings = {
-    id: 'nutella',
+    id: 'nutella1',
     name: 'Нутелла',
     img: '/images/nutella1.jpg', // Проверь, что в папке файл маленькими буквами!
     prices: { pickup: 330, delivery: 450 }
