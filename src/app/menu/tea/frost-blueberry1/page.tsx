@@ -27,7 +27,7 @@ export default function DrinkTemplatePage() {
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
   // ❗❗❗ 2. ТУТ ПИШЕШЬ ID И ИМЯ ❗❗❗
-  const productId = 'frost-blueberry'; 
+  const productId = 'frost-blueberry1'; 
   const productName = 'Морозная черника';       
   const productImg = '/images/frost-blueberry1.jpg'; 
 

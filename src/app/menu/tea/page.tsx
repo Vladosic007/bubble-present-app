@@ -18,7 +18,7 @@ const slugMap: Record<string, string> = {
   'чоко клубника': 'choco-straw1',
   'таро': 'taro1',
   'жасминовая клубника': 'jasmine-straw1',
-  'морозная черника': 'frost-blueberry',
+  'морозная черника': 'frost-blueberry1',
   'малиновое облако': 'rasp-cloud1',
   'красная смородина': 'red-currant1',
   'цитрус': 'citrus',
