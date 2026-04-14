@@ -12,7 +12,7 @@ const slugMap: Record<string, string> = {
   'нутелла': 'nutella1',
   'орео': 'oreo1', 
   'бабл милк ти': 'bubble-milk1',
-  'молочная черника': 'blueberry',
+  'молочная черника': 'blueberry1',
   'тайское караоке': 'caraoke',
   'гранат кокос': 'pomegranate1',
   'чоко клубника': 'choco-straw',

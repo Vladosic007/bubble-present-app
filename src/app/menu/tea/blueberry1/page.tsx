@@ -26,7 +26,7 @@ export default function DrinkTemplatePage() {
   const deliveryPrice = 440; 
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
-  const productId = 'blueberry'; 
+  const productId = 'blueberry1'; 
   const productName = 'Молочная черника';       
   const productImg = '/images/blueberry1.jpg'; 
 
