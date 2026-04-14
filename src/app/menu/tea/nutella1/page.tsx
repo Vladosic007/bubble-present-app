@@ -174,7 +174,7 @@ export default function DrinkTemplatePage() {
         {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ШРИФТ BENZIN) === */}
         <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] flex items-center justify-center z-20 backdrop-blur-[30px] box-border shrink-0">
           <div className="w-[322px] h-[130px] box-border overflow-y-auto no-scrollbar">
-            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin font-weight: 400 uppercase opacity-80">
+            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin uppercase opacity-80">
               Нутелла — жидкая ностальгия. Густой томный шоколад с ореховым шепотом нутеллы, укрытый воздушной сырной шапкой. Молоко смягчает эту роскошь, а на дне вас ждёт приятный сюрприз — на выбор: классические жемчужины тапиоки или взрывные джус-боллы. Каждый глоток — тёплое воспоминание с текстурным восторгом.
             </p>
           </div>
