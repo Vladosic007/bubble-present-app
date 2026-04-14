@@ -21,7 +21,7 @@ export default function DrinkTemplatePage() {
     setIsMounted(true);
   }, []);
 
-  // ❗❗❗ 1. ТВОИ ЦЕНЫ И НАСТРОЙКИ ❗❗❗
+  // ❗❗❗ 1. ТВОИ ЦЕНЫ И НАСТРОЙКИ ❗❗❗  
   const pickupPrice = 300;   // Цена за M Самовывоз
   const deliveryPrice = 420; // Цена за M Доставка
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
