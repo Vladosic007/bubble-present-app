@@ -21,15 +21,15 @@ export default function DrinkTemplatePage() {
     setIsMounted(true);
   }, []);
 
-  // ❗❗❗ 1. ТВОИ ЦЕНЫ И НАСТРОЙКИ (ВЕЛЬВЕТ) ❗❗❗
+  // ❗❗❗ 1. ТВОИ ЦЕНЫ И НАСТРОЙКИ (ЛЕСНОЙ МОРС) ❗❗❗
   const pickupPrice = 310;   
   const deliveryPrice = 430; 
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
   // ❗❗❗ 2. ТУТ ПИШЕШЬ ID И ИМЯ ❗❗❗
-  const productId = 'velvet'; 
-  const productName = 'Вельвет';       
-  const productImg = '/images/velvet1.jpg'; 
+  const productId = 'forest-berries1'; 
+  const productName = 'Лесной морс';       
+  const productImg = '/images/forest-berries1.jpg'; 
 
   // === СТЕЙТЫ ДЛЯ КЛИКОВ ===
   const [selectedType, setSelectedType] = useState('Холодный');
@@ -103,8 +103,8 @@ export default function DrinkTemplatePage() {
 
   // === СЧИТАЕМ ИТОГОВУЮ ЦЕНУ И СОБИРАЕМ ДОБАВКИ ===
   let finalPrice = basePrice;
-  if (selectedVolume === 'L') finalPrice += 60; // ❗ Наценка L (+60)
-  if (cheeseSelected) finalPrice += 70;         // ❗ Наценка сырная шапка (+70)
+  if (selectedVolume === 'L') finalPrice += 60; 
+  if (cheeseSelected) finalPrice += 70;
   if (tapiocaX2Selected || juiceX2Selected) finalPrice += 80;
 
   const toppingsList = [selectedType];
@@ -148,7 +148,7 @@ export default function DrinkTemplatePage() {
     if (itemInCart && itemInCart.quantity < 9) {
       changeQuantity(currentCartItemId, 1);
     } else {
-      alert("Бро, лимит 9 штук на один напиток! 🧋");
+      alert("Бро, лимит 9 стаканов на один вид напитка! 🧋");
     }
   };
 
@@ -156,26 +156,31 @@ export default function DrinkTemplatePage() {
     <div className="bg-[#FDFDFD] min-h-[100dvh] w-full flex justify-center overflow-y-auto overflow-x-hidden font-sans">
       <main className="w-full max-w-[370px] relative flex flex-col items-center pb-[120px]">
         
+        {/* === 1. КАРТИНКА И ГРАДИЕНТЫ === */}
         <div className="relative w-[370px] h-[360px] shrink-0">
-          <Image src="/images/velvet1.jpg" alt="Вельвет" fill quality={100} className="object-cover" priority />
+          <Image src="/images/forest-berries1.jpg" alt="Лесной морс" fill quality={100} className="object-cover" priority />
           <div className="absolute bottom-0 left-0 w-full h-[120px] bg-gradient-to-t from-[#FDFDFD] via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
         </div>
 
+        {/* === 2. ЗАГОЛОВОК === */}
         <div className="w-full px-[12px] mt-[16px] mb-[16px] z-20">
-          <h1 className="text-[24px] font-black uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none"
-              style={{ fontFamily: "'Benzin', sans-serif" }}>
-            Вельвет
+          {/* ДОБАВЛЕН font-extrabold */}
+          <h1 className="text-[24px] uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none font-benzin font-extrabold">
+            Лесной морс
           </h1>
         </div>
 
+        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ШРИФТ BENZIN) === */}
         <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] flex items-center justify-center z-20 backdrop-blur-[30px] box-border shrink-0">
           <div className="w-[322px] h-[130px] box-border overflow-y-auto no-scrollbar">
-            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>
-              Бархатный каркаде с глубоким вишнёвым оттенком и прохладной мятой создают изысканную кислинку. Цветочная терпкость мягко обволакивает, оставляя благородное послевкусие. А в каждом глоток текстурный акцент на выбор: упругие жемчужины тапиоки или взрывные джус-боллы.
+            {/* ДОБАВЛЕН font-medium */}
+            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin font-medium uppercase opacity-80">
+              Густой ягодный букет из малины, черники и ежевики с освежающей нотой лимона в молочном чае. Каждый глоток — будто прогулка по летнему лесу с сочными ягодами на ладони. И текстурный сюрприз на дне — на выбор: классическая тапиока или взрывные джус-боллы.
             </p>
           </div>
         </div>
 
+        {/* === 4. РАСКРЫТЫЙ БЛОК "ДОПОЛНЕНИЯ" === */}
         <div 
           className={`w-[346px] mb-[96px] bg-[#AEAEAE]/25 rounded-[25px] flex flex-col items-center z-20 box-border relative overflow-hidden shrink-0 transition-all duration-500 ease-in-out ${isAddonsOpen ? 'max-h-[2500px] pb-[32px]' : 'max-h-[52px]'}`}
           style={{ 
@@ -186,16 +191,17 @@ export default function DrinkTemplatePage() {
         >
           <div className="w-full h-[52px] flex justify-between items-center shrink-0 cursor-pointer px-[16px]" onClick={() => setIsAddonsOpen(!isAddonsOpen)}>
             <div className="flex items-center justify-start">
-              <span className="text-[18px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Дополнения</span>
+              <span className="text-[18px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}> Дополнения </span>
             </div>
             <div className="w-[24px] h-[24px] relative shrink-0">
               <Image src="/icons/arrow.svg" alt="Стрелка" fill className={`object-contain transition-transform duration-300 ${isAddonsOpen ? 'rotate-90' : 'rotate-0'}`} />
             </div>
           </div>
 
+          {/* ТИП */}
           <div className="w-[314px] h-[138px] mt-[16px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
             <div className="mt-[16px] ml-[16px] shrink-0">
-              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block font-extrabold" style={{ fontFamily: "'Benzin', sans-serif" }}>Тип</span>
+              <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block font-extrabold" style={{ fontFamily: "'Benzin', sans-serif" }}>Тип</span>
             </div>
             <div className="w-full flex justify-between items-center mt-[16px] px-[16px] box-border shrink-0">
               <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block font-extrabold" style={{ fontFamily: "'Benzin', sans-serif" }}>Холодный</span>
@@ -208,6 +214,7 @@ export default function DrinkTemplatePage() {
             </div>
           </div>
 
+          {/* ДОБАВКИ */}
           <div className="w-[314px] h-fit pb-[16px] mt-[32px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0 transition-all duration-500 overflow-hidden" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
             <div className="mt-[16px] ml-[16px] shrink-0">
               <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block font-extrabold" style={{ fontFamily: "'Benzin', sans-serif" }}>Добавки</span>
@@ -232,7 +239,6 @@ export default function DrinkTemplatePage() {
                   </div>
                 </div>
               ))}
-              <div className="w-full h-[16px] shrink-0"></div>
             </div>
             <div className="w-[282px] h-[1px] bg-[#BEBEBE] rounded-full mx-auto mt-[12px] shrink-0"></div>
             <div className="w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0">
@@ -246,21 +252,21 @@ export default function DrinkTemplatePage() {
 
           {/* КРАФТИНГ */}
           <div className="w-[314px] h-fit pb-[16px] mt-[32px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
-            <div className="mt-[16px] ml-[16px] shrink-0">
-              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">Крафтинг</span>
+            <div className="mt-[16px] ml-[16px] shrink-0 font-benzin font-extrabold">
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Крафтинг</span>
             </div>
-            <div className={`w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0 transition-opacity duration-300 ${tapiocaSelected ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">Тапиока 2X</span>
+            <div className={`w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0 transition-opacity duration-300 ${tapiocaSelected ? 'opacity-100' : 'opacity-40 pointer-events-none'} font-benzin font-extrabold`}>
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Тапиока 2X</span>
               <div className="flex items-center gap-[10px] shrink-0">
-                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${tapiocaX2Selected ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>+ 80 ₽</span>
+                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${tapiocaX2Selected ? 'opacity-100' : 'opacity-0'}`}>+ 80 ₽</span>
                 <div onClick={() => setTapiocaX2Selected(!tapiocaX2Selected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${tapiocaX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{tapiocaX2Selected && <CheckMark />}</div>
               </div>
             </div>
             <div className="w-[282px] h-[1px] bg-[#BEBEBE] rounded-full mx-auto mt-[12px] shrink-0"></div>
-            <div className={`w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0 transition-opacity duration-300 ${juiceSelected ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">Джус боллы 2X</span>
+            <div className={`w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0 transition-opacity duration-300 ${juiceSelected ? 'opacity-100' : 'opacity-40 pointer-events-none'} font-benzin font-extrabold`}>
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Джус боллы 2X</span>
               <div className="flex items-center gap-[10px] shrink-0">
-                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${juiceX2Selected ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>+ 80 ₽</span>
+                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${juiceX2Selected ? 'opacity-100' : 'opacity-0'}`}>+ 80 ₽</span>
                 <div onClick={handleJuiceX2Click} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${juiceX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{juiceX2Selected && <CheckMark />}</div>
               </div>
             </div>
@@ -268,20 +274,22 @@ export default function DrinkTemplatePage() {
 
           {/* ОБЪЁМ */}
           <div className="w-[314px] h-fit pb-[20px] mt-[32px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
-            <div className="mt-[16px] ml-[16px] shrink-0">
-              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">Объём</span>
+            <div className="mt-[16px] ml-[16px] shrink-0 font-benzin font-extrabold">
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Объём</span>
             </div>
-            <div className="w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0">
-              <div className="flex items-center"><span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">M</span><span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px]" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>500 ml</span></div>
+            <div className="w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0 font-benzin font-extrabold">
+              {/* ДОБАВЛЕН font-normal ДЛЯ МЛ */}
+              <div className="flex items-center"><span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">M</span><span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px] font-benzin font-normal">500 ml</span></div>
               <div className="flex items-center gap-[10px] shrink-0">
                 <div onClick={() => setSelectedVolume('M')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedVolume === 'M' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{selectedVolume === 'M' && <CheckMark />}</div>
               </div>
             </div>
             <div className="w-[282px] h-[1px] bg-[#BEBEBE] rounded-full mx-auto mt-[12px] shrink-0"></div>
-            <div className="w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0">
-              <div className="flex items-center"><span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">L</span><span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px]" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>700 ml</span></div>
+            <div className="w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0 font-benzin font-extrabold">
+              {/* ДОБАВЛЕН font-normal ДЛЯ МЛ */}
+              <div className="flex items-center"><span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">L</span><span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px] font-benzin font-normal">700 ml</span></div>
               <div className="flex items-center gap-[10px] shrink-0">
-                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${selectedVolume === 'L' ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>+ 60 ₽</span>
+                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${selectedVolume === 'L' ? 'opacity-100' : 'opacity-0'}`}>+ 60 ₽</span>
                 <div onClick={() => setSelectedVolume('L')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedVolume === 'L' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{selectedVolume === 'L' && <CheckMark />}</div>
               </div>
             </div>
