@@ -32,7 +32,8 @@ const slugMap: Record<string, string> = {
   'лесной морс': 'forest-berries1',
   'тайский с апельсином': 'thai-orange1',
   'ягодный микс': 'berry-mix1',
-  'вельвет': 'velvet',
+  'вельвет': 'velvet1',
+  'вильвет': 'velvet1' // 👈 Защита от опечатки
 };
 
 const menuCategories = [
