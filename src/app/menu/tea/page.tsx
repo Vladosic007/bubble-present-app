@@ -24,7 +24,7 @@ const slugMap: Record<string, string> = {
   'цитрус': 'citrus1',
   'жасминовая малина': 'jasmine-rasp1',
   'маракуйя с содовой': 'passion-soda1',
-  'жасминовый лайм': 'jasmine-lime',
+  'жасминовый лайм': 'jasmine-lime1',
   'рэд драгон': 'red-dragon1',
   'тай лун': 'tai-lung1',
   'облепиховая пряность': 'sea-buckthorn1',

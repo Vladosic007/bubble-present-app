@@ -27,7 +27,7 @@ export default function DrinkTemplatePage() {
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
   // ❗❗❗ 2. ТУТ ПИШЕШЬ ID И ИМЯ ❗❗❗
-  const productId = 'tai-lung'; 
+  const productId = 'tai-lung1'; 
   const productName = 'Тай лун';       
   const productImg = '/images/tai-lung1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
 
@@ -164,16 +164,17 @@ export default function DrinkTemplatePage() {
 
         {/* === 2. ЗАГОЛОВОК === */}
         <div className="w-full px-[12px] mt-[16px] mb-[16px] z-20">
-          <h1 className="text-[24px] font-black uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none"
-              style={{ fontFamily: "'Benzin', sans-serif" }}>
+          {/* ДОБАВЛЕН font-extrabold */}
+          <h1 className="text-[24px] uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none font-benzin font-extrabold">
             Тай лун
           </h1>
         </div>
 
-        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ === */}
+        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ШРИФТ BENZIN) === */}
         <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] flex items-center justify-center z-20 backdrop-blur-[30px] box-border shrink-0">
           <div className="w-[322px] h-[130px] box-border overflow-y-auto no-scrollbar">
-            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>
+            {/* ДОБАВЛЕН font-medium */}
+            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin font-medium uppercase opacity-80">
               Тай Лун — это тропический шторм в стакане. Сочная свежесть изумрудного киви с лёгкой терпкостью встречает страстный взрыв маракуйи, заключённые в лёгкую основу жасминового чая. Каждый глоток — это яркое погружение. А на дне — на выбор: жемчужины тапиоки или джус-боллы, готовые лопнуть сочным аккордом.
             </p>
           </div>
