@@ -255,20 +255,20 @@ export default function DrinkTemplatePage() {
           {/* КРАФТИНГ */}
           <div className="w-[314px] h-fit pb-[16px] mt-[32px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
             <div className="mt-[16px] ml-[16px] shrink-0 font-benzin font-extrabold">
-              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">Крафтинг</span>
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Крафтинг</span>
             </div>
-            <div className={`w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0 transition-opacity duration-300 ${tapiocaSelected ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">Тапиока 2X</span>
+            <div className={`w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0 transition-opacity duration-300 ${tapiocaSelected ? 'opacity-100' : 'opacity-40 pointer-events-none'} font-benzin font-extrabold`}>
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Тапиока 2X</span>
               <div className="flex items-center gap-[10px] shrink-0">
-                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${tapiocaX2Selected ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>+ 80 ₽</span>
+                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${tapiocaX2Selected ? 'opacity-100' : 'opacity-0'}`}>+ 80 ₽</span>
                 <div onClick={() => setTapiocaX2Selected(!tapiocaX2Selected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${tapiocaX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{tapiocaX2Selected && <CheckMark />}</div>
               </div>
             </div>
             <div className="w-[282px] h-[1px] bg-[#BEBEBE] rounded-full mx-auto mt-[12px] shrink-0"></div>
-            <div className={`w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0 transition-opacity duration-300 ${juiceSelected ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase font-extrabold">Джус боллы 2X</span>
+            <div className={`w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0 transition-opacity duration-300 ${juiceSelected ? 'opacity-100' : 'opacity-40 pointer-events-none'} font-benzin font-extrabold`}>
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Джус боллы 2X</span>
               <div className="flex items-center gap-[10px] shrink-0">
-                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${juiceX2Selected ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>+ 80 ₽</span>
+                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${juiceX2Selected ? 'opacity-100' : 'opacity-0'}`}>+ 80 ₽</span>
                 <div onClick={handleJuiceX2Click} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${juiceX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{juiceX2Selected && <CheckMark />}</div>
               </div>
             </div>
