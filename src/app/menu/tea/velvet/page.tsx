@@ -21,15 +21,15 @@ export default function DrinkTemplatePage() {
     setIsMounted(true);
   }, []);
 
-  // ❗❗❗ 1. ТВОИ ЦЕНЫ И НАСТРОЙКИ (ТАЙСКИЙ С АПЕЛЬСИНОМ) ❗❗❗
-  const pickupPrice = 320;   
-  const deliveryPrice = 440; 
+  // ❗❗❗ 1. ТВОИ ЦЕНЫ И НАСТРОЙКИ (ВЕЛЬВЕТ) ❗❗❗
+  const pickupPrice = 310;   
+  const deliveryPrice = 430; 
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
   // ❗❗❗ 2. ТУТ ПИШЕШЬ ID И ИМЯ ❗❗❗
-  const productId = 'thai-orange'; 
-  const productName = 'Тайский с апельсином';       
-  const productImg = '/images/thai-orange1.jpg'; 
+  const productId = 'velvet'; 
+  const productName = 'Вельвет';       
+  const productImg = '/images/velvet1.jpg'; 
 
   // === СТЕЙТЫ ДЛЯ КЛИКОВ ===
   const [selectedType, setSelectedType] = useState('Холодный');
@@ -103,8 +103,8 @@ export default function DrinkTemplatePage() {
 
   // === СЧИТАЕМ ИТОГОВУЮ ЦЕНУ И СОБИРАЕМ ДОБАВКИ ===
   let finalPrice = basePrice;
-  if (selectedVolume === 'L') finalPrice += 60; // ❗ Наценка за L (+60)
-  if (cheeseSelected) finalPrice += 70;         // ❗ Наценка за сырную шапку
+  if (selectedVolume === 'L') finalPrice += 60; // ❗ Наценка L (+60)
+  if (cheeseSelected) finalPrice += 70;         // ❗ Наценка сырная шапка (+70)
   if (tapiocaX2Selected || juiceX2Selected) finalPrice += 80;
 
   const toppingsList = [selectedType];
@@ -157,7 +157,7 @@ export default function DrinkTemplatePage() {
       <main className="w-full max-w-[370px] relative flex flex-col items-center pb-[120px]">
         
         <div className="relative w-[370px] h-[360px] shrink-0">
-          <Image src="/images/thai-orange1.jpg" alt="Тайский с апельсином" fill quality={100} className="object-cover" priority />
+          <Image src="/images/velvet1.jpg" alt="Вельвет" fill quality={100} className="object-cover" priority />
           <div className="absolute bottom-0 left-0 w-full h-[120px] bg-gradient-to-t from-[#FDFDFD] via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
         </div>
 
@@ -165,7 +165,7 @@ export default function DrinkTemplatePage() {
         <div className="w-full px-[12px] mt-[16px] mb-[16px] z-20">
           {/* ДОБАВЛЕН font-extrabold */}
           <h1 className="text-[24px] uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none font-benzin font-extrabold">
-            Тайский с апельсином
+            Вельвет
           </h1>
         </div>
 
@@ -174,7 +174,7 @@ export default function DrinkTemplatePage() {
           <div className="w-[322px] h-[130px] box-border overflow-y-auto no-scrollbar">
             {/* ДОБАВЛЕН font-medium */}
             <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin font-medium uppercase opacity-80">
-              Тайский с апельсином — это пряное путешествие. Насыщенный, тайский чай с характерными нотами специй вливается в яркую, солнечную сладость апельсина, подчеркнутую лёгкой кислотой лимона. А в финале — на выбор: классические жемчужины тапиоки или взрывные джус-боллы, наполненные цитрусовым соком.
+              Бархатный каркаде с глубоким вишнёвым оттенком и прохладной мятой создают изысканную кислинку. Цветочная терпкость мягко обволакивает, оставляя благородное послевкусие. А в каждом глоток текстурный акцент на выбор: упругие жемчужины тапиоки или взрывные джус-боллы.
             </p>
           </div>
         </div>
@@ -189,15 +189,14 @@ export default function DrinkTemplatePage() {
         >
           <div className="w-full h-[52px] flex justify-between items-center shrink-0 cursor-pointer px-[16px]" onClick={() => setIsAddonsOpen(!isAddonsOpen)}>
             <div className="flex items-center justify-start">
-              <span className="text-[18px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Дополнения</span>
+              <span className="text-[18px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Дополнения</span>
             </div>
             <div className="w-[24px] h-[24px] relative shrink-0">
               <Image src="/icons/arrow.svg" alt="Стрелка" fill className={`object-contain transition-transform duration-300 ${isAddonsOpen ? 'rotate-90' : 'rotate-0'}`} />
             </div>
           </div>
 
-          {/* ТИП */}
-          <div className="w-[314px] h-[138px] mt-[16px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(8, 0, 255, 0.25)' }}>
+          <div className="w-[314px] h-[138px] mt-[16px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
             <div className="mt-[16px] ml-[16px] shrink-0">
               <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block font-extrabold" style={{ fontFamily: "'Benzin', sans-serif" }}>Тип</span>
             </div>
@@ -212,7 +211,6 @@ export default function DrinkTemplatePage() {
             </div>
           </div>
 
-          {/* ДОБАВКИ */}
           <div className="w-[314px] h-fit pb-[16px] mt-[32px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0 transition-all duration-500 overflow-hidden" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
             <div className="mt-[16px] ml-[16px] shrink-0">
               <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block font-extrabold" style={{ fontFamily: "'Benzin', sans-serif" }}>Добавки</span>

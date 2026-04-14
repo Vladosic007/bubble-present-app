@@ -24,16 +24,15 @@ const slugMap: Record<string, string> = {
   'цитрус': 'citrus1',
   'жасминовая малина': 'jasmine-rasp1',
   'маракуйя с содовой': 'passion-soda1',
-  'жасминовый лайм': 'jasmine-lime',
+  'жасминовый лайм': 'jasmine-lime1',
   'рэд драгон': 'red-dragon1',
   'тай лун': 'tai-lung1',
   'облепиховая пряность': 'sea-buckthorn1',
   'жасминовый киви': 'jasmine-kiwi1',
   'лесной морс': 'forest-berries1',
-  'тайский с апельсином': 'thai-orange',
+  'тайский с апельсином': 'thai-orange1',
   'ягодный микс': 'berry-mix1',
-  'вельвет': 'velvet1',
-  'вильвет': 'velvet1' // 👈 Защита от опечатки
+  'вельвет': 'velvet',
 };
 
 const menuCategories = [
