@@ -166,7 +166,7 @@ export default function DrinkTemplatePage() {
 
         {/* === 2. ЗАГОЛОВОК === */}
         <div className="w-full px-[12px] mt-[16px] mb-[16px] z-20">
-          <h1 className="text-[24px] font-black uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none font-benzin">
+          <h1 className="text-[24px] font-black uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none font-benzin" font-normal>
             Нутелла
           </h1>
         </div>
