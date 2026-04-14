@@ -27,7 +27,7 @@ export default function DrinkTemplatePage() {
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
   // ❗❗❗ 2. ТУТ ПИШЕШЬ ID И ИМЯ ❗❗❗
-  const productId = 'velvet'; 
+  const productId = 'velvet1'; 
   const productName = 'Вельвет';       
   const productImg = '/images/velvet1.jpg'; 
 
