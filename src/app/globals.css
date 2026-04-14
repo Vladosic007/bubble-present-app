@@ -4,15 +4,15 @@
 /* Важно: Проверь, чтобы файлы лежали именно в public/fonts/ и названия совпадали! */
 @font-face {
   font-family: 'Benzin';
-  src: url('/fonts/Benzin-ExtraBold.ttf') format('truetype');
-  font-weight: 800;
+  src: url('/fonts/benzin-extrabold.ttf') format('truetype');
+  font-weight: 800; /* ExtraBold */
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Benzin';
-  src: url('/fonts/Benzin-Regular.ttf') format('truetype');
-  font-weight: 400;
+  src: url('/fonts/benzin-regular.ttf') format('truetype');
+  font-weight: 400; /* Regular */
   font-style: normal;
   font-display: swap;
 }
