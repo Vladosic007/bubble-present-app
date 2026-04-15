@@ -11,7 +11,7 @@ import { supabase } from '../../../lib/supabase'; // ❗ Проверь путь
 const slugMap: Record<string, string> = {
   'Чоко банан': 'choco-banana1',
   'Чизкейк': 'cheesecake1',
-  'Взрывная карамель': 'exploding-caramel',
+  'Взрывная карамель': 'exploding-caramel1',
   'Халва': 'halva1',
   'Красотка в розовом': 'pretty-in-pink1',
   'Рот фронт': 'rot-front1',
