@@ -9,9 +9,9 @@ import { supabase } from '../../../lib/supabase'; // ❗ Проверь путь
 
 // === СЛОВАРЬ ПЕРЕВОДА ДЛЯ МАТЧИ (База -> Ссылки/Картинки) ===
 const slugMap: Record<string, string> = {
-  'матча с малиной': 'matcha-raspberry',
-  'матча с фисташкой': 'matcha-pistachio',
-  'розовая сакура': 'pink-sakura'
+  'матча с малиной': 'matcha-raspberry1',
+  'матча с фисташкой': 'matcha-pistachio1',
+  'розовая сакура': 'pink-sakura1'
 };
 
 export default function MatchaMenu() {
