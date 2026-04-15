@@ -275,7 +275,7 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckoutClick = async () => {
+const handleCheckoutClick = async () => {
     const savedPhone = localStorage.getItem('bubble_user_phone');
     const savedAddress = localStorage.getItem('bubble_user_address');
     const savedName = localStorage.getItem('bubble_user_name') || 'Гость';
@@ -336,7 +336,41 @@ export default function CartPage() {
     }
 
     const orderId = data[0].id;
+    const dbTime = new Date(data[0].created_at).getTime();
 
+    // === ТЕЛЕГРАМ БОТ: ОТПРАВКА ЗАКАЗА ===
+    const tgMessage = `🚨 НОВЫЙ ЗАКАЗ #${orderId} 🚨\n\n` +
+      `📦 Тип: ${orderType === 'delivery' ? '🚗 ДОСТАВКА' : '🏃 САМОВЫВОЗ'}\n` +
+      `👤 Имя: ${savedName}\n` +
+      `📞 Телефон: ${savedPhone}\n` +
+      (orderType === 'delivery' ? `📍 Адрес: ${savedAddress}\n\n` : `\n`) +
+      `🛒 Заказ:\n` +
+      formattedItems.map((i: any) => `▫️ ${i.name} x${i.qty}`).join('\n') + `\n\n` +
+      `💰 Итого: ${dynamicTotal} руб.`;
+
+    const tgPayload = {
+      chat_id: CHAT_ID,
+      message_thread_id: TOPIC_ID,
+      text: tgMessage,
+    };
+
+    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tgPayload)
+    }).catch(err => console.error('Ошибка отправки заказа в ТГ', err));
+
+    // === ТЕСТОВЫЙ РЕЖИМ (Без ЮKassa) ===
+    if (savedName.trim().toUpperCase() === 'ТЕСТ') {
+      await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
+      setActiveOrder(orderId, 'accepted', dbTime);
+      clearCart();
+      setIsPaying(false);
+      alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в Телеграм без оплаты!");
+      return; 
+    }
+
+    // === БОЕВОЙ РЕЖИМ (С ЮKassa) ===
     try {
       const response = await fetch('/api/payment', {
         method: 'POST',
@@ -353,7 +387,6 @@ export default function CartPage() {
       const paymentData = await response.json();
 
       if (paymentData.confirmation_url) {
-        const dbTime = new Date(data[0].created_at).getTime();
         setActiveOrder(orderId, 'pending_payment', dbTime); 
         clearCart(); 
         window.location.href = paymentData.confirmation_url;
@@ -366,7 +399,6 @@ export default function CartPage() {
       setIsPaying(false);
     }
   };
-
   const statusConfig: Record<string, { title: string; desc: string; emoji: string; progress: string }> = {
     pending_payment: { title: "Ожидание оплаты", desc: "Перенаправляем в кассу...", emoji: "💳", progress: "5%" },
     accepted: { title: "Заказ оформлен", desc: "Мы получили твой заказ", emoji: "📝", progress: "15%" },
