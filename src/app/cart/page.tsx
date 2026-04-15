@@ -375,16 +375,6 @@ const handleCheckoutClick = async () => {
       alert("Ошибка сети при отправке в ТГ. Посмотри консоль F12.");
     }
 
-    // === ТЕСТОВЫЙ РЕЖИМ (Без ЮKassa) ===
-    if (savedName.trim().toUpperCase() === 'ТЕСТ') {
-      await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
-      setActiveOrder(orderId, 'accepted', dbTime);
-      clearCart();
-      setIsPaying(false);
-      alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в Телеграм без оплаты!");
-      return; 
-    }
-
     // === БОЕВОЙ РЕЖИМ (С ЮKassa) ===
     try {
       const response = await fetch('/api/payment', {
