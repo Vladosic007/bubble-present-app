@@ -161,14 +161,14 @@ export default function HistoryPage() {
         
         {isLoading ? (
           <div className="flex flex-col items-center justify-center flex-1 w-full pb-[150px]">
-            <span className="text-[#FF008C] font-['Benzin'] animate-pulse">Загрузка истории...</span>
+            <span className="text-[#FF008C] font-benzin font-medium animate-pulse">Загрузка истории...</span>
           </div>
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center flex-1 w-full pb-[150px]">
             <div className="relative w-[214px] h-[310px] shrink-0 pointer-events-none opacity-50">
               <Image src="/images/bubblik.png" alt="Пустая история" fill className="object-contain" priority />
             </div>
-            <p className="mt-[32px] px-[46px] text-center text-[#000000]/40 font-medium text-[12px] tracking-[0.02em] uppercase" style={{ fontFamily: "'Benzin-Medium', sans-serif" }}>
+            <p className="mt-[32px] px-[46px] text-center text-[#000000]/40 font-benzin font-medium text-[12px] tracking-[0.02em] uppercase">
               Вы еще не заказывали бабл-ти.<br/>Самое время это исправить!
             </p>
           </div>
@@ -225,14 +225,14 @@ export default function HistoryPage() {
                 </div>
 
                 <div className="absolute left-[187px] top-[16px] flex flex-col gap-[8px]">
-                  <span className="font-['Benzin-Medium'] text-[10px] tracking-[0.02em] text-[#616161] uppercase">Заказ {order.id}</span>
-                  <span className="font-['Benzin-Regular'] text-[10px] tracking-[0.02em] text-[#616161] uppercase">{order.date}</span>
-                  <span className="font-['Benzin-Regular'] text-[10px] tracking-[0.02em] text-[#616161] uppercase">{order.count} напитка</span>
-                  <span className="font-['Benzin-Regular'] text-[10px] tracking-[0.02em] text-[#616161] uppercase">Итого: {order.total} руб</span>
+                  <span className="font-benzin font-medium text-[10px] tracking-[0.02em] text-[#616161] uppercase">Заказ {order.id}</span>
+                  <span className="font-benzin font-medium text-[10px] tracking-[0.02em] text-[#616161] uppercase">{order.date}</span>
+                  <span className="font-benzin font-medium text-[10px] tracking-[0.02em] text-[#616161] uppercase">{order.count} напитка</span>
+                  <span className="font-benzin font-medium text-[10px] tracking-[0.02em] text-[#616161] uppercase">Итого: {order.total} руб</span>
                 </div>
 
                 <div className={`absolute left-[187px] bottom-[16px] w-[121px] h-[22px] rounded-[15px] flex items-center justify-center shadow-sm ${getStatusColor(order.status)}`}>
-                  <span className="font-['Benzin-Regular'] text-[10px] tracking-[0.02em] text-[#FFFFFF] uppercase drop-shadow-sm">
+                  <span className="font-benzin font-medium text-[10px] tracking-[0.02em] text-[#FFFFFF] uppercase drop-shadow-sm">
                     {order.status}
                   </span>
                 </div>
