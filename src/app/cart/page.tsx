@@ -67,7 +67,17 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice 
         </ul>
         <div className="absolute right-[16px] top-[8px] w-[30px] h-[30px] rounded-full bg-[#D9D9D9] flex items-center justify-center font-['Benzin'] font-extrabold text-[15px] text-white uppercase drop-shadow-sm pointer-events-none">{item.size}</div>
         
-        <button onClick={(e) => { e.stopPropagation(); changeQuantity(item.cartItemId, -1); }} className="absolute left-[265px] top-[62px] w-[20px] h-[20px] active:scale-95 transition-transform flex items-center justify-center z-20">
+        <button 
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            if (item.quantity > 1) {
+              changeQuantity(item.cartItemId, -1); 
+            } else {
+              removeItem(item.cartItemId); // ❗ Если осталась 1 штука, полностью удаляем
+            }
+          }} 
+          className="absolute left-[265px] top-[62px] w-[20px] h-[20px] active:scale-95 transition-transform flex items-center justify-center z-20"
+        >
           <Image src="/icons/minus.svg" alt="-" fill className="object-contain" />
         </button>
         
