@@ -231,7 +231,7 @@ export default function BubblikPage() {
             <div className="w-[350px] mx-[10px] h-[92px] rounded-[25px] bg-[#FFFFFF]/20 box-border flex items-center justify-center text-center shrink-0 z-10 px-[10px]" 
               style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}
             >
-              <p className="text-white leading-[1.4]" style={{ fontFamily: "'Benzin-Medium', sans-serif", fontWeight: 500, fontSize: '10px', letterSpacing: '0.05em' }}>
+              <p className="text-[10px] text-white leading-[1.4] tracking-[0.05em] font-benzin font-medium">
                 {currentLevelData.desc.split('\n').map((line, i, arr) => (
                   <span key={i}>{line}{i !== arr.length - 1 && <br />}</span>
                 ))}

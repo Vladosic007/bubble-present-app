@@ -71,13 +71,33 @@ body {
 }
 
 /* === 5. КОСМИЧЕСКИЕ АНИМАЦИИ === */
+
+/* Делаем так, чтобы звезды не вылезали за пределы экрана */
+.animated-cosmic-latte {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Делаем слои в 2 раза больше экрана, чтобы при вращении не было пустых углов */
+.stars-layer-1, .stars-layer-2, .coffee-nebula {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+}
+
 .stars-layer-1 {
   background-image:
     radial-gradient(2px 2px at 20px 30px, #fff, rgba(0,0,0,0)),
     radial-gradient(2.5px 2.5px at 50px 70px, rgba(255,255,255,0.9), rgba(0,0,0,0)),
     radial-gradient(2px 2px at 120px 10px, rgba(255,255,255,0.9), rgba(0,0,0,0));
   background-size: 200px 200px;
-  animation: var(--animate-stars-slow);
+  /* Медленно крутим по часовой */
+  animation: cosmic-spin-slow 150s linear infinite;
 }
 
 .stars-layer-2 {
@@ -86,31 +106,37 @@ body {
     radial-gradient(3px 3px at 80px 10px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
     radial-gradient(2px 2px at 150px 80px, rgba(255,255,255,0.9), rgba(0,0,0,0));
   background-size: 300px 300px;
-  animation: var(--animate-stars-fast);
+  /* Быстрее крутим ПРОТИВ часовой */
+  animation: cosmic-spin-fast 100s linear infinite reverse;
 }
 
 .coffee-nebula {
   filter: blur(40px);
-  animation: var(--animate-nebula);
+  animation: nebula-drift 10s ease-in-out infinite;
 }
 
-@keyframes stars-drift-slow {
-  from { transform: translate(0, 0); }
-  to { transform: translate(-200px, -200px); }
+/* Плавное вращение на 360 градусов */
+@keyframes cosmic-spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-@keyframes stars-drift-fast {
-  from { transform: translate(0, 0); }
-  to { transform: translate(-300px, -300px); }
+
+@keyframes cosmic-spin-fast {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
+
 @keyframes nebula-drift {
   0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.7; }
   50% { transform: translate(-30px, 50px) scale(1.05) rotate(-3deg); opacity: 0.5; }
 }
+
+/* Свечение для полоски уровня (оставил твое) */
 @keyframes fire-glow {
   0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 238, 0.4); filter: brightness(1); }
   50% { box-shadow: 0 0 25px rgba(255, 0, 238, 0.7); filter: brightness(1.2); }
 }
 
 .burning-bar {
-  animation: var(--animate-fire);
+  animation: fire-glow 2s infinite ease-in-out;
 }
