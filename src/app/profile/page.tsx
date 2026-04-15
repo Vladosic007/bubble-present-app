@@ -186,7 +186,7 @@ export default function ProfilePage() {
 
               {/* ❗ ВСТАВЬ СВОЙ ТЕЛЕГРАМ НИЖЕ ❗ */}
               <a 
-                href="https://t.me/barystabp" 
+                href="https://t.me/BubblePresentSupport" 
                 target="_blank" 
                 rel="noreferrer" 
                 className="w-[346px] h-[52px] rounded-[20px] bg-[#0088CC]/10 text-[#0088CC] border border-[#0088CC]/30 font-['Arial'] font-bold uppercase text-[14px] active:scale-95 transition-transform flex items-center justify-center gap-2 mb-[16px]"
@@ -196,7 +196,7 @@ export default function ProfilePage() {
 
               {/* ❗ ВСТАВЬ СВОЙ НОМЕР НИЖЕ ❗ */}
               <a 
-                href="tel:+79990000000" 
+                href="tel:+79281265120" 
                 className="w-[346px] h-[52px] rounded-[20px] bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/30 font-['Arial'] font-bold uppercase text-[14px] active:scale-95 transition-transform flex items-center justify-center gap-2 mb-[24px]"
               >
                 <span className="text-[20px]">📞</span> Позвонить баристе
