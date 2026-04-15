@@ -27,9 +27,9 @@ export default function LimonadeTemplatePage() {
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
   // ❗❗❗ 2. ТУТ ПИШЕШЬ ID И ИМЯ ❗❗❗
-  const productId = 'emerald-breeze'; 
-  const productName = 'Изумрудный бриз';       
-  const productImg = '/images/emerald-breeze1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
+  const productId = 'banana-lim1'; 
+  const productName = 'Банановый';       
+  const productImg = '/images/banana-lim1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
 
   // === СТЕЙТЫ ДЛЯ КЛИКОВ ===
   // Тип всегда "Холодный", поэтому стейта нет
@@ -166,25 +166,24 @@ export default function LimonadeTemplatePage() {
         {/* === 1. КАРТИНКА И ГРАДИЕНТЫ === */}
         <div className="relative w-[370px] h-[360px] shrink-0">
           {/* ❗❗❗ 4. МЕНЯТЬ ФОТКУ НА СТРАНИЦЕ ТУТ ❗❗❗ */}
-          <Image src="/images/emerald-breeze1.jpg" alt="Изумрудный бриз" fill quality={100} className="object-cover" priority />
+          <Image src="/images/banana-lim1.jpg" alt="Банановый лимонад" fill quality={100} className="object-cover" priority />
           <div className="absolute bottom-0 left-0 w-full h-[120px] bg-gradient-to-t from-[#FDFDFD] via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
         </div>
 
         {/* === 2. ЗАГОЛОВОК === */}
         <div className="w-full px-[12px] mt-[16px] mb-[16px] z-20">
-          <h1 className="text-[24px] font-black uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none"
-              style={{ fontFamily: "'Benzin', sans-serif" }}>
-            {/* ❗❗❗ 5. МЕНЯТЬ НАЗВАНИЕ НАПИТКА ТУТ ❗❗❗ */}
-            Изумрудный бриз
+          {/* ДОБАВЛЕН font-extrabold */}
+          <h1 className="text-[24px] uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none font-benzin font-extrabold">
+            Банановый
           </h1>
         </div>
 
-        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ === */}
+        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ШРИФТ BENZIN) === */}
         <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] flex items-center justify-center z-20 backdrop-blur-[30px] box-border shrink-0">
           <div className="w-[322px] h-[130px] box-border overflow-y-auto no-scrollbar">
-            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>
-              {/* ❗❗❗ 6. МЕНЯТЬ ОПИСАНИЕ НАПИТКА ТУТ ❗❗❗ */}
-              Страстная маракуйя встречает сочный апельсин в компании бодрящей содовой, создавая тропический взрыв. Яркая кислинка переплетается с цитрусовой сладостью, даря ощущение летнего бриза. А на дне вас ждёт текстурный акцент на выбор: упругая тапиока или взрывные джус-боллы
+            {/* ДОБАВЛЕН font-medium */}
+            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin font-medium uppercase opacity-80">
+              Нежный и солнечный: сладкий банан в объятиях игривой содовой создаёт лёгкое летнее настроение. Тропическая сладость мягко окутывает, даря уют и расслабление. В каждом глотке текстурный сюрприз — на выбор: классические жемчужины тапиоки или взрывные джус-боллы
             </p>
           </div>
         </div>
@@ -310,39 +309,23 @@ export default function LimonadeTemplatePage() {
 
           {/* ОБЪЁМ */}
           <div className="w-[314px] h-fit pb-[20px] mt-[32px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
-            <div className="mt-[16px] ml-[16px] shrink-0">
-              <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Объём</span>
+            <div className="mt-[16px] ml-[16px] shrink-0 font-benzin font-extrabold">
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Объём</span>
             </div>
-            
-            {/* Объём M */}
-            <div className="w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0">
-              <div className="flex items-center">
-                 <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>M</span>
-                 <span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px]" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>500 ml</span>
-              </div>
+            <div className="w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0 font-benzin font-extrabold">
+              {/* ДОБАВЛЕН font-normal ДЛЯ МЛ */}
+              <div className="flex items-center"><span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">M</span><span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px] font-benzin font-normal">500 ml</span></div>
               <div className="flex items-center gap-[10px] shrink-0">
-                <div onClick={() => setSelectedVolume('M')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedVolume === 'M' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
-                  {selectedVolume === 'M' && <CheckMark />}
-                </div>
+                <div onClick={() => setSelectedVolume('M')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedVolume === 'M' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{selectedVolume === 'M' && <CheckMark />}</div>
               </div>
             </div>
-
             <div className="w-[282px] h-[1px] bg-[#BEBEBE] rounded-full mx-auto mt-[12px] shrink-0"></div>
-
-            {/* Объём L */}
-            <div className="w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0">
-              <div className="flex items-center">
-                 <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>L</span>
-                 <span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px]" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>700 ml</span>
-              </div>
+            <div className="w-full flex justify-between items-center mt-[12px] px-[16px] shrink-0 font-benzin font-extrabold">
+              {/* ДОБАВЛЕН font-normal ДЛЯ МЛ */}
+              <div className="flex items-center"><span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">L</span><span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px] font-benzin font-normal">700 ml</span></div>
               <div className="flex items-center gap-[10px] shrink-0">
-                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${selectedVolume === 'L' ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>
-                  {/* ❗❗❗ МЕНЯТЬ ЦЕНУ ЗА БОЛЬШОЙ ОБЪЕМ ТУТ ❗❗❗ */}
-                  + 50 ₽
-                </span>
-                <div onClick={() => setSelectedVolume('L')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedVolume === 'L' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
-                  {selectedVolume === 'L' && <CheckMark />}
-                </div>
+                <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${selectedVolume === 'L' ? 'opacity-100' : 'opacity-0'}`}>+ 60 ₽</span>
+                <div onClick={() => setSelectedVolume('L')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedVolume === 'L' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{selectedVolume === 'L' && <CheckMark />}</div>
               </div>
             </div>
           </div>

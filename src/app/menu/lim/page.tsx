@@ -9,12 +9,12 @@ import { supabase } from '../../../lib/supabase'; // ❗ Проверь путь
 
 // === СЛОВАРЬ ПЕРЕВОДА ДЛЯ ЛИМОНАДОВ (База -> Ссылки/Картинки) ===
 const slugMap: Record<string, string> = {
-  'изумрудный бриз': 'emerald-breeze',
-  'карамельная малина': 'caramel-rasp',
-  'райзсан': 'raiesan', 
-  'банановый': 'banana-lim',
+  'изумрудный бриз': 'emerald-breeze1',
+  'карамельная малина': 'caramel-rasp1',
+  'райзсан': 'raiesan1', 
+  'банановый': 'banana-lim1',
   'щавелевый': 'sorrel',
-  'мохито': 'mojito'
+  'мохито': 'mojito1'
 };
 
 export default function LimMenu() {
