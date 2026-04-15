@@ -27,9 +27,9 @@ export default function CoffeeTemplatePage() {
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
   // ❗❗❗ 2. ТУТ ПИШЕШЬ ID И ИМЯ ❗❗❗
-  const productId = 'rot-front'; 
-  const productName = 'Рот фронт';       
-  const productImg = '/images/rot-front1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
+  const productId = 'toffee-boom1'; 
+  const productName = 'Тоффи бум';       
+  const productImg = '/images/toffee-boom1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
 
   // === СТЕЙТЫ ДЛЯ КЛИКОВ ===
   const [selectedType, setSelectedType] = useState('Холодный');
@@ -90,25 +90,25 @@ export default function CoffeeTemplatePage() {
         {/* КАРТИНКА И ГРАДИЕНТЫ (370px) */}
         <div className="relative w-[370px] h-[360px] shrink-0">
           {/* ❗❗❗ 4. МЕНЯТЬ ФОТКУ НА СТРАНИЦЕ ТУТ ❗❗❗ */}
-          <Image src="/images/rot-front1.jpg" alt="Рот фронт" fill quality={100} className="object-cover" priority />
+          <Image src="/images/toffee-boom1.jpg" alt="Тоффи бум" fill quality={100} className="object-cover" priority />
           <div className="absolute bottom-0 left-0 w-full h-[120px] bg-gradient-to-t from-[#FDFDFD] via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
         </div>
 
-        {/* ЗАГОЛОВОК */}
+        {/* === 2. ЗАГОЛОВОК === */}
         <div className="w-full px-[12px] mt-[16px] mb-[16px] z-20">
-          <h1 className="text-[32px] font-black uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none"
-              style={{ fontFamily: "'Benzin', sans-serif" }}>
-            {/* ❗❗❗ 5. МЕНЯТЬ НАЗВАНИЕ НАПИТКА ТУТ ❗❗❗ */}
-            Рот фронт
+          {/* ДОБАВЛЕН font-extrabold */}
+          <h1 className="text-[24px] uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none font-benzin font-extrabold">
+            Тоффи бум
           </h1>
         </div>
 
-        {/* КАРТОЧКА С ОПИСАНИЕМ (346px) */}
+         {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ШРИФТ BENZIN) === */}
         <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] flex items-center justify-center z-20 backdrop-blur-[30px] box-border shrink-0">
           <div className="w-[322px] h-[130px] box-border overflow-y-auto no-scrollbar">
-            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>
+            {/* ДОБАВЛЕН font-medium */}
+            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin font-medium uppercase opacity-80">
               {/* ❗❗❗ 6. МЕНЯТЬ ОПИСАНИЕ НАПИТКА ТУТ ❗❗❗ */}
-              Топлёный шоколад с ванильной нежностью встречает насыщенный эспрессо в молочном бархате. Вкус детства с благородным кофейным акцентом дарит тепло и ностальгию. И классические шарики тапиоки завершают эту сладкую историю
+              Сливочная ирисочная сладость тоффи и белый шоколад переплетаются с эспрессо, создавая нежную карамельную симфонию. Молоко окутывает этот дуэт мягкостью и уютом. А тапиока на дне дарит завершающую текстурную ноту наслаждения
             </p>
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function CoffeeTemplatePage() {
             <div className="w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0">
               <div className="flex items-center">
                  <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>M</span>
-                 <span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px]" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>500 ml</span>
+                 <span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px] font-benzin font-normal" >500 ml</span>
               </div>
               <div className="flex items-center gap-[10px] shrink-0">
                 <div className="w-[22px] h-[22px] rounded-[6px] border flex items-center justify-center transition-all duration-300 shrink-0 bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]">

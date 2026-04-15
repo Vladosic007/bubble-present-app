@@ -10,16 +10,16 @@ import { supabase } from '../../../lib/supabase'; // ❗ Проверь путь
 // === СЛОВАРЬ ПЕРЕВОДА (База -> Ссылки/Картинки) ===
 const slugMap: Record<string, string> = {
   'Чоко банан': 'choco-banana1',
-  'Чизкейк': 'cheesecake',
+  'Чизкейк': 'cheesecake1',
   'Взрывная карамель': 'exploding-caramel',
-  'Халва': 'halva',
-  'Красотка в розовом': 'pretty-in-pink',
-  'Рот фронт': 'rot-front',
-  'Тоффи бум': 'toffee-boom',
-  'Сырный раф': 'cheese-raf',
-  'Сникерс': 'snickers',
+  'Халва': 'halva1',
+  'Красотка в розовом': 'pretty-in-pink1',
+  'Рот фронт': 'rot-front1',
+  'Тоффи бум': 'toffee-boom1',
+  'Сырный раф': 'cheese-raf1',
+  'Сникерс': 'snickers1',
   'Клубника-базилик': 'straw-basil',
-  'Дубайский': 'dubai',
+  'Дубайский': 'dubai1',
   'Бамбл': 'bumble'
 };
 

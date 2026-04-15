@@ -1,7 +1,7 @@
 "use client";
 
 import { useCartStore } from '../../../../store/cartStore';
-import { useState, useEffect } from 'react'; // ❗ Добавили useEffect
+import { useState, useEffect } from 'react'; // ❗ Добавили useEffect ❗
 import Image from 'next/image';
 
 const CheckMark = () => (
@@ -14,7 +14,7 @@ export default function CoffeeTemplatePage() {
   // === СТЕЙТЫ КОРЗИНЫ ===
   const { items, addItem, changeQuantity, removeItem, orderType } = useCartStore();
 
-  // ❗ МАГИЯ ДЛЯ СИНХРОНИЗАЦИИ ПАМЯТИ ❗
+  // ❗ МАГИЯ ДЛЯ СИНХРОНИЗАЦИИ ПАМЯТИ (ЧТОБЫ КНОПКА НЕ ТУПИЛА) ❗
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
@@ -27,9 +27,9 @@ export default function CoffeeTemplatePage() {
   const basePrice = orderType === 'delivery' ? deliveryPrice : pickupPrice;
 
   // ❗❗❗ 2. ТУТ ПИШЕШЬ ID И ИМЯ ❗❗❗
-  const productId = 'toffee-boom'; 
-  const productName = 'Тоффи бум';       
-  const productImg = '/images/toffee-boom1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
+  const productId = 'cheese-raf1'; 
+  const productName = 'Сырный раф';       
+  const productImg = '/images/cheese-raf1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
 
   // === СТЕЙТЫ ДЛЯ КЛИКОВ ===
   const [selectedType, setSelectedType] = useState('Холодный');
@@ -52,7 +52,7 @@ export default function CoffeeTemplatePage() {
 
   const handleAddToCart = () => {
     addItem({
-      cartItemId: currentCartItemId, // ❗ ID для корзины ❗
+      cartItemId: currentCartItemId, // ❗❗❗ ВОТ ОН, ПОТЕРЯННЫЙ ID ❗❗❗
       id: productId as any, 
       name: productName, 
       price: finalPrice,
@@ -74,12 +74,7 @@ export default function CoffeeTemplatePage() {
   };
 
   const handlePlus = () => {
-    // ❗ Проверка на 9 штук ❗
-    if (itemInCart && itemInCart.quantity < 9) {
-      changeQuantity(currentCartItemId, 1);
-    } else {
-      alert("Бро, максимум 9 штук одного напитка в одни руки! 🧋");
-    }
+    changeQuantity(currentCartItemId, 1);
   };
 
   return (
@@ -90,25 +85,25 @@ export default function CoffeeTemplatePage() {
         {/* КАРТИНКА И ГРАДИЕНТЫ (370px) */}
         <div className="relative w-[370px] h-[360px] shrink-0">
           {/* ❗❗❗ 4. МЕНЯТЬ ФОТКУ НА СТРАНИЦЕ ТУТ ❗❗❗ */}
-          <Image src="/images/toffee-boom1.jpg" alt="Тоффи бум" fill quality={100} className="object-cover" priority />
+          <Image src="/images/cheese-raf1.jpg" alt="Сырный раф" fill quality={100} className="object-cover" priority />
           <div className="absolute bottom-0 left-0 w-full h-[120px] bg-gradient-to-t from-[#FDFDFD] via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
         </div>
 
-        {/* ЗАГОЛОВОК */}
+       {/* === 2. ЗАГОЛОВОК === */}
         <div className="w-full px-[12px] mt-[16px] mb-[16px] z-20">
-          <h1 className="text-[32px] font-black uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none"
-              style={{ fontFamily: "'Benzin', sans-serif" }}>
-            {/* ❗❗❗ 5. МЕНЯТЬ НАЗВАНИЕ НАПИТКА ТУТ ❗❗❗ */}
-            Тоффи бум
+          {/* ДОБАВЛЕН font-extrabold */}
+          <h1 className="text-[24px] uppercase tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none font-benzin font-extrabold">
+            Сырный раф
           </h1>
         </div>
 
-        {/* КАРТОЧКА С ОПИСАНИЕМ (346px) */}
+        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ШРИФТ BENZIN) === */}
         <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] flex items-center justify-center z-20 backdrop-blur-[30px] box-border shrink-0">
           <div className="w-[322px] h-[130px] box-border overflow-y-auto no-scrollbar">
-            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>
+            {/* ДОБАВЛЕН font-medium */}
+            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin font-medium uppercase opacity-80">
               {/* ❗❗❗ 6. МЕНЯТЬ ОПИСАНИЕ НАПИТКА ТУТ ❗❗❗ */}
-              Сливочная ирисочная сладость тоффи и белый шоколад переплетаются с эспрессо, создавая нежную карамельную симфонию. Молоко окутывает этот дуэт мягкостью и уютом. А тапиока на дне дарит завершающую текстурную ноту наслаждения
+              Плавленый сыр встречает сливочную нежность и ваниль в эспрессо — звучит смело, а на вкус как уютная тайна. Мягкий, обволакивающий раф с бархатистой текстурой и глубоким послевкусием. И жемчужины тапиоки добавляют ему характерный акцент
             </p>
           </div>
         </div>
@@ -196,7 +191,7 @@ export default function CoffeeTemplatePage() {
             <div className="w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0">
               <div className="flex items-center">
                  <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>M</span>
-                 <span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px]" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}>500 ml</span>
+                 <span className="text-[12px] tracking-[0.02em] text-[#949494] whitespace-nowrap leading-none block ml-[10px] font-benzin font-normal" >500 ml</span>
               </div>
               <div className="flex items-center gap-[10px] shrink-0">
                 <div className="w-[22px] h-[22px] rounded-[6px] border flex items-center justify-center transition-all duration-300 shrink-0 bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]">
@@ -208,38 +203,38 @@ export default function CoffeeTemplatePage() {
           
         </div>
 
-        {/* ❗ УМНАЯ КНОПКА (С РЕШЕНИЕМ РАССИНХРОНА) ❗ */}
-        <div className="w-[346px] h-[56px] mb-[20px] z-20 shrink-0">
-          {!isMounted ? (
-            /* Пока память подгружается - рисуем красивую заглушку */
-            <div className="w-full h-full bg-[#EEEEEE] rounded-[25px] flex justify-center items-center shadow-sm">
-              <span className="text-[#949494] font-['Benzin'] text-[12px] uppercase">Сверка с корзиной...</span>
-            </div>
-          ) : itemInCart ? (
-            /* СЧЕТЧИК */
-            <div className="w-full h-full bg-[#FFFFFF]/30 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-between items-center px-[24px] box-border">
-              <button onClick={handleMinus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
-                <Image src="/icons/minus.svg" alt="-" width={20} height={20} className="object-contain" />
-              </button>
-              
-              <span className="text-[22px] font-black tracking-[0.02em] text-[#FF008C] leading-none" style={{ fontFamily: "'Benzin', sans-serif" }}>
-                {itemInCart.quantity}
-              </span>
-              
-              <button onClick={handlePlus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
-                <Image src="/icons/plus.svg" alt="+" width={20} height={20} className="object-contain" />
-              </button>
-            </div>
-          ) : (
-            /* КНОПКА В КОРЗИНУ */
-            <button 
-              onClick={handleAddToCart} 
-              className="w-full h-full bg-[#FFD1F5]/40 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-center items-center active:scale-95 transition-transform"
-            >
-              <span className="text-[20px] font-black tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none flex items-center gap-[12px]" style={{ fontFamily: "'Benzin', sans-serif" }}>
-                <span>В корзину</span>
-              </span>
-            </button>
+        {/* УМНАЯ КНОПКА (С РЕШЕНИЕМ РАССИНХРОНА) */}
+                <div className="w-[346px] h-[56px] mb-[20px] z-20 shrink-0">
+                  {!isMounted ? (
+                    /* Пока память подгружается - рисуем красивую заглушку */
+                    <div className="w-full h-full bg-[#EEEEEE] rounded-[25px] flex justify-center items-center shadow-sm">
+                      <span className="text-[#949494] font-['Benzin'] text-[12px] uppercase">Сверка с корзиной...</span>
+                    </div>
+                  ) : itemInCart ? (
+                    /* СЧЕТЧИК */
+                    <div className="w-full h-full bg-[#FFFFFF]/30 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-between items-center px-[24px] box-border">
+                      <button onClick={handleMinus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
+                        <Image src="/icons/minus.svg" alt="-" width={20} height={20} className="object-contain" />
+                      </button>
+                      
+                      <span className="text-[22px] font-black tracking-[0.02em] text-[#FF008C] leading-none" style={{ fontFamily: "'Benzin', sans-serif" }}>
+                        {itemInCart.quantity}
+                      </span>
+                      
+                      <button onClick={handlePlus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
+                        <Image src="/icons/plus.svg" alt="+" width={20} height={20} className="object-contain" />
+                      </button>
+                    </div>
+                  ) : (
+                    /* КНОПКА В КОРЗИНУ */
+                    <button 
+                      onClick={handleAddToCart} 
+                      className="w-full h-full bg-[#FFD1F5]/40 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-center items-center active:scale-95 transition-transform"
+                    >
+                      <span className="text-[20px] font-black tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none flex items-center gap-[12px]" style={{ fontFamily: "'Benzin', sans-serif" }}>
+                        <span>В корзину</span>
+                      </span>
+                    </button>
           )}
         </div>
         
