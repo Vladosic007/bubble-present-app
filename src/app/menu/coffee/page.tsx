@@ -9,7 +9,7 @@ import { supabase } from '../../../lib/supabase'; // ❗ Проверь путь
 
 // === СЛОВАРЬ ПЕРЕВОДА (База -> Ссылки/Картинки) ===
 const slugMap: Record<string, string> = {
-  'Чоко банан': 'choco-banana',
+  'Чоко банан': 'choco-banana1',
   'Чизкейк': 'cheesecake',
   'Взрывная карамель': 'exploding-caramel',
   'Халва': 'halva',
