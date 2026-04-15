@@ -350,15 +350,30 @@ const handleCheckoutClick = async () => {
 
     const tgPayload = {
       chat_id: CHAT_ID,
-      message_thread_id: TOPIC_ID,
+      message_thread_id: Number(TOPIC_ID), // ❗ Сделали 100% числом
       text: tgMessage,
     };
 
-    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tgPayload)
-    }).catch(err => console.error('Ошибка отправки заказа в ТГ', err));
+    // ❗ Умная отправка: теперь она скажет, если что-то не так
+    try {
+      const tgResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tgPayload)
+      });
+      
+      const tgResult = await tgResponse.json();
+      
+      if (!tgResponse.ok) {
+        console.error("❌ Телега отклонила запрос:", tgResult);
+        alert(`Ошибка ТГ: ${tgResult.description}`); // Выведет ошибку прямо на экран!
+      } else {
+        console.log("✅ Сообщение успешно ушло в ТГ!");
+      }
+    } catch (err) {
+      console.error("❌ Ошибка сети при отправке в ТГ:", err);
+      alert("Ошибка сети при отправке в ТГ. Посмотри консоль F12.");
+    }
 
     // === ТЕСТОВЫЙ РЕЖИМ (Без ЮKassa) ===
     if (savedName.trim().toUpperCase() === 'ТЕСТ') {
