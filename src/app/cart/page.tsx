@@ -275,7 +275,7 @@ export default function CartPage() {
     }
   };
 
-const handleCheckoutClick = async () => {
+  const handleCheckoutClick = async () => {
     const savedPhone = localStorage.getItem('bubble_user_phone');
     const savedAddress = localStorage.getItem('bubble_user_address');
     const savedName = localStorage.getItem('bubble_user_name') || 'Гость';
@@ -349,35 +349,9 @@ const handleCheckoutClick = async () => {
       formattedItems.map((i: any) => `▫️ ${i.name} x${i.qty}`).join('\n') + `\n\n` +
       `💰 Итого: ${dynamicTotal} руб.`;
 
-    const tgPayload = {
-      chat_id: CHAT_ID,
-      message_thread_id: Number(TOPIC_ID),
-      text: tgMessage,
-    };
+    const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
 
-    // ❗ ТИХАЯ ОТПРАВКА В ТЕЛЕГРАМ (Без алертов, чтобы не блочить оплату)
-    try {
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tgPayload)
-      });
-    } catch (err) {
-      console.error("Тихая ошибка отправки в ТГ:", err);
-      // Мы специально НЕ пишем alert() здесь, чтобы клиент пошел платить дальше
-    }
-
-    // === 🛠 МАГИЯ ДЛЯ ТЕСТИРОВАНИЯ (Без ЮKassa) ===
-    if (savedName.trim().toUpperCase() === 'ТЕСТ') {
-      await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
-      setActiveOrder(orderId, 'accepted', dbTime);
-      clearCart();
-      setIsPaying(false);
-      alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в Телеграм без оплаты!");
-      return; 
-    }
-
-    // === 💳 БОЕВОЙ РЕЖИМ (С ЮKassa) ===
+    // ❗ ОТПРАВЛЯЕМ ВСЁ НА НАШ СЕРВЕР (Больше никаких прямых запросов в ТГ!)
     try {
       const response = await fetch('/api/payment', {
         method: 'POST',
@@ -387,18 +361,31 @@ const handleCheckoutClick = async () => {
           amount: dynamicTotal,
           description: `Заказ #${orderId} (Bubble Present)`,
           email: savedEmail,
-          items: formattedItems
+          items: formattedItems,
+          tgMessage: tgMessage, // Передаем текст боту на сервере
+          isTest: isTestMode    // Передаем флаг теста
         }),
       });
 
       const paymentData = await response.json();
 
+      // === 🛠 МАГИЯ ДЛЯ ТЕСТИРОВАНИЯ ===
+      if (isTestMode) {
+        await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
+        setActiveOrder(orderId, 'accepted', dbTime);
+        clearCart();
+        setIsPaying(false);
+        alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в Телеграм без оплаты!");
+        return; 
+      }
+
+      // === 💳 БОЕВОЙ РЕЖИМ ===
       if (paymentData.confirmation_url) {
         setActiveOrder(orderId, 'pending_payment', dbTime); 
         clearCart(); 
-        setIsPaying(false); // ❗ Снимаем размытие ДО перехода, чтобы не висло
+        setIsPaying(false); // Снимаем размытие моментально
 
-        // ❗ ХАК ДЛЯ IOS PWA: Создаем невидимую ссылку и кликаем по ней
+        // Железобетонный редирект для PWA Айфонов
         const link = document.createElement('a');
         link.href = paymentData.confirmation_url;
         document.body.appendChild(link);
@@ -409,10 +396,11 @@ const handleCheckoutClick = async () => {
       }
     } catch (err) {
       console.error('Ошибка инициализации оплаты:', err);
-      alert("Не удалось запустить оплату. Обратитесь к баристе.");
+      alert("Не удалось запустить оплату. Проверьте интернет или обратитесь к баристе.");
       setIsPaying(false);
     }
   };
+
   const statusConfig: Record<string, { title: string; desc: string; emoji: string; progress: string }> = {
     pending_payment: { title: "Ожидание оплаты", desc: "Перенаправляем в кассу...", emoji: "💳", progress: "5%" },
     accepted: { title: "Заказ оформлен", desc: "Мы получили твой заказ", emoji: "📝", progress: "15%" },
