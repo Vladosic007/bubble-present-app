@@ -313,6 +313,7 @@ const handleCheckoutClick = async () => {
       };
     });
 
+    // 1. Создаем заказ в базе
     const { data, error } = await supabase
       .from('orders')
       .insert([
@@ -338,7 +339,7 @@ const handleCheckoutClick = async () => {
     const orderId = data[0].id;
     const dbTime = new Date(data[0].created_at).getTime();
 
-    // === ТЕЛЕГРАМ БОТ: ОТПРАВКА ЗАКАЗА ===
+    // === ФОРМИРУЕМ ТЕКСТ ДЛЯ ТЕЛЕГРАМ ===
     const tgMessage = `🚨 НОВЫЙ ЗАКАЗ #${orderId} 🚨\n\n` +
       `📦 Тип: ${orderType === 'delivery' ? '🚗 ДОСТАВКА' : '🏃 САМОВЫВОЗ'}\n` +
       `👤 Имя: ${savedName}\n` +
@@ -350,32 +351,33 @@ const handleCheckoutClick = async () => {
 
     const tgPayload = {
       chat_id: CHAT_ID,
-      message_thread_id: Number(TOPIC_ID), // ❗ Сделали 100% числом
+      message_thread_id: Number(TOPIC_ID),
       text: tgMessage,
     };
 
-    // ❗ Умная отправка: теперь она скажет, если что-то не так
+    // ❗ ТИХАЯ ОТПРАВКА В ТЕЛЕГРАМ (Без алертов, чтобы не блочить оплату)
     try {
-      const tgResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tgPayload)
       });
-      
-      const tgResult = await tgResponse.json();
-      
-      if (!tgResponse.ok) {
-        console.error("❌ Телега отклонила запрос:", tgResult);
-        alert(`Ошибка ТГ: ${tgResult.description}`); // Выведет ошибку прямо на экран!
-      } else {
-        console.log("✅ Сообщение успешно ушло в ТГ!");
-      }
     } catch (err) {
-      console.error("❌ Ошибка сети при отправке в ТГ:", err);
-      alert("Ошибка сети при отправке в ТГ. Посмотри консоль F12.");
+      console.error("Тихая ошибка отправки в ТГ:", err);
+      // Мы специально НЕ пишем alert() здесь, чтобы клиент пошел платить дальше
     }
 
-    // === БОЕВОЙ РЕЖИМ (С ЮKassa) ===
+    // === 🛠 МАГИЯ ДЛЯ ТЕСТИРОВАНИЯ (Без ЮKassa) ===
+    if (savedName.trim().toUpperCase() === 'ТЕСТ') {
+      await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
+      setActiveOrder(orderId, 'accepted', dbTime);
+      clearCart();
+      setIsPaying(false);
+      alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в Телеграм без оплаты!");
+      return; 
+    }
+
+    // === 💳 БОЕВОЙ РЕЖИМ (С ЮKassa) ===
     try {
       const response = await fetch('/api/payment', {
         method: 'POST',
