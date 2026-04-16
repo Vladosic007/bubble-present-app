@@ -396,7 +396,14 @@ const handleCheckoutClick = async () => {
       if (paymentData.confirmation_url) {
         setActiveOrder(orderId, 'pending_payment', dbTime); 
         clearCart(); 
-        window.location.href = paymentData.confirmation_url;
+        setIsPaying(false); // ❗ Снимаем размытие ДО перехода, чтобы не висло
+
+        // ❗ ХАК ДЛЯ IOS PWA: Создаем невидимую ссылку и кликаем по ней
+        const link = document.createElement('a');
+        link.href = paymentData.confirmation_url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else {
         throw new Error('Нет ссылки на оплату');
       }
