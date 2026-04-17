@@ -164,16 +164,32 @@ export default function BubblikPage() {
           </div>
         ) : (
           <>
-            <input
-              type="text"
-              maxLength={15}
-              value={bubblikName}
-              onChange={handleNameChange}
-              onFocus={(e) => e.target.select()}
-              className="relative z-20 mt-[165px] mb-[40px] w-full max-w-[300px] bg-transparent text-center text-white outline-none placeholder:text-white/50 uppercase cursor-text"
-              style={{ fontFamily: "'Benzin', sans-serif", fontSize: '12px', letterSpacing: '0.02em', fontWeight: 800 }}
-              placeholder="ВВЕДИ ИМЯ"
-            />
+            {/* ❗ БЛОК ИМЕНИ БАБЛИКА С ПОДСКАЗКОЙ ❗ */}
+            <div className="relative z-20 mt-[165px] mb-[30px] w-full flex flex-col items-center justify-center">
+              <div className="relative w-full max-w-[300px] flex justify-center items-center">
+                <input
+                  type="text"
+                  maxLength={15}
+                  value={bubblikName}
+                  onChange={handleNameChange}
+                  onFocus={(e) => e.target.select()}
+                  className="w-full bg-transparent text-center text-white outline-none placeholder:text-white/50 uppercase cursor-text z-10"
+                  style={{ fontFamily: "'Benzin', sans-serif", fontSize: '12px', letterSpacing: '0.02em', fontWeight: 800 }}
+                  placeholder="ВВЕДИ ИМЯ"
+                />
+                {/* ❗ Иконка карандашика ❗ */}
+                <div className="absolute right-[30px] pointer-events-none opacity-40 z-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                  </svg>
+                </div>
+              </div>
+              
+              {/* ❗ Текст-подсказка ❗ */}
+              <span className="text-[8px] text-white/40 font-['Arial'] font-bold uppercase mt-[6px] tracking-wider drop-shadow-md">
+                Нажми, чтобы дать имя
+              </span>
+            </div>
 
             <div className="relative z-10 w-[251px] h-[287px] shrink-0 pointer-events-none flex items-center justify-center">
               <AnimatePresence>
