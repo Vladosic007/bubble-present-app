@@ -103,48 +103,77 @@ export default function ProfilePage() {
           />
         </button>
 
-        <div 
-          onClick={() => fileInputRef.current?.click()}
-          className="mt-[100px] relative w-[180px] h-[180px] rounded-full overflow-hidden shadow-[0_4px_15px_rgba(0,0,0,0.15)] shrink-0 border-4 border-white z-10 bg-[#E5E5EA] cursor-pointer group"
-        >
-          <Image 
-            src={photoUrl} 
-            alt="Аватар" 
-            fill 
-            className="object-cover transition-opacity duration-300 group-hover:opacity-70" 
-            priority
-            quality={100} 
-            unoptimized 
-          />
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
-             <span className="text-white font-['Benzin'] text-[12px] uppercase drop-shadow-md">Изменить</span>
+        {/* 1. БЛОК АВАТАРКИ С ИКОНКОЙ КАМЕРЫ */}
+        <div className="mt-[100px] relative w-[180px] h-[180px] shrink-0 z-10">
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="relative w-full h-full rounded-full overflow-hidden shadow-[0_4px_15px_rgba(0,0,0,0.15)] border-4 border-white bg-[#E5E5EA] cursor-pointer group"
+          >
+            <Image 
+              src={photoUrl} 
+              alt="Аватар" 
+              fill 
+              className="object-cover transition-opacity duration-300 group-hover:opacity-70" 
+              priority
+              quality={100} 
+              unoptimized 
+            />
+            {/* Затемнение работает только на компах */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
+               <span className="text-white font-['Benzin'] text-[12px] uppercase drop-shadow-md">Изменить</span>
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImageUpload} 
+              accept="image/*" 
+              className="hidden" 
+            />
           </div>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImageUpload} 
-            accept="image/*" 
-            className="hidden" 
-          />
+          
+          {/* ❗ ПОДСКАЗКА: ИКОНКА КАМЕРЫ ❗ */}
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute bottom-[5px] right-[10px] w-[44px] h-[44px] bg-white rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.15)] cursor-pointer active:scale-90 transition-transform"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF008C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+          </div>
         </div>
 
-        <div className="mt-[20px] px-4 w-full flex justify-center z-10">
-          <input 
-            type="text"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            onBlur={handleSaveProfile}
-            maxLength={20}
-            placeholder="ТВОЕ ИМЯ"
-            className="font-['Benzin'] font-extrabold text-[32px] tracking-[0.02em] uppercase text-center w-full bg-transparent outline-none focus:ring-0 leading-tight cursor-text"
-            style={{ 
-              backgroundImage: 'linear-gradient(to right, #FF00EE, #FF008C)',
-              color: 'transparent',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              filter: 'drop-shadow(0px 0px 1px rgba(255,255,255,0.5))'
-            }}
-          />
+        {/* 2. БЛОК ИМЕНИ С ИКОНКОЙ КАРАНДАША */}
+        <div className="mt-[20px] px-4 w-full flex flex-col items-center justify-center z-10 relative">
+          <div className="relative w-full flex justify-center items-center">
+            <input 
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              onBlur={handleSaveProfile}
+              maxLength={20}
+              placeholder="ТВОЕ ИМЯ"
+              className="font-['Benzin'] font-extrabold text-[32px] tracking-[0.02em] uppercase text-center w-full bg-transparent outline-none focus:ring-0 leading-tight cursor-text"
+              style={{ 
+                backgroundImage: 'linear-gradient(to right, #FF00EE, #FF008C)',
+                color: 'transparent',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                filter: 'drop-shadow(0px 0px 1px rgba(255,255,255,0.5))'
+              }}
+            />
+            {/* ❗ ПОДСКАЗКА: ИКОНКА КАРАНДАША ❗ */}
+            <div className="absolute right-[20px] pointer-events-none opacity-40">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF008C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+              </svg>
+            </div>
+          </div>
+          
+          {/* ❗ ПОДСКАЗКА: ТЕКСТ ❗ */}
+          <span className="text-[10px] text-[#949494] font-['Arial'] font-bold uppercase mt-[4px]">
+            Нажми, чтобы изменить имя
+          </span>
         </div>
 
         <section className="mt-[40px] w-full flex flex-col items-center gap-[32px] px-[12px] pb-[40px] z-10">
