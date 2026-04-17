@@ -3,6 +3,7 @@
 import { useCartStore } from '../../../../store/cartStore';
 import { useState, useEffect } from 'react'; // ❗ Добавили useEffect
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 // === ГАЛОЧКА ===
 const CheckMark = () => (
@@ -49,11 +50,43 @@ export default function DrinkTemplatePage() {
   const [tapiocaX2Selected, setTapiocaX2Selected] = useState(false);
   const [juiceX2Selected, setJuiceX2Selected] = useState(false);
 
-  const juiceFlavorsList = [
-    'Персик', 'Черника', 'Личи', 'Клубника', 'Малина', 
-    'Маракуйя', 'Манго', 'Яблоко', 'Киви', 'Йогурт', 'Апельсин'
-  ];
+  // ❗ ИСПРАВЛЕНИЕ: ДЕЛАЕМ СПИСОК ВКУСОВ ДИНАМИЧЕСКИМ ИЗ БАЗЫ ДАННЫХ ❗
+  const [juiceFlavorsList, setJuiceFlavorsList] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const fetchActiveToppings = async () => {
+      const { data, error } = await supabase
+        .from('toppings')
+        .select('name')
+        .eq('is_active', true);
 
+      if (data && !error) {
+        const activeNames = data.map((t: any) => t.name);
+        
+        // 1. ФИЛЬТРУЕМ МУСОР (Тапиока, Сыр и бронебойная защита от 2X/Крафтинга)
+        const flavorsOnly = activeNames.filter((name: string) => {
+          const lowerName = name.toLowerCase();
+          return !lowerName.includes('тапиока') && 
+                 !lowerName.includes('сырн') &&
+                 !lowerName.includes('2x') &&    // английская X
+                 !lowerName.includes('2х') &&    // русская Х
+                 !lowerName.includes('крафт');   // на случай слова "крафтинг"
+        });
+
+        // 2. ОЧИЩАЕМ НАЗВАНИЯ (Срезаем "ДЖУС-БОЛЛЫ: ")
+        const cleanFlavors = flavorsOnly.map((name: string) => {
+          let clean = name.replace(/джус[- ]боллы[:\s]+/i, '');
+          return clean.trim(); 
+        });
+        
+        setJuiceFlavorsList(cleanFlavors);
+      }
+    };
+
+    fetchActiveToppings();
+  }, []);
+
+  // 4. ТВОЯ ЛОГИКА ВЫБОРА ДОБАВОК
   const handleTapiocaClick = () => {
     if (!tapiocaSelected) {
       setTapiocaSelected(true);
