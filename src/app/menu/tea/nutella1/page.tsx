@@ -49,22 +49,31 @@ export default function DrinkTemplatePage() {
   
   useEffect(() => {
     const fetchActiveToppings = async () => {
+      const { supabase } = await import('../../lib/supabase'); // Убедись, что путь твой
+      
       const { data, error } = await supabase
         .from('toppings')
         .select('name')
         .eq('is_active', true);
 
       if (data && !error) {
-        // ❗ Добавили (t: any) — теперь TS не будет ругаться
         const activeNames = data.map((t: any) => t.name);
         
-        // ❗ Добавили (name: string)
+        // 1. ФИЛЬТРУЕМ МУСОР (Убираем Тапиоку, Сыр и случайно попавший 2X)
         const flavorsOnly = activeNames.filter((name: string) => 
           !name.toLowerCase().includes('тапиока') && 
-          !name.toLowerCase().includes('сырн')
+          !name.toLowerCase().includes('сырн') &&
+          !name.toLowerCase().includes('2x') // ❗ Жестко выкидываем крафтинг из вкусов
         );
+
+        // 2. ОЧИЩАЕМ НАЗВАНИЯ (Срезаем "ДЖУС-БОЛЛЫ: ")
+        const cleanFlavors = flavorsOnly.map((name: string) => {
+          // Эта регулярка найдет "ДЖУС-БОЛЛЫ: ", "ДЖУС БОЛЛЫ:" и просто удалит их
+          let clean = name.replace(/джус[- ]боллы[:\s]+/i, '');
+          return clean.trim(); 
+        });
         
-        setJuiceFlavorsList(flavorsOnly);
+        setJuiceFlavorsList(cleanFlavors);
       }
     };
 
