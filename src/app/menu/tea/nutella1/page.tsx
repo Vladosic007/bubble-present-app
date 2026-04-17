@@ -49,8 +49,6 @@ export default function DrinkTemplatePage() {
   
   useEffect(() => {
     const fetchActiveToppings = async () => {
-      // ❗ Удалили тупую строчку с импортом, теперь код берет supabase с самого верха файла ❗
-      
       const { data, error } = await supabase
         .from('toppings')
         .select('name')
@@ -59,12 +57,15 @@ export default function DrinkTemplatePage() {
       if (data && !error) {
         const activeNames = data.map((t: any) => t.name);
         
-        // 1. ФИЛЬТРУЕМ МУСОР (Убираем Тапиоку, Сыр и случайно попавший 2X)
-        const flavorsOnly = activeNames.filter((name: string) => 
-          !name.toLowerCase().includes('тапиока') && 
-          !name.toLowerCase().includes('сырн') &&
-          !name.toLowerCase().includes('2x')
-        );
+        // 1. ФИЛЬТРУЕМ МУСОР (Тапиока, Сыр и бронебойная защита от 2X/Крафтинга)
+        const flavorsOnly = activeNames.filter((name: string) => {
+          const lowerName = name.toLowerCase();
+          return !lowerName.includes('тапиока') && 
+                 !lowerName.includes('сырн') &&
+                 !lowerName.includes('2x') &&    // английская X
+                 !lowerName.includes('2х') &&    // русская Х
+                 !lowerName.includes('крафт');   // на случай слова "крафтинг"
+        });
 
         // 2. ОЧИЩАЕМ НАЗВАНИЯ (Срезаем "ДЖУС-БОЛЛЫ: ")
         const cleanFlavors = flavorsOnly.map((name: string) => {
