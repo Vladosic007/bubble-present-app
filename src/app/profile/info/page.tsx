@@ -96,14 +96,57 @@ export default function InfoPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ❗ ТЕПЕРЬ СОХРАНЯЕМ В ПАМЯТЬ АБСОЛЮТНО ВСЕ ПОЛЯ ❗
+  // ❗ ЖЕСТКАЯ ПРОВЕРКА И СОХРАНЕНИЕ ❗
   const handleSave = () => {
-    localStorage.setItem('bubble_user_name', formData.firstName);
-    localStorage.setItem('bubble_user_lastname', formData.lastName);
-    localStorage.setItem('bubble_user_phone', formData.phone);
-    localStorage.setItem('bubble_user_email', formData.email);
-    localStorage.setItem('bubble_user_address', formData.address);
-    alert("✅ Данные успешно сохранены!");
+    const { firstName, lastName, phone, email, address } = formData;
+
+    // 1. Проверка на маты (базовые корни) и бред (4 согласных подряд)
+    const matRegex = /(х[уy](й|и|я|е|ё)|пизд|еб[аоуеы]|бля|шлюх|хуел|залуп|дроч)/i;
+    const gibberishRegex = /[бвгджзклмнпрстфхцчшщ]{4,}/i; 
+    const cyrillicRegex = /^[А-Яа-яЁё\s\-]+$/;
+
+    // Проверка Имени
+    if (!firstName || firstName.length < 2) {
+      return alert("❌ Введи нормальное имя (минимум 2 буквы)!");
+    }
+    if (!cyrillicRegex.test(firstName)) {
+      return alert("❌ Имя должно содержать только русские буквы!");
+    }
+    if (matRegex.test(firstName) || gibberishRegex.test(firstName)) {
+      return alert("❌ Давай без матов и непонятного набора букв в имени, бро!");
+    }
+
+    // Проверка Фамилии (если она введена)
+    if (lastName) {
+      if (!cyrillicRegex.test(lastName)) {
+        return alert("❌ Фамилия должна содержать только русские буквы!");
+      }
+      if (matRegex.test(lastName) || gibberishRegex.test(lastName)) {
+        return alert("❌ Давай без матов и бреда в фамилии!");
+      }
+    }
+
+    // 2. Проверка телефона (чистим от скобок и пробелов)
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, ''); // убирает ( ) - и пробелы
+    const phoneRegex = /^(\+7|8)\d{10}$/; // строго +7 или 8 и 10 цифр после
+    if (!phoneRegex.test(cleanPhone)) {
+      return alert("❌ Введи корректный номер телефона (например, +79959300704 или 89959300704)!");
+    }
+
+    // 3. Проверка почты (стандартный формат с @ и точкой)
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,10}$/;
+    if (email && !emailRegex.test(email)) {
+      return alert("❌ Введи нормальную электронную почту (например, example@gmail.com)!");
+    }
+
+    // Если код дошел сюда, значит данные идеальные! Сохраняем.
+    localStorage.setItem('bubble_user_name', firstName);
+    localStorage.setItem('bubble_user_lastname', lastName);
+    localStorage.setItem('bubble_user_phone', cleanPhone); // Сохраняем чистый номер
+    localStorage.setItem('bubble_user_email', email);
+    localStorage.setItem('bubble_user_address', address);
+    
+    alert("✅ Данные успешно сохранены! Форма идеальна.");
   };
 
   const handleConfirmMap = () => {
