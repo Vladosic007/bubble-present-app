@@ -172,11 +172,11 @@ export default function DrinkTemplatePage() {
           </h1>
         </div>
 
-        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ИДЕАЛЬНЫЙ BENZIN REGULAR) === */}
+        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ИДЕАЛЬНЫЙ BENZIN REGULAR КАК В ФИГМЕ) === */}
         <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] flex items-center justify-center z-20 backdrop-blur-[30px] box-border shrink-0 py-[12px]">
           <div className="w-[322px] h-[126px] box-border overflow-y-auto no-scrollbar flex flex-col justify-center">
-            {/* ❗ Убрали text-justify, добавили text-center, font-normal и чуть уменьшили размер для элегантности ❗ */}
-            <p className="text-[11px] text-[#272727] leading-[1.5] text-center font-benzin font-normal uppercase opacity-80 tracking-[0.02em] px-[8px]">
+            {/* ❗ Убрали text-justify, поставили text-center, УБРАЛИ uppercase и поставили font-normal ❗ */}
+            <p className="text-[11px] text-[#272727] leading-[1.5] text-center font-benzin font-normal opacity-80 tracking-[0.02em] px-[8px]">
               Нутелла — жидкая ностальгия. Густой томный шоколад с ореховым шепотом нутеллы, укрытый воздушной сырной шапкой. Молоко смягчает эту роскошь, а на дне вас ждёт приятный сюрприз — на выбор: классические жемчужины тапиоки или взрывные джус-боллы. Каждый глоток — тёплое воспоминание с текстурным восторгом.
             </p>
           </div>
