@@ -101,7 +101,7 @@ export default function InfoPage() {
     const { firstName, lastName, phone, email, address } = formData;
 
     // 1. Проверка на маты (базовые корни) и бред (4 согласных подряд)
-    const matRegex = /(х[уy](й|и|я|е|ё)|пизд|еб[аоуеы]|бля|шлюх|хуел|залуп|дроч)/i;
+    const matRegex = /(х[уy](й|и|я|е|ё)|пизд|еб[аоуеы]|бля|шлюх|хуел|залуп|дроч|гондон|пидр|пизда|еблан)/i;
     const gibberishRegex = /[бвгджзклмнпрстфхцчшщ]{4,}/i; 
     const cyrillicRegex = /^[А-Яа-яЁё\s\-]+$/;
 
@@ -113,7 +113,7 @@ export default function InfoPage() {
       return alert("❌ Имя должно содержать только русские буквы!");
     }
     if (matRegex.test(firstName) || gibberishRegex.test(firstName)) {
-      return alert("❌ Давай без матов и непонятного набора букв в имени, бро!");
+      return alert("❌ Давай без матов и непонятного набора букв в имени!");
     }
 
     // Проверка Фамилии (если она введена)
@@ -130,7 +130,7 @@ export default function InfoPage() {
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, ''); // убирает ( ) - и пробелы
     const phoneRegex = /^(\+7|8)\d{10}$/; // строго +7 или 8 и 10 цифр после
     if (!phoneRegex.test(cleanPhone)) {
-      return alert("❌ Введи корректный номер телефона (например, +79959300704 или 89959300704)!");
+      return alert("❌ Введи корректный номер телефона!");
     }
 
     // 3. Проверка почты (стандартный формат с @ и точкой)
