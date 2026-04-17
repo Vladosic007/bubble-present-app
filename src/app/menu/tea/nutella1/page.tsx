@@ -49,7 +49,7 @@ export default function DrinkTemplatePage() {
   
   useEffect(() => {
     const fetchActiveToppings = async () => {
-      const { supabase } = await import('../../lib/supabase'); // Убедись, что путь твой
+      // ❗ Удалили тупую строчку с импортом, теперь код берет supabase с самого верха файла ❗
       
       const { data, error } = await supabase
         .from('toppings')
@@ -63,12 +63,11 @@ export default function DrinkTemplatePage() {
         const flavorsOnly = activeNames.filter((name: string) => 
           !name.toLowerCase().includes('тапиока') && 
           !name.toLowerCase().includes('сырн') &&
-          !name.toLowerCase().includes('2x') // ❗ Жестко выкидываем крафтинг из вкусов
+          !name.toLowerCase().includes('2x')
         );
 
         // 2. ОЧИЩАЕМ НАЗВАНИЯ (Срезаем "ДЖУС-БОЛЛЫ: ")
         const cleanFlavors = flavorsOnly.map((name: string) => {
-          // Эта регулярка найдет "ДЖУС-БОЛЛЫ: ", "ДЖУС БОЛЛЫ:" и просто удалит их
           let clean = name.replace(/джус[- ]боллы[:\s]+/i, '');
           return clean.trim(); 
         });
