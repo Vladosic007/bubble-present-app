@@ -24,7 +24,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="p-4 flex flex-col items-center pb-[100px] pt-8 min-h-screen bg-[#FAFAFA]">
+    <div className="p-4 flex flex-col items-center pb-[100px] pt-8 min-h-screen bg-white">
       
       {/* ❗ ВСТАВЛЯЕМ ПЛАШКУ СЮДА ❗ */}
       <InstallPrompt />
