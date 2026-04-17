@@ -169,11 +169,11 @@ export default function DrinkTemplatePage() {
           </h1>
         </div>
 
-        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ШРИФТ BENZIN) === */}
-        <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] flex items-center justify-center z-20 backdrop-blur-[30px] box-border shrink-0">
-          <div className="w-[322px] h-[130px] box-border overflow-y-auto no-scrollbar">
-            {/* ДОБАВЛЕН font-medium */}
-            <p className="text-[12px] text-[#272727] leading-[1.4] text-justify font-benzin font-medium uppercase opacity-80">
+        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ФИНАЛЬНЫЙ ЖЕЛЕЗОБЕТОННЫЙ ФИКС) === */}
+        <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] z-20 backdrop-blur-[30px] box-border shrink-0 flex flex-col pt-[20px] pb-[16px] overflow-hidden">
+          {/* ❗ Скроллится только этот внутренний блок, а отступы мы вынесли наружу ❗ */}
+          <div className="w-full h-full overflow-y-auto no-scrollbar px-[20px]">
+            <p className="text-[12px] text-[#272727] leading-[1.4] text-left font-benzin font-normal opacity-90 tracking-[0.02em] m-0">
               Жасминовый киви — это сочная и нежная гармония. Медовая глубина жасминового чая обнимает яркую, свежую сладость киви, создавая идеальный баланс. А в завершении каждого глотка вас ждёт приятная текстурная игра — на выбор: классические жемчужины тапиоки или взрывные джус-боллы.
             </p>
           </div>
