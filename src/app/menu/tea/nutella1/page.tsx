@@ -3,6 +3,7 @@
 import { useCartStore } from '../../../../store/cartStore';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 // === ГАЛОЧКА ===
 const CheckMark = () => (
@@ -43,10 +44,32 @@ export default function DrinkTemplatePage() {
   const [tapiocaX2Selected, setTapiocaX2Selected] = useState(false);
   const [juiceX2Selected, setJuiceX2Selected] = useState(false);
 
-  const juiceFlavorsList = [
-    'Персик', 'Черника', 'Личи', 'Клубника', 'Малина', 
-    'Маракуйя', 'Манго', 'Яблоко', 'Киви', 'Йогурт', 'Апельсин'
-  ];
+  // ❗ ИСПРАВЛЕНИЕ: ДЕЛАЕМ СПИСОК ВКУСОВ ДИНАМИЧЕСКИМ ИЗ БАЗЫ ДАННЫХ ❗
+  const [juiceFlavorsList, setJuiceFlavorsList] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const fetchActiveToppings = async () => {
+      const { data, error } = await supabase
+        .from('toppings')
+        .select('name')
+        .eq('is_active', true);
+
+      if (data && !error) {
+        // ❗ Добавили (t: any) — теперь TS не будет ругаться
+        const activeNames = data.map((t: any) => t.name);
+        
+        // ❗ Добавили (name: string)
+        const flavorsOnly = activeNames.filter((name: string) => 
+          !name.toLowerCase().includes('тапиока') && 
+          !name.toLowerCase().includes('сырн')
+        );
+        
+        setJuiceFlavorsList(flavorsOnly);
+      }
+    };
+
+    fetchActiveToppings();
+  }, []);
 
   // 4. ТВОЯ ЛОГИКА ВЫБОРА ДОБАВОК
   const handleTapiocaClick = () => {
