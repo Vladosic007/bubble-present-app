@@ -3,6 +3,7 @@
 import { useCartStore } from '../../../../store/cartStore';
 import { useState, useEffect } from 'react'; 
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 // === ГАЛОЧКА ===
 const CheckMark = () => (
@@ -42,60 +43,92 @@ export default function LimonadeTemplatePage() {
   const [tapiocaX2Selected, setTapiocaX2Selected] = useState(false);
   const [juiceX2Selected, setJuiceX2Selected] = useState(false);
 
-  const juiceFlavorsList = [
-    'Персик', 'Черника', 'Личи', 'Клубника', 'Малина', 
-    'Маракуйя', 'Манго', 'Яблоко', 'Киви', 'Йогурт', 'Апельсин'
-  ];
-
-  const handleTapiocaClick = () => {
-    if (!tapiocaSelected) {
-      setTapiocaSelected(true);
-      setJuiceSelected(false);
-      setJuiceX2Selected(false);
-      setSelectedJuiceFlavors([]);
-    } else {
-      setTapiocaSelected(false);
-      setTapiocaX2Selected(false);
-    }
-  };
-
-  const handleJuiceFlavorClick = (flavor: string) => {
-    const isSelected = selectedJuiceFlavors.includes(flavor);
-    const maxFlavors = juiceX2Selected ? 2 : 1;
-
-    if (isSelected) {
-      const newFlavors = selectedJuiceFlavors.filter(f => f !== flavor);
-      setSelectedJuiceFlavors(newFlavors);
-      if (newFlavors.length === 0) {
+  // ❗ ИСПРАВЛЕНИЕ: ДЕЛАЕМ СПИСОК ВКУСОВ ДИНАМИЧЕСКИМ ИЗ БАЗЫ ДАННЫХ ❗
+    const [juiceFlavorsList, setJuiceFlavorsList] = useState<string[]>([]);
+    
+    useEffect(() => {
+      const fetchActiveToppings = async () => {
+        const { data, error } = await supabase
+          .from('toppings')
+          .select('name')
+          .eq('is_active', true);
+  
+        if (data && !error) {
+          const activeNames = data.map((t: any) => t.name);
+          
+          // 1. ФИЛЬТРУЕМ МУСОР (Тапиока, Сыр и бронебойная защита от 2X/Крафтинга)
+          const flavorsOnly = activeNames.filter((name: string) => {
+            const lowerName = name.toLowerCase();
+            return !lowerName.includes('тапиока') && 
+                   !lowerName.includes('сырн') &&
+                   !lowerName.includes('2x') &&    // английская X
+                   !lowerName.includes('2х') &&    // русская Х
+                   !lowerName.includes('крафт');   // на случай слова "крафтинг"
+          });
+  
+          // 2. ОЧИЩАЕМ НАЗВАНИЯ (Срезаем "ДЖУС-БОЛЛЫ: ")
+          const cleanFlavors = flavorsOnly.map((name: string) => {
+            let clean = name.replace(/джус[- ]боллы[:\s]+/i, '');
+            return clean.trim(); 
+          });
+          
+          setJuiceFlavorsList(cleanFlavors);
+        }
+      };
+  
+      fetchActiveToppings();
+    }, []);
+  
+    // 4. ТВОЯ ЛОГИКА ВЫБОРА ДОБАВОК
+    const handleTapiocaClick = () => {
+      if (!tapiocaSelected) {
+        setTapiocaSelected(true);
         setJuiceSelected(false);
         setJuiceX2Selected(false);
+        setSelectedJuiceFlavors([]);
+      } else {
+        setTapiocaSelected(false);
+        setTapiocaX2Selected(false);
       }
-    } else {
-      if (selectedJuiceFlavors.length < maxFlavors) {
-        const newFlavors = [...selectedJuiceFlavors, flavor];
+    };
+  
+    const handleJuiceFlavorClick = (flavor: string) => {
+      const isSelected = selectedJuiceFlavors.includes(flavor);
+      const maxFlavors = juiceX2Selected ? 2 : 1;
+  
+      if (isSelected) {
+        const newFlavors = selectedJuiceFlavors.filter(f => f !== flavor);
         setSelectedJuiceFlavors(newFlavors);
-        setJuiceSelected(true);
-        setTapiocaSelected(false);
-        setTapiocaX2Selected(false);
-      } else if (maxFlavors === 1) {
-        setSelectedJuiceFlavors([flavor]);
-        setJuiceSelected(true);
-        setTapiocaSelected(false);
-        setTapiocaX2Selected(false);
+        if (newFlavors.length === 0) {
+          setJuiceSelected(false);
+          setJuiceX2Selected(false);
+        }
+      } else {
+        if (selectedJuiceFlavors.length < maxFlavors) {
+          const newFlavors = [...selectedJuiceFlavors, flavor];
+          setSelectedJuiceFlavors(newFlavors);
+          setJuiceSelected(true);
+          setTapiocaSelected(false);
+          setTapiocaX2Selected(false);
+        } else if (maxFlavors === 1) {
+          setSelectedJuiceFlavors([flavor]);
+          setJuiceSelected(true);
+          setTapiocaSelected(false);
+          setTapiocaX2Selected(false);
+        }
       }
-    }
-  };
-
-  const handleJuiceX2Click = () => {
-    if (juiceX2Selected) {
-      setJuiceX2Selected(false);
-      if (selectedJuiceFlavors.length > 1) {
-        setSelectedJuiceFlavors([selectedJuiceFlavors[0]]);
+    };
+  
+    const handleJuiceX2Click = () => {
+      if (juiceX2Selected) {
+        setJuiceX2Selected(false);
+        if (selectedJuiceFlavors.length > 1) {
+          setSelectedJuiceFlavors([selectedJuiceFlavors[0]]);
+        }
+      } else {
+        setJuiceX2Selected(true);
       }
-    } else {
-      setJuiceX2Selected(true);
-    }
-  };
+    };
 
   let finalPrice = basePrice;
   if (selectedVolume === 'L') finalPrice += 50; 
