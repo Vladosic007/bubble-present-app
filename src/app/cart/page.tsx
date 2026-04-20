@@ -117,6 +117,21 @@ export default function CartPage() {
   
   const [isPaying, setIsPaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  // ❗ 1. ЛОГИКА РАБОЧИХ ЧАСОВ (09:00 - 23:00) ❗
+  const [isOpen, setIsOpen] = useState(true);
+
+  useEffect(() => {
+    const checkTime = () => {
+      const hour = new Date().getHours();
+      // Если час >= 9 (9 утра) И < 23 (до 23:00), то мы открыты (true).
+      // Если время 23:01 или 08:50 — мы закрыты (false).
+      setIsOpen(hour >= 9 && hour < 23);
+    };
+
+    checkTime(); // Проверяем сразу при заходе
+    const timer = setInterval(checkTime, 60000); // Проверяем каждую минуту, чтобы кнопка блочилась сама
+    return () => clearInterval(timer);
+  }, []);
   
   const [dbPrices, setDbPrices] = useState<Record<string, { pickup: number, delivery: number }>>({});
 
@@ -578,12 +593,20 @@ export default function CartPage() {
             <span className="font-['Benzin'] font-extrabold text-[10px] uppercase text-[#FF008C]">{orderType === 'delivery' ? 'Доставка' : 'Самовывоз'}</span>
           </div>
           
+          {/* ❗ УМНАЯ КНОПКА ОПЛАТЫ (С ЗАЩИТОЙ ПО ВРЕМЕНИ) ❗ */}
           <button 
-            onClick={handleCheckoutClick} disabled={isPaying}
-            className="w-[346px] h-[49px] mx-auto rounded-[25px] bg-gradient-to-r from-[#FF00EE]/20 to-[#FF008C]/20 backdrop-blur-[30px] flex items-center justify-center shrink-0 active:scale-95 transition-transform pointer-events-auto shadow-[0_4px_6px_2px_rgba(8,0,255,0.15)] relative overflow-hidden"
-            style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4)' }}
+            onClick={handleCheckoutClick} 
+            disabled={isPaying || !isOpen}
+            className={`w-[346px] h-[49px] mx-auto rounded-[25px] backdrop-blur-[30px] flex items-center justify-center shrink-0 transition-transform pointer-events-auto relative overflow-hidden
+              ${!isOpen 
+                ? 'bg-[#949494]/20 border border-[#949494]/40 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-[#FF00EE]/20 to-[#FF008C]/20 shadow-[0_4px_6px_2px_rgba(8,0,255,0.15)] active:scale-95'
+              }`}
+            style={{ boxShadow: isOpen ? 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4)' : 'none' }}
           >
-            {isPaying ? (
+            {!isOpen ? (
+               <span className="font-['Benzin'] font-extrabold text-[13px] text-[#949494] uppercase tracking-wide">Мы спим 😴 Откроемся в 09:00</span>
+            ) : isPaying ? (
               <span className="font-['Benzin'] font-extrabold text-[18px] text-white uppercase animate-pulse">Оплата...</span>
             ) : (
               <span className="font-['Benzin'] font-extrabold text-[18px] text-[#FF00EE] uppercase drop-shadow-[0_0_2px_white]">Оплатить (ЮKassa)</span>
