@@ -155,11 +155,20 @@ export default function CartPage() {
       }
     }
 
+    // Если базы нет, возвращаем ту цену, которую нам честно посчитал сам напиток
     if (!basePrices) return item.price; 
 
+    // Берем базовую цену (зависит от доставки/самовывоза)
     const basePrice = orderType === 'delivery' ? basePrices.delivery : basePrices.pickup;
 
     let toppingsPrice = 0;
+    
+    // ❗ 1. ПРОВЕРЯЕМ РАЗМЕР (ДОБАВЛЯЕМ +60 ЗА L) ❗
+    if (item.size === 'L') {
+      toppingsPrice += 60;
+    }
+
+    // 2. ПРОВЕРЯЕМ ДОБАВКИ (Сыр и 2X)
     if (Array.isArray(item.toppings)) {
       item.toppings.forEach((t: string) => {
         const tLower = t.toLowerCase();
