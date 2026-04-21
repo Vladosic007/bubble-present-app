@@ -12,9 +12,10 @@ interface SwipeableCartItemProps {
   changeQuantity: (cartItemId: string, delta: number) => void;
   removeItem: (cartItemId: string) => void;
   currentItemPrice: number;
+  originalPrice?: number;
 }
 
-const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice }: SwipeableCartItemProps) => {
+const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice, originalPrice }: SwipeableCartItemProps) => {
   const [translateX, setTranslateX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -73,7 +74,7 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice 
             if (item.quantity > 1) {
               changeQuantity(item.cartItemId, -1); 
             } else {
-              removeItem(item.cartItemId); // ❗ Если осталась 1 штука, полностью удаляем
+              removeItem(item.cartItemId); 
             }
           }} 
           className="absolute left-[265px] top-[62px] w-[20px] h-[20px] active:scale-95 transition-transform flex items-center justify-center z-20"
@@ -96,7 +97,12 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice 
           <Image src="/icons/plus.svg" alt="+" fill className="object-contain" />
         </button>
 
-        <div className="absolute right-[16px] bottom-[16px] pointer-events-none">
+        <div className="absolute right-[16px] bottom-[16px] flex flex-col items-end pointer-events-none">
+          {originalPrice && originalPrice > currentItemPrice && (
+            <span className="text-[10px] text-[#949494] line-through font-['Benzin'] font-bold leading-none mb-[2px]">
+              {originalPrice * item.quantity} руб
+            </span>
+          )}
           <span className="font-['Benzin'] font-extrabold text-[16px] tracking-[0.02em] leading-none bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text uppercase">
             {currentItemPrice * item.quantity} руб
           </span>
@@ -105,8 +111,6 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice 
     </div>
   );
 };
-
-export default function CartPage() {
   const router = useRouter();
   
   const { 
@@ -117,19 +121,24 @@ export default function CartPage() {
   
   const [isPaying, setIsPaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  // ❗ 1. ЛОГИКА РАБОЧИХ ЧАСОВ (09:00 - 23:00) ❗
+
+  // ❗ МАГИЧЕСКИЙ РУБИЛЬНИК АКЦИИ И ЧАСЫ РАБОТЫ ❗
+  const IS_OPENING_DAY = true; // Выключишь (false), когда акция закончится
   const [isOpen, setIsOpen] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const checkTime = () => {
       const hour = new Date().getHours();
-      // Если час >= 9 (9 утра) И < 23 (до 23:00), то мы открыты (true).
-      // Если время 23:01 или 08:50 — мы закрыты (false).
-      setIsOpen(hour >= 9 && hour < 23);
+      setIsOpen(hour >= 9 && hour < 23); // Открыты с 9 до 23
     };
 
-    checkTime(); // Проверяем сразу при заходе
-    const timer = setInterval(checkTime, 60000); // Проверяем каждую минуту, чтобы кнопка блочилась сама
+    checkTime(); 
+    const timer = setInterval(checkTime, 60000); 
     return () => clearInterval(timer);
   }, []);
   
@@ -159,31 +168,28 @@ export default function CartPage() {
     fetchPrices();
   }, []);
 
-  const getCorrectItemPrice = (item: CartItem) => {
+  const getCorrectItemPrice = (item: CartItem, applyPromo = true) => {
     const cleanItemName = normalizeString(item.name);
     let basePrices = dbPrices[cleanItemName];
 
     if (!basePrices) {
       const foundKey = Object.keys(dbPrices).find(k => k.includes(cleanItemName) || cleanItemName.includes(k));
-      if (foundKey) {
-        basePrices = dbPrices[foundKey];
-      }
+      if (foundKey) basePrices = dbPrices[foundKey];
     }
 
-    // Если базы нет, возвращаем ту цену, которую нам честно посчитал сам напиток
-    if (!basePrices) return item.price; 
+    if (!basePrices) {
+      let fallbackPrice = item.price;
+      if (applyPromo && IS_OPENING_DAY && orderType === 'pickup') {
+        return Math.round(fallbackPrice / 2);
+      }
+      return fallbackPrice;
+    }
 
-    // Берем базовую цену (зависит от доставки/самовывоза)
     const basePrice = orderType === 'delivery' ? basePrices.delivery : basePrices.pickup;
-
     let toppingsPrice = 0;
     
-    // ❗ 1. ПРОВЕРЯЕМ РАЗМЕР (ДОБАВЛЯЕМ +60 ЗА L) ❗
-    if (item.size === 'L') {
-      toppingsPrice += 60;
-    }
+    if (item.size === 'L') toppingsPrice += 60;
 
-    // 2. ПРОВЕРЯЕМ ДОБАВКИ (Сыр и 2X)
     if (Array.isArray(item.toppings)) {
       item.toppings.forEach((t: string) => {
         const tLower = t.toLowerCase();
@@ -192,7 +198,13 @@ export default function CartPage() {
       });
     }
 
-    return basePrice + toppingsPrice;
+    const fullPrice = basePrice + toppingsPrice;
+    
+    if (applyPromo && IS_OPENING_DAY && orderType === 'pickup') {
+      return Math.round(fullPrice / 2);
+    }
+    
+    return fullPrice;
   };
 
   const dynamicTotal = items.reduce((sum, item) => sum + (getCorrectItemPrice(item) * item.quantity), 0);
@@ -562,11 +574,23 @@ export default function CartPage() {
     );
   }
 
+  // Защита от белого экрана Vercel
+  if (!isMounted) return <div className="bg-[#F2F2F7] min-h-[100dvh] w-full" />;
+
   return (
     <div className="bg-[#F2F2F7] min-h-[100dvh] w-full flex justify-center overflow-hidden font-sans relative">
       <main className="w-full max-w-[370px] relative bg-[#FFFFFF] flex flex-col h-[100dvh] overflow-hidden">
         
         <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[310px] overflow-x-hidden touch-pan-y">
+          {/* ❗ БАННЕР АКЦИИ ❗ */}
+          {IS_OPENING_DAY && (
+            <div className="w-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] p-[10px] text-center z-50 shrink-0 shadow-md">
+              <span className="text-white font-['Benzin'] font-extrabold text-[10px] uppercase tracking-wider">
+                🎉 ГРАНД ОТКРЫТИЕ! -50% НА САМОВЫВОЗ 🎉
+              </span>
+            </div>
+          )}
+          
           <header className="relative w-full flex items-center justify-center pt-[32px] mb-[24px] shrink-0 pointer-events-none">
               <div className="relative h-[40px] w-[180px]">
                 <Image src="/images/logo.jpg" alt="Bubble Present" fill className="object-contain" priority />
@@ -580,20 +604,28 @@ export default function CartPage() {
                 changeQuantity={changeQuantity} 
                 removeItem={removeItem} 
                 currentItemPrice={getCorrectItemPrice(item)}
+                originalPrice={getCorrectItemPrice(item, false)} 
               />
             ))}
           </section>
         </div>
 
         <div className="absolute bottom-0 left-0 w-full h-[292px] rounded-t-[25px] bg-[#FFFFFF]/20 backdrop-blur-[30px] z-30 flex flex-col pointer-events-none" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px -4px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
-          <div className="pt-[24px] pl-[16px] pb-[32px] pointer-events-auto flex items-center justify-between pr-[16px]">
-            <span className="font-['Benzin'] font-extrabold text-[16px] uppercase tracking-[0.02em]" style={{ color: 'rgba(65, 63, 64, 0.4)' }}>
-              Итого: {dynamicTotal} руб
-            </span>
-            <span className="font-['Benzin'] font-extrabold text-[10px] uppercase text-[#FF008C]">{orderType === 'delivery' ? 'Доставка' : 'Самовывоз'}</span>
+          <div className="pt-[24px] pl-[16px] pb-[20px] pointer-events-auto flex items-center justify-between pr-[16px]">
+            <div className="flex flex-col">
+              <span className="font-['Benzin'] font-extrabold text-[16px] uppercase tracking-[0.02em]" style={{ color: 'rgba(65, 63, 64, 0.4)' }}>
+                Итого: {dynamicTotal} руб
+              </span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="font-['Benzin'] font-extrabold text-[10px] uppercase text-[#FF008C]">{orderType === 'delivery' ? 'Доставка' : 'Самовывоз'}</span>
+              {/* ❗ БАЙТ НА САМОВЫВОЗ ❗ */}
+              {IS_OPENING_DAY && orderType === 'delivery' && (
+                <span className="text-[8px] font-['Benzin'] font-bold text-[#FF0040] uppercase animate-pulse mt-[4px]">Скидка -50% на самовывоз!</span>
+              )}
+            </div>
           </div>
           
-          {/* ❗ УМНАЯ КНОПКА ОПЛАТЫ (С ЗАЩИТОЙ ПО ВРЕМЕНИ) ❗ */}
           <button 
             onClick={handleCheckoutClick} 
             disabled={isPaying || !isOpen}
