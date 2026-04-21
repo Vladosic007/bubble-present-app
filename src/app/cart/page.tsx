@@ -2,11 +2,13 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useCartStore, CartItem } from '../../store/cartStore'; 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
-// ❗ СТРОГАЯ ТИПИЗАЦИЯ КАРТОЧКИ ❗
+// ❗ МАГИЧЕСКИЙ РУБИЛЬНИК АКЦИИ ❗
+const IS_OPENING_DAY = true; // Поставь false, когда акция закончится
+
 interface SwipeableCartItemProps {
   item: CartItem;
   changeQuantity: (cartItemId: string, delta: number) => void;
@@ -111,6 +113,9 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
     </div>
   );
 };
+
+// ❗ ВОТ ЭТА СТРОЧКА У ТЕБЯ ПРОПАЛА, Я ЕЕ ВЕРНУЛ ❗
+export default function CartPage() {
   const router = useRouter();
   
   const { 
@@ -121,9 +126,7 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
   
   const [isPaying, setIsPaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-
-  // ❗ МАГИЧЕСКИЙ РУБИЛЬНИК АКЦИИ И ЧАСЫ РАБОТЫ ❗
-  const IS_OPENING_DAY = true; // Выключишь (false), когда акция закончится
+  
   const [isOpen, setIsOpen] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -292,7 +295,6 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
     } else {
       updateOrderStatus('cancelled');
       
-      // Отправляем сирену в Телегу ТОЛЬКО если заказ уже был оплачен!
       if (previousStatus !== 'pending_payment') {
         const cancelMessage = `❌ ЗАКАЗ #${activeOrderId} ОТМЕНЕН КЛИЕНТОМ ❌\n\nКлиент передумал и отменил заказ. Не готовьте его! Возврат средств!`;
         
@@ -349,7 +351,6 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
       };
     });
 
-    // 1. Создаем заказ в базе
     const { data, error } = await supabase
       .from('orders')
       .insert([
@@ -375,7 +376,6 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
     const orderId = data[0].id;
     const dbTime = new Date(data[0].created_at).getTime();
 
-    // === ФОРМИРУЕМ ТЕКСТ ДЛЯ ТЕЛЕГРАМ ===
     const tgMessage = `🚨 НОВЫЙ ЗАКАЗ #${orderId} 🚨\n\n` +
       `📦 Тип: ${orderType === 'delivery' ? '🚗 ДОСТАВКА' : '🏃 САМОВЫВОЗ'}\n` +
       `👤 Имя: ${savedName}\n` +
@@ -387,7 +387,6 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
 
     const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
 
-    // ❗ ОТПРАВЛЯЕМ ВСЁ НА НАШ СЕРВЕР (Больше никаких прямых запросов в ТГ!)
     try {
       const response = await fetch('/api/payment', {
         method: 'POST',
@@ -398,14 +397,13 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
           description: `Заказ #${orderId} (Bubble Present)`,
           email: savedEmail,
           items: formattedItems,
-          tgMessage: tgMessage, // Передаем текст боту на сервере
-          isTest: isTestMode    // Передаем флаг теста
+          tgMessage: tgMessage, 
+          isTest: isTestMode    
         }),
       });
 
       const paymentData = await response.json();
 
-      // === 🛠 МАГИЯ ДЛЯ ТЕСТИРОВАНИЯ ===
       if (isTestMode) {
         await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
         setActiveOrder(orderId, 'accepted', dbTime);
@@ -415,13 +413,11 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
         return; 
       }
 
-      // === 💳 БОЕВОЙ РЕЖИМ ===
       if (paymentData.confirmation_url) {
         setActiveOrder(orderId, 'pending_payment', dbTime); 
         clearCart(); 
-        setIsPaying(false); // Снимаем размытие моментально
+        setIsPaying(false); 
 
-        // Железобетонный редирект для PWA Айфонов
         const link = document.createElement('a');
         link.href = paymentData.confirmation_url;
         document.body.appendChild(link);
@@ -519,7 +515,6 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
                </div>
             </motion.div>
 
-            {/* ❗ КНОПКА ОТМЕНЫ ТЕПЕРЬ ЕСТЬ ВСЕГДА ❗ */}
             {activeOrderStatus === 'pending_payment' ? (
               <button 
                 onClick={() => handleCancelOrder(false)}
@@ -574,7 +569,7 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
     );
   }
 
-  // Защита от белого экрана Vercel
+  // ❗ Защита Vercel ❗
   if (!isMounted) return <div className="bg-[#F2F2F7] min-h-[100dvh] w-full" />;
 
   return (
@@ -583,13 +578,15 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
         
         <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[310px] overflow-x-hidden touch-pan-y">
           {/* ❗ БАННЕР АКЦИИ ❗ */}
-          {IS_OPENING_DAY && (
-            <div className="w-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] p-[10px] text-center z-50 shrink-0 shadow-md">
-              <span className="text-white font-['Benzin'] font-extrabold text-[10px] uppercase tracking-wider">
-                🎉 ГРАНД ОТКРЫТИЕ! -50% НА САМОВЫВОЗ 🎉
-              </span>
-            </div>
-          )}
+          <AnimatePresence>
+            {IS_OPENING_DAY && (
+              <motion.div initial={{ y: -50 }} animate={{ y: 0 }} className="w-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] p-[10px] text-center z-50 shrink-0 shadow-md">
+                <span className="text-white font-['Benzin'] font-extrabold text-[10px] uppercase tracking-wider">
+                  🎉 ГРАНД ОТКРЫТИЕ! -50% НА САМОВЫВОЗ 🎉
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           <header className="relative w-full flex items-center justify-center pt-[32px] mb-[24px] shrink-0 pointer-events-none">
               <div className="relative h-[40px] w-[180px]">
