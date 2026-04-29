@@ -39,7 +39,7 @@ export default function DrinkTemplatePage() {
   const [isAddonsOpen, setIsAddonsOpen] = useState(false);
   
   // Взаимоисключающие добавки
-  const [tapiocaSelected, setTapiocaSelected] = useState(false);
+  const [tapiocaSelected, setTapiocaSelected] = useState(true);
   const [juiceSelected, setJuiceSelected] = useState(false); 
   
   // Стейт для выпадающего списка Джус-боллов

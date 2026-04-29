@@ -30,6 +30,9 @@ export default function CoffeeTemplatePage() {
   const [selectedType, setSelectedType] = useState('Холодный');
   const [cheeseSelected, setCheeseSelected] = useState(false);
   const [isAddonsOpen, setIsAddonsOpen] = useState(false);
+  
+  // ❗ 1. Делаем Тапиоку включенной по умолчанию ❗
+  const [tapiocaSelected, setTapiocaSelected] = useState(true);
   const [tapiocaX2Selected, setTapiocaX2Selected] = useState(false);
 
   let finalPrice = basePrice;
@@ -38,10 +41,14 @@ export default function CoffeeTemplatePage() {
 
   const toppingsList = [selectedType];
   if (cheeseSelected) toppingsList.push('Сырная шапка');
-  toppingsList.push(tapiocaX2Selected ? 'Тапиока 2X' : 'Тапиока');
+  
+  // ❗ 2. Добавляем в корзину ТОЛЬКО если она выбрана ❗
+  if (tapiocaSelected) {
+    toppingsList.push(tapiocaX2Selected ? 'Тапиока 2X' : 'Тапиока');
+  }
 
   const currentCartItemId = `${productId}-M-${toppingsList.join('-')}`;
-  const itemInCart = items.find(item => item.cartItemId === currentCartItemId);
+  const itemInCart = items ? items.find(item => item.cartItemId === currentCartItemId) : null;
 
   const handleAddToCart = () => {
     addItem({

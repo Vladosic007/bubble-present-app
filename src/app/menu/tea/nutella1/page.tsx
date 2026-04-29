@@ -37,7 +37,7 @@ export default function DrinkTemplatePage() {
   const [cheeseSelected, setCheeseSelected] = useState(false);
   const [isAddonsOpen, setIsAddonsOpen] = useState(false);
   
-  const [tapiocaSelected, setTapiocaSelected] = useState(false);
+  const [tapiocaSelected, setTapiocaSelected] = useState(true);
   const [juiceSelected, setJuiceSelected] = useState(false); 
   const [isJuiceOpen, setIsJuiceOpen] = useState(false);
   const [selectedJuiceFlavors, setSelectedJuiceFlavors] = useState<string[]>([]);
