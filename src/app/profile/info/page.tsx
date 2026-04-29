@@ -122,11 +122,16 @@ export default function InfoPage() {
         return alert("❌ Фамилия должна содержать только русские буквы!");
       }
       if (matRegex.test(lastName) || gibberishRegex.test(lastName)) {
-        return alert("❌ Давай без матов и бреда в фамилии!");
-      }
-    }
+       return alert("❌ Давай без матов и бреда в фамилии!");
+       }
+     }
 
-    // 2. Проверка телефона (чистим от скобок и пробелов)
+     // ❗ ПРОВЕРКА НА ТАГАНРОГ ❗
+     if (address && !address.toLowerCase().includes('таганрог')) {
+       return alert("❌ Мы доставляем только по Таганрогу! Пожалуйста, выберите адрес в пределах города.");
+     }
+
+     // 2. Проверка телефона (чистим от скобок и пробелов)
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, ''); // убирает ( ) - и пробелы
     const phoneRegex = /^(\+7|8)\d{10}$/; // строго +7 или 8 и 10 цифр после
     if (!phoneRegex.test(cleanPhone)) {
@@ -222,10 +227,17 @@ export default function InfoPage() {
                     fetchAddress(newCoords, ymapsInstance);
                   }, 500);
                   setGeocodeTimeout(newTimeout);
-                }}
-                options={{ suppressMapOpenBlock: true }}
-              >
-                <GeolocationControl options={{ float: 'right' }} />
+                 }}
+               /* ❗ ЖЕСТКИЕ ГРАНИЦЫ ТАГАНРОГА ❗ */
+               options={{ 
+                 suppressMapOpenBlock: true,
+                 restrictMapArea: [
+                   [47.16, 38.78],
+                   [47.30, 39.05]
+                   ]
+                 }}
+               >
+               <GeolocationControl options={{ float: 'right' }} />
                 <ZoomControl options={{ float: 'right' }} />
               </Map>
             </YMaps>
