@@ -3,12 +3,12 @@ import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
+    // Отключаем строгие проверки TypeScript при деплое
     ignoreBuildErrors: true,
   },
+  // ❗ ВОТ ОНА, ТАБЛЕТКА ОТ ОШИБКИ TURBOPACK ❗
+  turbopack: {},
 };
 
 // ❗ МАГИЯ PWA (Кэширование для работы без инета) ❗
@@ -17,7 +17,7 @@ const withPwaConfig = withPWA({
   cacheOnFrontEndNav: true, 
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development", // Отключаем кэш во время разработки, чтобы ты видел свои изменения сразу
+  disable: process.env.NODE_ENV === "development", // Отключаем кэш во время разработки
   workboxOptions: {
     disableDevLogs: true,
   },
