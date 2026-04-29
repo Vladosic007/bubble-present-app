@@ -31,10 +31,12 @@ export default function CoffeeTemplatePage() {
   const productName = 'Дубайский';       
   const productImg = '/images/dubai1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
 
-  // === СТЕЙТЫ ДЛЯ КЛИКОВ ===
   const [selectedType, setSelectedType] = useState('Холодный');
   const [cheeseSelected, setCheeseSelected] = useState(false);
   const [isAddonsOpen, setIsAddonsOpen] = useState(false);
+  
+  // ❗ 1. Делаем Тапиоку включенной по умолчанию ❗
+  const [tapiocaSelected, setTapiocaSelected] = useState(true);
   const [tapiocaX2Selected, setTapiocaX2Selected] = useState(false);
 
   // === СЧИТАЕМ ИТОГОВУЮ ЦЕНУ И СОБИРАЕМ ДОБАВКИ ===

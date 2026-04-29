@@ -37,7 +37,7 @@ export default function MatchaTemplatePage() {
   const [cheeseSelected, setCheeseSelected] = useState(false);
   const [isAddonsOpen, setIsAddonsOpen] = useState(false);
   
-  const [tapiocaSelected, setTapiocaSelected] = useState(false);
+  const [tapiocaSelected, setTapiocaSelected] = useState(true);
   const [juiceSelected, setJuiceSelected] = useState(false); 
   
   const [isJuiceOpen, setIsJuiceOpen] = useState(false);
