@@ -83,7 +83,9 @@ export default function InfoPage() {
     ymaps.geocode(coords).then((res: any) => {
       const firstGeoObject = res.geoObjects.get(0);
       if (firstGeoObject) {
-        setCurrentAddress(firstGeoObject.getAddressLine());
+        let addr = firstGeoObject.getAddressLine();
+        addr = addr.replace(/^Россия,\s*/i, ''); // ❗ Отрезаем слово "Россия" ❗
+        setCurrentAddress(addr);
       } else {
         setCurrentAddress("Адрес не найден");
       }
@@ -126,10 +128,19 @@ export default function InfoPage() {
        }
      }
 
-     // ❗ ПРОВЕРКА НА ТАГАНРОГ ❗
-     if (address && !address.toLowerCase().includes('таганрог')) {
-       return alert("❌ Мы доставляем только по Таганрогу! Пожалуйста, выберите адрес в пределах города.");
+     // ❗ ПРОВЕРКА И ФОРМАТИРОВАНИЕ АДРЕСА ❗
+     let finalAddress = address.trim();
+     if (finalAddress && !finalAddress.toLowerCase().includes('таганрог')) {
+       return alert("❌ Мы доставляем только по Таганрогу! Пожалуйста, выберите адрес на карте или впишите город.");
      }
+     
+     // Если человек написал просто "Таганрог, Чехова", жестко добавляем область
+     if (finalAddress && !finalAddress.toLowerCase().includes('ростовская область')) {
+         finalAddress = `Ростовская область, ${finalAddress}`;
+     }
+     
+     // На всякий случай чистим от слова "Россия", если оно пролезло руками
+     finalAddress = finalAddress.replace(/^Россия,\s*/i, '');
 
      // 2. Проверка телефона (чистим от скобок и пробелов)
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, ''); // убирает ( ) - и пробелы
@@ -149,7 +160,7 @@ export default function InfoPage() {
     localStorage.setItem('bubble_user_lastname', lastName);
     localStorage.setItem('bubble_user_phone', cleanPhone); // Сохраняем чистый номер
     localStorage.setItem('bubble_user_email', email);
-    localStorage.setItem('bubble_user_address', address);
+    localStorage.setItem('bubble_user_address', finalAddress);
     
     alert("✅ Данные успешно сохранены! Форма идеальна.");
   };
