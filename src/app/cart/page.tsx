@@ -92,7 +92,7 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
           onClick={(e) => { 
             e.stopPropagation(); 
             if (item.quantity < 9) changeQuantity(item.cartItemId, 1); 
-            else alert("Бро, максимум 9 штук одного напитка в одни руки! 🧋");
+            else alert("У нас можно только максимум 9 одинаковых напитков))) 🧋");
           }} 
           className="absolute left-[310px] top-[62px] w-[20px] h-[20px] active:scale-95 transition-transform flex items-center justify-center z-20"
         >
