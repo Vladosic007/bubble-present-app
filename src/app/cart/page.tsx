@@ -108,9 +108,6 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
           <span className="font-['Benzin'] font-extrabold text-[16px] tracking-[0.02em] leading-none bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text uppercase">
             {currentItemPrice * item.quantity} руб
           </span>
-          <p className="text-[5px] text-[#949494] uppercase font-bold mt-[4px] leading-tight text-right w-[100px]">
-            Напиток в доставке и самовывозе может быть видоизменен
-          </p>
         </div>
       </article>
     </div>
