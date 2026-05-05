@@ -90,7 +90,10 @@ export default function HistoryPage() {
         .order('created_at', { ascending: false });
 
       if (data && !error) {
-        const formattedOrders = data.map(order => {
+        // ❗ ЖЕСТКИЙ ФИЛЬТР: УБИРАЕМ ВСЕ ОТМЕНЕННЫЕ ЗАКАЗЫ ИЗ СПИСКА ❗
+        const activeData = data.filter((order: any) => order.status !== 'cancelled');
+
+        const formattedOrders = activeData.map((order: any) => {
           let itemsArr: any[] = [];
           try { itemsArr = JSON.parse(order.items); } catch(e){}
 
