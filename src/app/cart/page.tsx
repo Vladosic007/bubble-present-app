@@ -108,6 +108,9 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
           <span className="font-['Benzin'] font-extrabold text-[16px] tracking-[0.02em] leading-none bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text uppercase">
             {currentItemPrice * item.quantity} руб
           </span>
+          <p className="text-[5px] text-[#949494] uppercase font-bold mt-[4px] leading-tight text-right w-[100px]">
+            Напиток в доставке и самовывозе может быть видоизменен
+          </p>
         </div>
       </article>
     </div>
@@ -136,14 +139,24 @@ export default function CartPage() {
 
   useEffect(() => {
     const checkTime = () => {
-      const hour = new Date().getHours();
-      setIsOpen(hour >= 9 && hour < 23); // Открыты с 9 до 23
+      const now = new Date();
+      const hour = now.getHours();
+      const min = now.getMinutes();
+      const totalMin = hour * 60 + min;
+
+      if (orderType === 'pickup') {
+        // Самовывоз с 11:30 (690 минут от начала дня) до 23:00 (1380 минут)
+        setIsOpen(totalMin >= 690 && totalMin < 1380);
+      } else {
+        // Доставка с 12:00 (720 минут) до 23:00 (1380 минут)
+        setIsOpen(totalMin >= 720 && totalMin < 1380);
+      }
     };
 
     checkTime(); 
-    const timer = setInterval(checkTime, 60000); 
+    const timer = setInterval(checkTime, 10000); // Проверяем чаще (каждые 10 сек)
     return () => clearInterval(timer);
-  }, []);
+  }, [orderType]); // Перепроверяем, если сменили тип заказа
   
   const [dbPrices, setDbPrices] = useState<Record<string, { pickup: number, delivery: number }>>({});
 
@@ -414,7 +427,8 @@ export default function CartPage() {
       }
 
       if (paymentData.confirmation_url) {
-        setActiveOrder(orderId, 'pending_payment', dbTime); 
+        localStorage.setItem('last_payment_url', paymentData.confirmation_url); // ❗ СОХРАНЯЕМ ССЫЛКУ ❗
+        setActiveOrder(orderId, 'pending_payment', dbTime);
         clearCart(); 
         setIsPaying(false); 
 
@@ -515,21 +529,19 @@ export default function CartPage() {
                </div>
             </motion.div>
 
-            {activeOrderStatus === 'pending_payment' ? (
+            {/* КНОПКА ПОВТОРНОЙ ОПЛАТЫ (ЕСЛИ НЕ ПЕРЕКИНУЛО) */}
+            {activeOrderStatus === 'pending_payment' && (
               <button 
-                onClick={() => handleCancelOrder(false)}
-                className="w-full h-[52px] rounded-[20px] border border-[#FF0040]/30 text-[#FF0040] font-['Arial'] font-bold uppercase text-[12px] mb-[12px] active:scale-95 transition-all active:bg-[#FFE5E5]"
+                onClick={() => {
+                  const savedLink = localStorage.getItem('last_payment_url');
+                  if (savedLink) window.location.href = savedLink;
+                  else alert("Ссылка на оплату не найдена, попробуйте создать заказ заново.");
+                }}
+                className="w-full h-[52px] rounded-[20px] bg-[#FF00EE] text-white font-['Arial'] font-bold uppercase text-[12px] mb-[12px] animate-bounce shadow-lg"
               >
-                Отменить заказ (Не оплачен)
+                Нажми сюда чтобы оплатить 💳
               </button>
-            ) : timeLeft > 0 && ['accepted', 'preparing'].includes(activeOrderStatus) ? (
-              <button 
-                onClick={() => handleCancelOrder(false)}
-                className="w-full h-[52px] rounded-[20px] border border-[#FF0040]/30 text-[#FF0040] font-['Arial'] font-bold uppercase text-[12px] mb-[12px] active:scale-95 transition-all active:bg-[#FFE5E5]"
-              >
-                Отменить заказ ({formatTime(timeLeft)})
-              </button>
-            ) : null}
+            )}
 
             {activeOrderStatus === 'completed' ? (
               <button 
