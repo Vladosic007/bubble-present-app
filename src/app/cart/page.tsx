@@ -124,7 +124,8 @@ export default function CartPage() {
   const { 
     items, changeQuantity, removeItem, orderType, clearCart,
     activeOrderId, activeOrderStatus, orderCreatedAt,
-    setActiveOrder, updateOrderStatus, clearActiveOrder
+    setActiveOrder, updateOrderStatus, clearActiveOrder,
+    setOrderType 
   } = useCartStore();
   
   const [isPaying, setIsPaying] = useState(false);
@@ -246,7 +247,17 @@ export default function CartPage() {
       }
     };
 
+    const checkTimeout = () => {
+      if (activeOrderStatus === 'pending_payment' && orderCreatedAt) {
+        const elapsed = (Date.now() - orderCreatedAt) / 1000;
+        if (elapsed > 600) { // 10 минут
+          handleCancelOrder(true);
+        }
+      }
+    };
+
     checkActualStatus();
+    checkTimeout();
   }, [activeOrderId, activeOrderStatus, orderCreatedAt, setActiveOrder, clearActiveOrder]);
 
   useEffect(() => {
@@ -529,18 +540,26 @@ export default function CartPage() {
                </div>
             </motion.div>
 
-            {/* КНОПКА ПОВТОРНОЙ ОПЛАТЫ (ЕСЛИ НЕ ПЕРЕКИНУЛО) */}
+            {/* КНОПКА ПОВТОРНОЙ ОПЛАТЫ И ОТМЕНЫ */}
             {activeOrderStatus === 'pending_payment' && (
-              <button 
-                onClick={() => {
-                  const savedLink = localStorage.getItem('last_payment_url');
-                  if (savedLink) window.location.href = savedLink;
-                  else alert("Ссылка на оплату не найдена, попробуйте создать заказ заново.");
-                }}
-                className="w-full h-[52px] rounded-[20px] bg-[#FF00EE] text-white font-['Arial'] font-bold uppercase text-[12px] mb-[12px] animate-bounce shadow-lg"
-              >
-                Нажми сюда чтобы оплатить 💳
-              </button>
+              <div className="w-full flex flex-col gap-[8px] mb-[12px]">
+                <button 
+                  onClick={() => {
+                    const savedLink = localStorage.getItem('last_payment_url');
+                    if (savedLink) window.location.href = savedLink;
+                    else alert("Ссылка не найдена");
+                  }}
+                  className="w-full h-[52px] rounded-[20px] bg-[#FF00EE] text-white font-['Arial'] font-bold uppercase text-[12px] shadow-lg"
+                >
+                  Нажми сюда чтобы оплатить 💳
+                </button>
+                <button 
+                  onClick={() => handleCancelOrder(false)}
+                  className="w-full h-[40px] text-[#FF0040] font-['Arial'] font-bold uppercase text-[10px] opacity-60"
+                >
+                  Отменить заказ
+                </button>
+              </div>
             )}
 
             {activeOrderStatus === 'completed' ? (
@@ -619,20 +638,34 @@ export default function CartPage() {
           </section>
         </div>
 
-        <div className="absolute bottom-0 left-0 w-full h-[292px] rounded-t-[25px] bg-[#FFFFFF]/20 backdrop-blur-[30px] z-30 flex flex-col pointer-events-none" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px -4px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
-          <div className="pt-[24px] pl-[16px] pb-[20px] pointer-events-auto flex items-center justify-between pr-[16px]">
-            <div className="flex flex-col">
-              <span className="font-['Benzin'] font-extrabold text-[16px] uppercase tracking-[0.02em]" style={{ color: 'rgba(65, 63, 64, 0.4)' }}>
+        {/* ❗ ВЕРНУЛИ ВНЕШНИЙ БЛОК ДЛЯ НИЖНЕЙ ПАНЕЛИ И ДОБАВИЛИ ДИСКЛЕЙМЕР ❗ */}
+        <div className="absolute bottom-0 left-0 w-full h-[230px] rounded-t-[25px] bg-[#FFFFFF]/20 backdrop-blur-[30px] z-30 flex flex-col pointer-events-none" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px -4px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
+          <div className="pt-[24px] px-[16px] pb-[10px] pointer-events-auto flex flex-col gap-[12px]">
+            <div className="flex items-center justify-between">
+              <span className="font-['Benzin'] font-extrabold text-[16px] uppercase tracking-[0.02em] text-[#413F40]/40">
                 Итого: {dynamicTotal} руб
               </span>
+              
+              {/* ПЕРЕКЛЮЧАТЕЛЬ ТИПА ЗАКАЗА */}
+              <div className="flex bg-[#F2F2F7] rounded-[12px] p-[2px] border border-[#FFFFFF]/40">
+                <button 
+                  onClick={() => setOrderType('pickup')}
+                  className={`px-[10px] py-[6px] rounded-[10px] text-[8px] font-bold uppercase transition-all ${orderType === 'pickup' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                >
+                  Сам-з
+                </button>
+                <button 
+                  onClick={() => setOrderType('delivery')}
+                  className={`px-[10px] py-[6px] rounded-[10px] text-[8px] font-bold uppercase transition-all ${orderType === 'delivery' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                >
+                  Дост-ка
+                </button>
+              </div>
             </div>
-            <div className="flex flex-col items-end">
-              <span className="font-['Benzin'] font-extrabold text-[10px] uppercase text-[#FF008C]">{orderType === 'delivery' ? 'Доставка' : 'Самовывоз'}</span>
-              {/* ❗ БАЙТ НА САМОВЫВОЗ ❗ */}
-              {IS_OPENING_DAY && orderType === 'delivery' && (
-                <span className="text-[8px] font-['Benzin'] font-bold text-[#FF0040] uppercase animate-pulse mt-[4px]">Скидка -50% на самовывоз!</span>
-              )}
-            </div>
+            
+            {IS_OPENING_DAY && orderType === 'pickup' && (
+              <span className="text-[10px] font-['Benzin'] font-bold text-[#FF0040] uppercase text-center">🎉 Акция: -50% на самовывоз! 🎉</span>
+            )}
           </div>
           
           <button 
@@ -646,13 +679,18 @@ export default function CartPage() {
             style={{ boxShadow: isOpen ? 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4)' : 'none' }}
           >
             {!isOpen ? (
-               <span className="font-['Benzin'] font-extrabold text-[13px] text-[#949494] uppercase tracking-wide">Мы спим 😴 Откроемся в 09:00</span>
+              <span className="font-['Benzin'] font-extrabold text-[13px] text-[#949494] uppercase tracking-wide">Мы спим 😴 Откроемся в 09:00</span>
             ) : isPaying ? (
               <span className="font-['Benzin'] font-extrabold text-[18px] text-white uppercase animate-pulse">Оплата...</span>
             ) : (
               <span className="font-['Benzin'] font-extrabold text-[18px] text-[#FF00EE] uppercase drop-shadow-[0_0_2px_white]">Оплатить (ЮKassa)</span>
             )}
           </button>
+
+          {/* ❗ ВЕРНУЛИ ДИСКЛЕЙМЕР ПОД КНОПКОЙ ОПЛАТЫ ❗ */}
+          <p className="text-[7px] text-[#949494] font-bold uppercase text-center mt-[12px] px-[40px] leading-tight pointer-events-auto">
+            Напиток в доставке и самовывозе может быть видоизменен
+          </p>
         </div>
 
         {isPaying && <div className="absolute inset-0 z-50 bg-white/50 backdrop-blur-sm" />}
