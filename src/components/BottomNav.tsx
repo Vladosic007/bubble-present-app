@@ -62,10 +62,10 @@ export default function BottomNav() {
                   className={`object-contain ${shouldInvert ? 'brightness-0 invert' : ''}`} 
                 />
                 
-                {/* ❗ КРАСНЫЙ СЧЕТЧИК КОРЗИНЫ ❗ */}
+                {/* ❗ КРАСНЫЙ СЧЕТЧИК КОРЗИНЫ (УВЕЛИЧЕННЫЙ + 9+) ❗ */}
                 {item.name === 'Корзина' && totalItems > 0 && (
-                  <div className="absolute -top-1 -right-2 bg-[#FF0040] text-white text-[9px] font-bold w-[14px] h-[14px] flex items-center justify-center rounded-full shadow-md">
-                    {totalItems}
+                  <div className="absolute -top-2 -right-3 bg-[#FF0040] text-white text-[10px] font-bold min-w-[18px] h-[18px] px-[4px] flex items-center justify-center rounded-full shadow-md leading-none">
+                    {totalItems > 9 ? '9+' : totalItems}
                   </div>
                 )}
               </div>
