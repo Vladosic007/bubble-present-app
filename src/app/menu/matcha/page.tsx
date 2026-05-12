@@ -52,7 +52,7 @@ export default function MatchaMenu() {
             deliveryPrice: d.price_delivery,
             img: `/images/${slug}.jpg`,
             href: `/menu/matcha/${slug}`,
-            temp_type: d.temp_type
+            temp_type: 'hot_cold' // ❗ Принудительно включаем и Огонь, и Снежинку ❗
           };
         });
         setMatchaDrinks(formatted);

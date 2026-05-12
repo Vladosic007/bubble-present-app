@@ -33,6 +33,7 @@ export default function MatchaTemplatePage() {
   const productImg = '/images/matcha-raspberry1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
 
   // === СТЕЙТЫ ДЛЯ КЛИКОВ ===
+  const [selectedType, setSelectedType] = useState('Холодный'); // ❗ ДОБАВИЛИ ТИП ❗
   const [selectedVolume, setSelectedVolume] = useState('M'); // M или L
   const [cheeseSelected, setCheeseSelected] = useState(false);
   const [isAddonsOpen, setIsAddonsOpen] = useState(false);
@@ -139,7 +140,7 @@ export default function MatchaTemplatePage() {
   if (cheeseSelected) finalPrice += 70;         // Наценка Сырная шапка (+70)
   if (tapiocaX2Selected || juiceX2Selected) finalPrice += 80; 
 
-  const toppingsList = ['Холодный'];
+  const toppingsList = [selectedType]; // ❗ ТЕПЕРЬ ОНО ДИНАМИЧЕСКОЕ ❗
   if (cheeseSelected) toppingsList.push('Сырная шапка');
   
   if (tapiocaSelected) {
@@ -231,15 +232,19 @@ export default function MatchaTemplatePage() {
             </div>
           </div>
 
-          <div className="w-[314px] h-fit pb-[16px] mt-[16px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
-            <div className="mt-[16px] ml-[16px] shrink-0">
-              <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Тип</span>
+          {/* ТИП */}
+          <div className="w-[314px] h-[138px] mt-[16px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
+            <div className="mt-[16px] ml-[16px] shrink-0 font-benzin font-extrabold">
+              <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block">Тип</span>
             </div>
-            <div className="w-full flex justify-between items-center mt-[16px] px-[16px] box-border shrink-0">
-              <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Холодный</span>
-              <div className="w-[22px] h-[22px] rounded-[6px] border flex items-center justify-center transition-all duration-300 shrink-0 bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]">
-                <CheckMark />
-              </div>
+            <div className="w-full flex justify-between items-center mt-[16px] px-[16px] box-border shrink-0 font-benzin font-extrabold">
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block">Холодный</span>
+              <div onClick={() => setSelectedType('Холодный')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedType === 'Холодный' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{selectedType === 'Холодный' && <CheckMark />}</div>
+            </div>
+            <div className="w-[282px] h-[1px] bg-[#BEBEBE] rounded-full mx-auto mt-[12px] shrink-0"></div>
+            <div className="w-full flex justify-between items-center mt-[12px] px-[16px] box-border shrink-0 font-benzin font-extrabold">
+              <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block">Горячий</span>
+              <div onClick={() => setSelectedType('Горячий')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedType === 'Горячий' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{selectedType === 'Горячий' && <CheckMark />}</div>
             </div>
           </div>
 
