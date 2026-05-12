@@ -60,8 +60,10 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
         <div className="absolute left-[12px] top-[16px] w-[112px] h-[107px] rounded-[15px] shadow-[0_1px_4px_1px_rgba(0,0,0,0.25)] overflow-hidden bg-white/50 pointer-events-none">
           <Image src={item.img} alt={item.name} fill className="object-cover" />
         </div>
-        <div className="absolute left-[140px] top-[16px] flex items-center justify-center bg-gradient-to-r from-[#FF00EE]/20 to-[#FF008C]/20 border border-[#FFFFFF]/40 shadow-[0_4px_6px_2px_rgba(8,0,255,0.15)] backdrop-blur-[30px] rounded-full px-[10px] py-[4px] pointer-events-none max-w-[140px]">
-          <h2 className="text-[#FF00EE] uppercase font-['Benzin'] font-extrabold text-[8px] leading-tight drop-shadow-[0_0_2px_white] whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</h2>
+        <div className="absolute left-[140px] top-[16px] flex items-center justify-center bg-gradient-to-r from-[#FF00EE]/20 to-[#FF008C]/20 border border-[#FFFFFF]/40 shadow-[0_4px_6px_2px_rgba(8,0,255,0.15)] backdrop-blur-[30px] rounded-[10px] px-[8px] py-[4px] pointer-events-none w-[120px]">
+          <h2 className="text-[#FF00EE] uppercase font-['Benzin'] font-extrabold text-[8px] leading-[1.2] drop-shadow-[0_0_2px_white] text-center whitespace-normal break-words">
+            {item.name}
+          </h2>
         </div>
         <ul className="absolute left-[140px] top-[54px] flex flex-col gap-[8px] pointer-events-none">
           {item.toppings?.map((topping: string, index: number) => (
@@ -617,7 +619,10 @@ export default function CartPage() {
           </AnimatePresence>
           
           <header className="relative w-full flex items-center justify-center pt-[32px] mb-[24px] shrink-0 pointer-events-none">
-              <div className="relative h-[40px] w-[180px]">
+              <div 
+                onClick={() => router.push('/')} 
+                className="relative h-[40px] w-[180px] pointer-events-auto cursor-pointer active:scale-95 transition-transform"
+              >
                 <Image src="/images/logo.jpg" alt="Bubble Present" fill className="object-contain" priority />
               </div>
           </header>

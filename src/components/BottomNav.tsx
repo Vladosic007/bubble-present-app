@@ -2,9 +2,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useCartStore } from '../store/cartStore'; // ❗ ДОБАВИЛИ ХРАНИЛИЩЕ ❗
 
 export default function BottomNav() {
   const pathname = usePathname();
+
+  // ❗ СЧИТАЕМ СКОЛЬКО ТОВАРОВ В КОРЗИНЕ ❗
+  const totalItems = useCartStore(state => state.items.reduce((sum, item) => sum + item.quantity, 0));
 
   // Проверяем, на странице ли мы баблика
   const isBubblikPage = pathname === '/bubblik';
@@ -29,44 +33,45 @@ export default function BottomNav() {
   return (
     <div className="fixed bottom-10 left-0 right-0 flex justify-center z-50">
       
-      {/* Главный контейнер меню: ширина 211px, высота 39px */}
-      <nav className="relative w-[211px] h-[39px] bg-[#6C6C6C]/20 backdrop-blur-xl rounded-full border border-[#FFFFFF]/40 shadow-[0px_4px_6px_2px_rgba(45,45,45,0.15)] flex items-center px-[4px] overflow-hidden">
+      {/* Главный контейнер меню УВЕЛИЧЕН: ширина 250px, высота 50px */}
+      <nav className="relative w-[250px] h-[50px] bg-[#6C6C6C]/20 backdrop-blur-xl rounded-full border border-[#FFFFFF]/40 shadow-[0px_4px_6px_2px_rgba(45,45,45,0.15)] flex items-center px-[4px] overflow-hidden">
         
-        {/* === АНИМИРОВАННЫЙ "ЖИДКИЙ" ПРЯМОУГОЛЬНИК === */}
+        {/* === АНИМИРОВАННЫЙ "ЖИДКИЙ" ПРЯМОУГОЛЬНИК (УВЕЛИЧЕН) === */}
         <div 
-          className="absolute h-[31px] w-[64px] bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/40 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-0"
-          style={{
-            left: `${4 + (activeIndex * 67)}px`
-          }}
+          className="absolute h-[42px] w-[76px] bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/40 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-0"
+          style={{ left: `${4 + (activeIndex * 80)}px` }}
         />
 
         {/* === САМИ КНОПКИ === */}
         {navItems.map((item, index) => {
           const isActive = index === activeIndex;
-          
-          // ❗ ВОТ ОНА, УМНАЯ ПРОВЕРКА ❗
-          // Красим в белый ТОЛЬКО если мы на странице Баблика И это НЕ иконка Баблика
           const shouldInvert = isBubblikPage && item.name !== 'Баблик';
 
           return (
             <Link 
               key={item.name} 
               href={item.href} 
-              className="relative w-[67px] h-full flex justify-center items-center z-10"
+              className="relative w-[80px] h-full flex justify-center items-center z-10"
             >
-              <div className="relative w-5 h-5 transition-transform duration-300 active:scale-75">
+              {/* ИКОНКА УВЕЛИЧЕНА (w-6 h-6) */}
+              <div className="relative w-6 h-6 transition-transform duration-300 active:scale-75">
                 <Image
                   src={isActive ? item.iconThick : item.iconThin}
                   alt={item.name}
                   fill
-                  // Применяем инверсию только если shouldInvert = true
                   className={`object-contain ${shouldInvert ? 'brightness-0 invert' : ''}`} 
                 />
+                
+                {/* ❗ КРАСНЫЙ СЧЕТЧИК КОРЗИНЫ ❗ */}
+                {item.name === 'Корзина' && totalItems > 0 && (
+                  <div className="absolute -top-1 -right-2 bg-[#FF0040] text-white text-[9px] font-bold w-[14px] h-[14px] flex items-center justify-center rounded-full shadow-md">
+                    {totalItems}
+                  </div>
+                )}
               </div>
             </Link>
           );
         })}
-
       </nav>
     </div>
   );
