@@ -88,12 +88,12 @@ export default function CoffeeTemplatePage() {
     <div className="bg-[#FDFDFD] min-h-[100dvh] w-full flex justify-center overflow-y-auto overflow-x-hidden font-sans">
       <main className="w-full max-w-[370px] relative flex flex-col items-center pb-[120px]">
 
-        {/* ❗ КНОПКА НАЗАД ❗ */}
+        {/* ❗ КНОПКА НАЗАД (С БЕЛОЙ СТРЕЛКОЙ) ❗ */}
         <button 
           onClick={() => router.back()} 
-          className="absolute top-[16px] left-[16px] w-[40px] h-[40px] bg-white/40 backdrop-blur-lg rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.1)] z-50 active:scale-90 transition-transform border border-white/50"
+          className="absolute top-[16px] left-[16px] w-[40px] h-[40px] bg-white/30 backdrop-blur-lg rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.1)] z-50 active:scale-90 transition-transform border border-white/40"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF008C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
