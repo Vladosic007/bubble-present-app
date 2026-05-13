@@ -99,6 +99,16 @@ export default function Home() {
           </Link>
         ))}
       </div>
+
+      {/* ❗ ПОДВАЛ С РЕКВИЗИТАМИ ИП ❗ */}
+        <footer className="w-full max-w-[370px] mt-[40px] flex flex-col items-center justify-center opacity-40 pointer-events-none">
+          <p className="text-[#333333] text-[8px] font-bold uppercase tracking-wider text-center leading-relaxed" style={{ fontFamily: "'Arial', sans-serif" }}>
+            ИП Лысаков Евгений Валерьевич<br/>
+            ИНН 930501372500 | ОГРН 324930100043740<br/>
+            г. Таганрог | тел: +7 (928) 126-51-20
+          </p>
+        </footer>
+        
     </div>
   );
 }
