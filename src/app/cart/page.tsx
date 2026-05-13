@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
-// ❗ МАГИЧЕСКИЙ РУБИЛЬНИК АКЦИИ ❗
 const IS_OPENING_DAY = true; // Поставь false, когда акция закончится
 
 interface SwipeableCartItemProps {
@@ -116,7 +115,6 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
   );
 };
 
-// ❗ ВОТ ЭТА СТРОЧКА У ТЕБЯ ПРОПАЛА, Я ЕЕ ВЕРНУЛ ❗
 export default function CartPage() {
   const router = useRouter();
   
@@ -129,9 +127,17 @@ export default function CartPage() {
   
   const [isPaying, setIsPaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  
   const [isOpen, setIsOpen] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+
+  // СТЕЙТЫ ДЛЯ ПРОМОКОДОВ
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string, discount: number } | null>(null);
+  const [promoError, setPromoError] = useState('');
+
+  // СТЕЙТЫ ДЛЯ ВРЕМЕНИ ЗАКАЗА
+  const [isTimeOrder, setIsTimeOrder] = useState(false);
+  const [selectedTime, setSelectedTime] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -145,18 +151,16 @@ export default function CartPage() {
       const totalMin = hour * 60 + min;
 
       if (orderType === 'pickup') {
-        // Самовывоз с 11:30 (690 минут от начала дня) до 23:00 (1380 минут)
         setIsOpen(totalMin >= 690 && totalMin < 1380);
       } else {
-        // Доставка с 12:00 (720 минут) до 23:00 (1380 минут)
         setIsOpen(totalMin >= 720 && totalMin < 1380);
       }
     };
 
     checkTime(); 
-    const timer = setInterval(checkTime, 10000); // Проверяем чаще (каждые 10 сек)
+    const timer = setInterval(checkTime, 10000); 
     return () => clearInterval(timer);
-  }, [orderType]); // Перепроверяем, если сменили тип заказа
+  }, [orderType]); 
   
   const [dbPrices, setDbPrices] = useState<Record<string, { pickup: number, delivery: number }>>({});
 
@@ -184,7 +188,45 @@ export default function CartPage() {
     fetchPrices();
   }, []);
 
-  const getCorrectItemPrice = (item: CartItem, applyPromo = true) => {
+  const handleApplyPromo = async () => {
+    if (!promoCodeInput.trim()) {
+      setPromoError('Введите код');
+      return;
+    }
+    
+    if (IS_OPENING_DAY && orderType === 'pickup') {
+      setPromoError('Скидки не суммируются!');
+      return;
+    }
+
+    setPromoError('');
+    
+    const { data, error } = await supabase
+      .from('promocodes')
+      .select('*')
+      .eq('code', promoCodeInput.trim().toUpperCase())
+      .single();
+
+    if (error || !data) {
+      setPromoError('Код не найден');
+      return;
+    }
+
+    if (!data.is_active) {
+      setPromoError('Код неактивен');
+      return;
+    }
+
+    if (data.usage_limit && data.used_count >= data.usage_limit) {
+      setPromoError('Лимит исчерпан');
+      return;
+    }
+
+    setAppliedPromo({ code: data.code, discount: data.discount_percent });
+    setPromoError('Применен!');
+  };
+
+  const getCorrectItemPrice = (item: CartItem, applyOpeningPromo = true) => {
     const cleanItemName = normalizeString(item.name);
     let basePrices = dbPrices[cleanItemName];
 
@@ -195,7 +237,7 @@ export default function CartPage() {
 
     if (!basePrices) {
       let fallbackPrice = item.price;
-      if (applyPromo && IS_OPENING_DAY && orderType === 'pickup') {
+      if (applyOpeningPromo && IS_OPENING_DAY && orderType === 'pickup') {
         return Math.round(fallbackPrice / 2);
       }
       return fallbackPrice;
@@ -216,14 +258,23 @@ export default function CartPage() {
 
     const fullPrice = basePrice + toppingsPrice;
     
-    if (applyPromo && IS_OPENING_DAY && orderType === 'pickup') {
+    if (applyOpeningPromo && IS_OPENING_DAY && orderType === 'pickup') {
       return Math.round(fullPrice / 2);
     }
     
     return fullPrice;
   };
 
-  const dynamicTotal = items.reduce((sum, item) => sum + (getCorrectItemPrice(item) * item.quantity), 0);
+  const rawTotal = items.reduce((sum, item) => sum + (getCorrectItemPrice(item) * item.quantity), 0);
+  const dynamicTotal = appliedPromo ? Math.round(rawTotal * (1 - appliedPromo.discount / 100)) : rawTotal;
+
+  useEffect(() => {
+    if (IS_OPENING_DAY && orderType === 'pickup' && appliedPromo) {
+      setAppliedPromo(null);
+      setPromoCodeInput('');
+      setPromoError('Промокод сброшен (Акция)');
+    }
+  }, [orderType]);
 
   useEffect(() => {
     const checkActualStatus = async () => {
@@ -249,7 +300,7 @@ export default function CartPage() {
     const checkTimeout = () => {
       if (activeOrderStatus === 'pending_payment' && orderCreatedAt) {
         const elapsed = (Date.now() - orderCreatedAt) / 1000;
-        if (elapsed > 600) { // 10 минут
+        if (elapsed > 600) { 
           handleCancelOrder(true);
         }
       }
@@ -291,12 +342,6 @@ export default function CartPage() {
       return () => clearInterval(timerId);
     }
   }, [activeOrderStatus, orderCreatedAt]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `0${m}:${s < 10 ? '0' : ''}${s}`;
-  };
 
   const handleCancelOrder = async (isAutoCancel = false) => {
     if (!activeOrderId) return;
@@ -360,6 +405,12 @@ export default function CartPage() {
       return;
     }
 
+    // Проверка выбора времени
+    if (isTimeOrder && !selectedTime) {
+      alert("Укажите желаемое время заказа!");
+      return;
+    }
+
     setIsPaying(true);
 
     const formattedItems = items.map((item: CartItem) => {
@@ -373,6 +424,11 @@ export default function CartPage() {
         price: getCorrectItemPrice(item) 
       };
     });
+
+    // Записываем использование промокода
+    if (appliedPromo) {
+      await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }).catch(() => {});
+    }
 
     const { data, error } = await supabase
       .from('orders')
@@ -399,13 +455,17 @@ export default function CartPage() {
     const orderId = data[0].id;
     const dbTime = new Date(data[0].created_at).getTime();
 
+    const timeInfo = isTimeOrder ? `⏰ КО ВРЕМЕНИ: ${selectedTime}` : '🚀 КАК МОЖНО СКОРЕЕ';
+
     const tgMessage = `🚨 НОВЫЙ ЗАКАЗ #${orderId} 🚨\n\n` +
       `📦 Тип: ${orderType === 'delivery' ? '🚗 ДОСТАВКА' : '🏃 САМОВЫВОЗ'}\n` +
+      `${timeInfo}\n` +
       `👤 Имя: ${savedName}\n` +
       `📞 Телефон: ${savedPhone}\n` +
       (orderType === 'delivery' ? `📍 Адрес: ${savedAddress}\n\n` : `\n`) +
       `🛒 Заказ:\n` +
       formattedItems.map((i: any) => `▫️ ${i.name} x${i.qty}`).join('\n') + `\n\n` +
+      (appliedPromo ? `🎁 ПРОМОКОД: ${appliedPromo.code} (-${appliedPromo.discount}%)\n` : '') +
       `💰 Итого: ${dynamicTotal} руб.`;
 
     const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
@@ -437,7 +497,7 @@ export default function CartPage() {
       }
 
       if (paymentData.confirmation_url) {
-        localStorage.setItem('last_payment_url', paymentData.confirmation_url); // ❗ СОХРАНЯЕМ ССЫЛКУ ❗
+        localStorage.setItem('last_payment_url', paymentData.confirmation_url); 
         setActiveOrder(orderId, 'pending_payment', dbTime);
         clearCart(); 
         setIsPaying(false); 
@@ -539,7 +599,6 @@ export default function CartPage() {
                </div>
             </motion.div>
 
-            {/* КНОПКА ПОВТОРНОЙ ОПЛАТЫ И ОТМЕНЫ */}
             {activeOrderStatus === 'pending_payment' && (
               <div className="w-full flex flex-col gap-[8px] mb-[12px]">
                 <button 
@@ -599,15 +658,14 @@ export default function CartPage() {
     );
   }
 
-  // ❗ Защита Vercel ❗
   if (!isMounted) return <div className="bg-[#F2F2F7] min-h-[100dvh] w-full" />;
 
   return (
     <div className="bg-[#F2F2F7] min-h-[100dvh] w-full flex justify-center overflow-hidden font-sans relative">
       <main className="w-full max-w-[370px] relative bg-[#FFFFFF] flex flex-col h-[100dvh] overflow-hidden">
         
-        <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[310px] overflow-x-hidden touch-pan-y">
-          {/* ❗ БАННЕР АКЦИИ ❗ */}
+        {/* Увеличили padding снизу до 390px, чтобы блок скроллился выше новой большой панели */}
+        <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[390px] overflow-x-hidden touch-pan-y">
           <AnimatePresence>
             {IS_OPENING_DAY && (
               <motion.div initial={{ y: -50 }} animate={{ y: 0 }} className="w-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] p-[10px] text-center z-50 shrink-0 shadow-md">
@@ -640,40 +698,102 @@ export default function CartPage() {
           </section>
         </div>
 
-        {/* ❗ ВЕРНУЛИ ВНЕШНИЙ БЛОК ДЛЯ НИЖНЕЙ ПАНЕЛИ И ДОБАВИЛИ ДИСКЛЕЙМЕР ❗ */}
-        <div className="absolute bottom-0 left-0 w-full h-[230px] rounded-t-[25px] bg-[#FFFFFF]/20 backdrop-blur-[30px] z-30 flex flex-col pointer-events-none" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px -4px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
-          <div className="pt-[24px] px-[16px] pb-[10px] pointer-events-auto flex flex-col gap-[12px]">
-            <div className="flex items-center justify-between">
-              <span className="font-['Benzin'] font-extrabold text-[16px] uppercase tracking-[0.02em] text-[#413F40]/40">
-                Итого: {dynamicTotal} руб
-              </span>
+        {/* ПАНЕЛЬ ОПЛАТЫ И НАСТРОЕК УВЕЛИЧЕНА (h-[350px]) */}
+        <div className="absolute bottom-0 left-0 w-full h-[350px] rounded-t-[25px] bg-[#FFFFFF]/20 backdrop-blur-[30px] z-30 flex flex-col pointer-events-none" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px -4px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
+          <div className="pt-[20px] px-[16px] pb-[10px] pointer-events-auto flex flex-col gap-[12px]">
+            
+            {/* ПРОМОКОД */}
+            <div className="flex gap-[8px] items-center mb-[4px]">
+              <input 
+                type="text" 
+                value={promoCodeInput}
+                onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                placeholder="Промокод"
+                disabled={!!appliedPromo || (IS_OPENING_DAY && orderType === 'pickup')}
+                className="flex-1 h-[36px] bg-[#F2F2F7] rounded-[12px] px-[16px] text-[12px] font-['Arial'] font-bold outline-none placeholder:text-[#949494] disabled:opacity-50 border border-[#FFFFFF]/40 shadow-inner"
+              />
+              {!appliedPromo ? (
+                <button 
+                  onClick={handleApplyPromo}
+                  disabled={IS_OPENING_DAY && orderType === 'pickup'}
+                  className="h-[36px] px-[16px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[12px] text-[10px] font-['Benzin'] font-extrabold uppercase shadow-sm active:scale-95 disabled:opacity-50"
+                >
+                  Ок
+                </button>
+              ) : (
+                <button 
+                  onClick={() => { setAppliedPromo(null); setPromoCodeInput(''); setPromoError(''); }}
+                  className="h-[36px] px-[16px] bg-[#FF0040] text-white rounded-[12px] text-[10px] font-['Benzin'] font-extrabold uppercase shadow-sm active:scale-95"
+                >
+                  ✖
+                </button>
+              )}
+            </div>
+            {promoError && <span className={`text-[9px] font-bold uppercase mt-[-10px] ml-[4px] ${promoError === 'Применен!' ? 'text-[#0DAA00]' : 'text-[#FF0040]'}`}>{promoError}</span>}
+
+            <div className="flex items-center justify-between mt-[4px]">
+              {/* ИТОГОВАЯ ЦЕНА */}
+              <div className="flex flex-col">
+                <span className="font-['Benzin'] font-extrabold text-[16px] uppercase tracking-[0.02em] text-[#413F40]/40 flex items-center gap-[8px]">
+                  Итого: {dynamicTotal} руб
+                  {appliedPromo && <span className="text-[10px] text-[#FF008C] bg-[#FF008C]/10 px-[6px] py-[2px] rounded-md">-{appliedPromo.discount}%</span>}
+                </span>
+                {appliedPromo && <span className="text-[10px] line-through text-[#949494] font-['Benzin']">{rawTotal} руб</span>}
+              </div>
               
-              {/* ПЕРЕКЛЮЧАТЕЛЬ ТИПА ЗАКАЗА */}
-              <div className="flex bg-[#F2F2F7] rounded-[12px] p-[2px] border border-[#FFFFFF]/40">
-                <button 
-                  onClick={() => setOrderType('pickup')}
-                  className={`px-[10px] py-[6px] rounded-[10px] text-[8px] font-bold uppercase transition-all ${orderType === 'pickup' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
-                >
-                  Сам-з
-                </button>
-                <button 
-                  onClick={() => setOrderType('delivery')}
-                  className={`px-[10px] py-[6px] rounded-[10px] text-[8px] font-bold uppercase transition-all ${orderType === 'delivery' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
-                >
-                  Дост-ка
-                </button>
+              {/* ПЕРЕКЛЮЧАТЕЛИ ТИПА И ВРЕМЕНИ ЗАКАЗА */}
+              <div className="flex flex-col gap-[8px] w-[140px]">
+                <div className="flex bg-[#F2F2F7] rounded-[12px] p-[2px] border border-[#FFFFFF]/40">
+                  <button 
+                    onClick={() => setOrderType('pickup')}
+                    className={`px-[6px] py-[6px] flex-1 rounded-[10px] text-[8px] font-bold uppercase transition-all ${orderType === 'pickup' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                  >
+                    Сам-з
+                  </button>
+                  <button 
+                    onClick={() => setOrderType('delivery')}
+                    className={`px-[6px] py-[6px] flex-1 rounded-[10px] text-[8px] font-bold uppercase transition-all ${orderType === 'delivery' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                  >
+                    Дост-ка
+                  </button>
+                </div>
+                
+                <div className="flex bg-[#F2F2F7] rounded-[12px] p-[2px] border border-[#FFFFFF]/40">
+                  <button 
+                    onClick={() => setIsTimeOrder(false)}
+                    className={`px-[4px] py-[6px] flex-1 rounded-[10px] text-[7px] font-bold uppercase transition-all ${!isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                  >
+                    Быстрее
+                  </button>
+                  <button 
+                    onClick={() => setIsTimeOrder(true)}
+                    className={`px-[4px] py-[6px] flex-1 rounded-[10px] text-[7px] font-bold uppercase transition-all ${isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                  >
+                    Время
+                  </button>
+                </div>
+                
+                {/* ИНПУТ ВРЕМЕНИ ПОЯВЛЯЕТСЯ ТОЛЬКО ПРИ НАЖАТИИ "КО ВРЕМЕНИ" */}
+                {isTimeOrder && (
+                  <input 
+                    type="time" 
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="h-[28px] bg-[#F2F2F7] rounded-[10px] text-[12px] font-['Arial'] font-bold outline-none text-center border border-[#FFFFFF]/40 shadow-inner w-full text-[#333]"
+                  />
+                )}
               </div>
             </div>
             
             {IS_OPENING_DAY && orderType === 'pickup' && (
-              <span className="text-[10px] font-['Benzin'] font-bold text-[#FF0040] uppercase text-center">🎉 Акция: -50% на самовывоз! 🎉</span>
+               <span className="text-[10px] font-['Benzin'] font-bold text-[#FF0040] uppercase text-center mt-[4px]">🎉 Акция: -50% на самовывоз! 🎉</span>
             )}
           </div>
           
           <button 
             onClick={handleCheckoutClick} 
             disabled={isPaying || !isOpen}
-            className={`w-[346px] h-[49px] mx-auto rounded-[25px] backdrop-blur-[30px] flex items-center justify-center shrink-0 transition-transform pointer-events-auto relative overflow-hidden
+            className={`w-[346px] h-[49px] mx-auto mt-[4px] rounded-[25px] backdrop-blur-[30px] flex items-center justify-center shrink-0 transition-transform pointer-events-auto relative overflow-hidden
               ${!isOpen 
                 ? 'bg-[#949494]/20 border border-[#949494]/40 cursor-not-allowed' 
                 : 'bg-gradient-to-r from-[#FF00EE]/20 to-[#FF008C]/20 shadow-[0_4px_6px_2px_rgba(8,0,255,0.15)] active:scale-95'
@@ -681,7 +801,7 @@ export default function CartPage() {
             style={{ boxShadow: isOpen ? 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4)' : 'none' }}
           >
             {!isOpen ? (
-              <span className="font-['Benzin'] font-extrabold text-[13px] text-[#949494] uppercase tracking-wide">Мы спим 😴 Откроемся в 09:00</span>
+               <span className="font-['Benzin'] font-extrabold text-[13px] text-[#949494] uppercase tracking-wide">Мы спим 😴 Откроемся в 09:00</span>
             ) : isPaying ? (
               <span className="font-['Benzin'] font-extrabold text-[18px] text-white uppercase animate-pulse">Оплата...</span>
             ) : (
@@ -689,7 +809,6 @@ export default function CartPage() {
             )}
           </button>
 
-          {/* ❗ ВЕРНУЛИ ДИСКЛЕЙМЕР ПОД КНОПКОЙ ОПЛАТЫ ❗ */}
           <p className="text-[7px] text-[#949494] font-bold uppercase text-center mt-[12px] px-[40px] leading-tight pointer-events-auto">
             Напиток в доставке и самовывозе может быть видоизменен
           </p>
