@@ -206,14 +206,19 @@ export default function CoffeeTemplatePage() { // весь блок добавл
           </h1>
         </div>
 
-        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (ФИНАЛЬНЫЙ ЖЕЛЕЗОБЕТОННЫЙ ФИКС) === */}
-        <div className="w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] z-20 backdrop-blur-[30px] box-border shrink-0 flex flex-col pt-[20px] pb-[16px] overflow-hidden">
-          {/* ❗ Скроллится только этот внутренний блок, а отступы мы вынесли наружу ❗ */}
-          <div className="w-full h-full overflow-y-auto no-scrollbar px-[20px]">
+        {/* === 3. КАРТОЧКА С ОПИСАНИЕМ (СО СКРОЛЛ-ПОДСКАЗКОЙ) === */}
+        {/* Добавили relative для позиционирования тени */}
+        <div className="relative w-[346px] h-[150px] mb-[32px] bg-[#EEEEEE] border border-[#FFFFFF]/40 shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] rounded-[25px] z-20 backdrop-blur-[30px] box-border shrink-0 flex flex-col pt-[20px] overflow-hidden">
+          
+          {/* Сам скроллящийся текст (добавили pb-[30px] чтобы текст можно было докрутить выше тени) */}
+          <div className="w-full h-full overflow-y-auto no-scrollbar px-[20px] pb-[30px]">
             <p className="text-[12px] text-[#272727] leading-[1.4] text-left font-benzin font-normal opacity-90 tracking-[0.02em] m-0">
-              Травянистая кислинка щавеля встречает сочный лимон в компании бодрой содовой, создавая освежающий микс. Неожиданное сочетание с диким характером и природной свежестью бодрит с первого глотка. А на дне — приятный выбор: классическая тапиока или взрывные джус-боллы
+              Солнечный апельсиновый сок встречает насыщенный эспрессо в дерзком танце контрастов. Солёная карамель добавляет этому дуэту глубину и неожиданную нежность, балансируя между сладостью и лёгкой терпкостью. А на дне — классические жемчужины тапиоки, дарящие каждому глотку текстурное приключение
             </p>
           </div>
+
+          {/* ❗ ГРАДИЕНТНАЯ ТЕНЬ ВНИЗУ (ПОДСКАЗКА ДЛЯ СКРОЛЛА) ❗ */}
+          <div className="absolute bottom-0 left-0 w-full h-[40px] bg-gradient-to-t from-[#EEEEEE] via-[#EEEEEE]/90 to-transparent pointer-events-none rounded-b-[25px]" />
         </div>
 
         <div 
