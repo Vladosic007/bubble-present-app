@@ -3,7 +3,7 @@
 import { useCartStore } from '../../../../store/cartStore';
 import { useState, useEffect } from 'react'; // ❗ Добавили useEffect ❗
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // добавить для кнопки 
 
 const CheckMark = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="animate-in zoom-in duration-200">
@@ -11,7 +11,7 @@ const CheckMark = () => (
   </svg>
 );
 
-export default function CoffeeTemplatePage() {
+export default function CoffeeTemplatePage() { // весь блок добавляем для кнопки 
   const router = useRouter(); // ❗ ДОБАВЛЯЕМ РОУТЕР
   const { items, addItem, changeQuantity, removeItem, orderType } = useCartStore();
 
@@ -88,7 +88,7 @@ export default function CoffeeTemplatePage() {
     <div className="bg-[#FDFDFD] min-h-[100dvh] w-full flex justify-center overflow-y-auto overflow-x-hidden font-sans">
       <main className="w-full max-w-[370px] relative flex flex-col items-center pb-[120px]">
 
-        {/* ❗ КНОПКА НАЗАД (С БЕЛОЙ СТРЕЛКОЙ) ❗ */}
+        {/* ❗ КНОПКА НАЗАД (С БЕЛОЙ СТРЕЛКОЙ) ❗ */} 
         <button 
           onClick={() => router.back()} 
           className="absolute top-[16px] left-[16px] w-[40px] h-[40px] bg-white/30 backdrop-blur-lg rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.1)] z-50 active:scale-90 transition-transform border border-white/40"
@@ -96,7 +96,7 @@ export default function CoffeeTemplatePage() {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6"/>
           </svg>
-        </button>
+        </button> 
         
         <div className="relative w-[370px] h-[360px] shrink-0">
           <Image src="/images/bumble.jpg" alt="Бамбл" fill quality={100} className="object-cover" priority />

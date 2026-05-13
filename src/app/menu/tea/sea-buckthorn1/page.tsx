@@ -4,6 +4,7 @@ import { useCartStore } from '../../../../store/cartStore';
 import { useState, useEffect } from 'react'; // ❗ Добавили useEffect
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation'; // добавить для кнопки 
 
 // === ГАЛОЧКА ===
 const CheckMark = () => (
@@ -12,8 +13,8 @@ const CheckMark = () => (
   </svg>
 );
 
-export default function DrinkTemplatePage() {
-  // === СТЕЙТЫ КОРЗИНЫ ===
+export default function CoffeeTemplatePage() { // весь блок добавляем для кнопки 
+  const router = useRouter(); // ❗ ДОБАВЛЯЕМ РОУТЕР
   const { items, addItem, changeQuantity, removeItem, orderType } = useCartStore();
 
   // ❗ МАГИЯ ДЛЯ СИНХРОНИЗАЦИИ ПАМЯТИ ❗
@@ -188,6 +189,16 @@ export default function DrinkTemplatePage() {
   return (
     <div className="bg-[#FDFDFD] min-h-[100dvh] w-full flex justify-center overflow-y-auto overflow-x-hidden font-sans">
       <main className="w-full max-w-[370px] relative flex flex-col items-center pb-[120px]">
+        
+        {/* ❗ КНОПКА НАЗАД (С БЕЛОЙ СТРЕЛКОЙ) ❗ */} 
+        <button 
+          onClick={() => router.back()} 
+          className="absolute top-[16px] left-[16px] w-[40px] h-[40px] bg-white/30 backdrop-blur-lg rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.1)] z-50 active:scale-90 transition-transform border border-white/40"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
         
         <div className="relative w-[370px] h-[360px] shrink-0">
           <Image src="/images/sea-buckthorn1.jpg" alt="Облепиховая пряность" fill quality={100} className="object-cover" priority />
