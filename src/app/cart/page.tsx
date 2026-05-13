@@ -128,6 +128,7 @@ export default function CartPage() {
   const [isPaying, setIsPaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isOpen, setIsOpen] = useState(true);
+  const [closeReason, setCloseReason] = useState(''); // ❗ Добавили причину закрытия
   const [isMounted, setIsMounted] = useState(false);
 
   // СТЕЙТЫ ДЛЯ ПРОМОКОДОВ
@@ -148,19 +149,35 @@ export default function CartPage() {
       const now = new Date();
       const hour = now.getHours();
       const min = now.getMinutes();
+      const day = now.getDay(); // 0 - воскресенье, 6 - суббота
       const totalMin = hour * 60 + min;
 
+      const isWeekend = day === 0 || day === 6;
+      const openTime = 660; // 11:00 в минутах (11 * 60)
+      
+      let closeTime = 0;
       if (orderType === 'pickup') {
-        setIsOpen(totalMin >= 690 && totalMin < 1380);
+        closeTime = isWeekend ? 1350 : 1290; // Выходные 22:30 (1350), Будни 21:30 (1290)
       } else {
-        setIsOpen(totalMin >= 720 && totalMin < 1380);
+        closeTime = isWeekend ? 1320 : 1260; // Выходные 22:00 (1320), Будни 21:00 (1260)
+      }
+
+      if (totalMin < openTime) {
+        setIsOpen(false);
+        setCloseReason('early');
+      } else if (totalMin >= closeTime) {
+        setIsOpen(false);
+        setCloseReason('late');
+      } else {
+        setIsOpen(true);
+        setCloseReason('');
       }
     };
 
     checkTime(); 
     const timer = setInterval(checkTime, 10000); 
     return () => clearInterval(timer);
-  }, [orderType]); 
+  }, [orderType]);
   
   const [dbPrices, setDbPrices] = useState<Record<string, { pickup: number, delivery: number }>>({});
 
@@ -406,9 +423,26 @@ export default function CartPage() {
     }
 
     // Проверка выбора времени
-    if (isTimeOrder && !selectedTime) {
-      alert("Укажите желаемое время заказа!");
-      return;
+    if (isTimeOrder) {
+      if (!selectedTime) {
+        alert("Укажите желаемое время заказа!");
+        return;
+      }
+      
+      const [selHour, selMin] = selectedTime.split(':').map(Number);
+      const selTotalMin = selHour * 60 + selMin;
+      const day = new Date().getDay();
+      const isWeekend = day === 0 || day === 6;
+      
+      const openTime = 660; // 11:00
+      const closeTime = orderType === 'pickup' 
+        ? (isWeekend ? 1350 : 1290) 
+        : (isWeekend ? 1320 : 1260);
+
+      if (selTotalMin < openTime || selTotalMin >= closeTime) {
+        alert(`Мы не сможем отдать заказ в это время!\nОткрываемся в 11:00, ${orderType === 'delivery' ? 'доставка' : 'самовывоз'} работает до ${Math.floor(closeTime/60)}:${closeTime%60 === 0 ? '00' : closeTime%60}.`);
+        return;
+      }
     }
 
     setIsPaying(true);
@@ -801,7 +835,9 @@ export default function CartPage() {
             style={{ boxShadow: isOpen ? 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4)' : 'none' }}
           >
             {!isOpen ? (
-               <span className="font-['Benzin'] font-extrabold text-[13px] text-[#949494] uppercase tracking-wide">Мы спим 😴 Откроемся в 09:00</span>
+               <span className="font-['Benzin'] font-extrabold text-[13px] text-[#949494] uppercase tracking-wide">
+                 {closeReason === 'early' ? 'Мы спим 😴 Откроемся в 11:00' : 'На сегодня всё 😴'}
+               </span>
             ) : isPaying ? (
               <span className="font-['Benzin'] font-extrabold text-[18px] text-white uppercase animate-pulse">Оплата...</span>
             ) : (
