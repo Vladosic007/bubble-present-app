@@ -6,12 +6,26 @@ import { supabase } from '../../lib/supabase';
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
-  const [activeTab, setActiveTab] = useState<'orders' | 'drinks' | 'toppings'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'drinks' | 'toppings' | 'promos'>('orders');
   
   const [drinks, setDrinks] = useState<any[]>([]);
   const [toppings, setToppings] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [promocodes, setPromocodes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // === СТЕЙТЫ БОССА (ПРОМОКОДЫ) ===
+  const [isBoss, setIsBoss] = useState(false);
+  const [showBossPrompt, setShowBossPrompt] = useState(false);
+  const [bossPin, setBossPin] = useState('');
+  
+  const [newPromoCode, setNewPromoCode] = useState('');
+  const [newPromoDiscount, setNewPromoDiscount] = useState('');
+  const [newPromoLimit, setNewPromoLimit] = useState('');
+
+  useEffect(() => {
+    if (localStorage.getItem('bubble_boss_mode') === 'true') setIsBoss(true);
+  }, []);
 
   // === ЛОГИКА АВТОРИЗАЦИИ ===
   const handleLogin = (e: React.FormEvent) => {
@@ -32,10 +46,12 @@ export default function AdminPage() {
     const { data: drinksData } = await supabase.from('drinks').select('*').order('id', { ascending: true });
     const { data: toppingsData } = await supabase.from('toppings').select('*').order('id', { ascending: true });
     const { data: ordersData } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    const { data: promosData } = await supabase.from('promocodes').select('*').order('created_at', { ascending: false });
 
     if (drinksData) setDrinks(drinksData);
     if (toppingsData) setToppings(toppingsData);
     if (ordersData) setOrders(ordersData);
+    if (promosData) setPromocodes(promosData);
     setIsLoading(false);
   };
 
@@ -76,6 +92,51 @@ export default function AdminPage() {
   const changeOrderStatus = async (id: number, newStatus: string) => {
     setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
     await supabase.from('orders').update({ status: newStatus }).eq('id', id);
+  };
+
+  // === ЛОГИКА ПРОМОКОДОВ И БОССА ===
+  const handleTabClick = (tab: any) => {
+    if (tab === 'promos' && !isBoss) {
+      setShowBossPrompt(true);
+      return;
+    }
+    setActiveTab(tab);
+  };
+
+  const handleBossAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (bossPin === '8888') { // ❗ ПАРОЛЬ ВЛАДЕЛЬЦА ТУТ ❗
+      setIsBoss(true);
+      setShowBossPrompt(false);
+      setActiveTab('promos');
+      localStorage.setItem('bubble_boss_mode', 'true');
+      setBossPin('');
+    } else {
+      alert('Неверный PIN босса!');
+      setBossPin('');
+    }
+  };
+
+  const handleCreatePromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPromoCode || !newPromoDiscount) return;
+    const code = newPromoCode.trim().toUpperCase();
+    const discount = parseInt(newPromoDiscount);
+    const limit = newPromoLimit ? parseInt(newPromoLimit) : null;
+
+    const { data, error } = await supabase.from('promocodes').insert([{ code, discount_percent: discount, usage_limit: limit }]).select();
+    if (error) {
+      alert('Ошибка! Возможно такой код уже существует.');
+    } else if (data) {
+      setPromocodes([data[0], ...promocodes]);
+      setNewPromoCode(''); setNewPromoDiscount(''); setNewPromoLimit('');
+    }
+  };
+
+  const togglePromo = async (id: string, currentStatus: boolean) => {
+    setPromocodes(promocodes.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p));
+    const { error } = await supabase.from('promocodes').update({ is_active: !currentStatus }).eq('id', id);
+    if (error) setPromocodes(promocodes.map(p => p.id === id ? { ...p, is_active: currentStatus } : p));
   };
 
   // === ЭКРАН ВХОДА ===
@@ -123,12 +184,13 @@ export default function AdminPage() {
 
           <div className="w-full h-[44px] bg-white/10 rounded-[15px] p-[4px] flex relative">
             <div 
-              className="absolute top-[4px] bottom-[4px] w-[calc(33.33%-4px)] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-[12px] transition-all duration-300 ease-out"
-              style={{ left: activeTab === 'orders' ? '4px' : activeTab === 'drinks' ? 'calc(33.33%)' : 'calc(66.66% - 4px)' }}
+              className="absolute top-[4px] bottom-[4px] w-[calc(25%-2px)] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-[12px] transition-all duration-300 ease-out"
+              style={{ left: activeTab === 'orders' ? '4px' : activeTab === 'drinks' ? 'calc(25% + 1px)' : activeTab === 'toppings' ? 'calc(50%)' : 'calc(75% - 4px)' }}
             />
-            <button onClick={() => setActiveTab('orders')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[10px] uppercase transition-colors ${activeTab === 'orders' ? 'text-white' : 'text-white/50'}`}>Заказы</button>
-            <button onClick={() => setActiveTab('drinks')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[10px] uppercase transition-colors ${activeTab === 'drinks' ? 'text-white' : 'text-white/50'}`}>Напитки</button>
-            <button onClick={() => setActiveTab('toppings')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[10px] uppercase transition-colors ${activeTab === 'toppings' ? 'text-white' : 'text-white/50'}`}>Стоп-лист</button>
+            <button onClick={() => handleTabClick('orders')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[9px] uppercase transition-colors ${activeTab === 'orders' ? 'text-white' : 'text-white/50'}`}>Заказы</button>
+            <button onClick={() => handleTabClick('drinks')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[9px] uppercase transition-colors ${activeTab === 'drinks' ? 'text-white' : 'text-white/50'}`}>Напитки</button>
+            <button onClick={() => handleTabClick('toppings')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[9px] uppercase transition-colors ${activeTab === 'toppings' ? 'text-white' : 'text-white/50'}`}>Стоп</button>
+            <button onClick={() => handleTabClick('promos')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[9px] uppercase transition-colors ${activeTab === 'promos' ? 'text-white' : 'text-white/50'}`}>Промики</button>
           </div>
         </header>
 
@@ -228,10 +290,58 @@ export default function AdminPage() {
                   ))}
                 </div>
               )}
+              {/* Вкладка Промокодов */}
+              {activeTab === 'promos' && (
+                <div className="flex flex-col gap-[16px]">
+                  {/* Форма создания */}
+                  <form onSubmit={handleCreatePromo} className="w-full bg-white p-[16px] rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.05)] border border-[#E5E5EA] flex flex-col gap-[12px]">
+                    <h2 className="font-['Benzin'] font-extrabold text-[12px] uppercase text-[#FF008C]">Создать код</h2>
+                    <input type="text" placeholder="КОД (напр. BUBBLE20)" value={newPromoCode} onChange={e => setNewPromoCode(e.target.value)} required className="w-full h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none uppercase" />
+                    <div className="flex gap-[12px]">
+                      <input type="number" placeholder="Скидка %" value={newPromoDiscount} onChange={e => setNewPromoDiscount(e.target.value)} required min="1" max="99" className="flex-1 h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none" />
+                      <input type="number" placeholder="Лимит (шт)" value={newPromoLimit} onChange={e => setNewPromoLimit(e.target.value)} min="1" className="flex-1 h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none" />
+                    </div>
+                    <button type="submit" className="w-full h-[40px] bg-[#333] text-white rounded-[10px] font-bold text-[10px] uppercase active:scale-95 transition-transform">Создать</button>
+                  </form>
+
+                  {/* Список */}
+                  {promocodes.map(promo => (
+                    <div key={promo.id} className={`w-full bg-white p-[16px] rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex items-center justify-between border ${!promo.is_active ? 'border-[#FF0040] opacity-60' : 'border-[#E5E5EA]'}`}>
+                      <div className="flex flex-col gap-[4px]">
+                        <span className="font-['Benzin'] font-extrabold text-[14px] text-[#333] uppercase leading-tight">{promo.code} <span className="text-[#FF008C]">-{promo.discount_percent}%</span></span>
+                        <span className="font-['Arial'] font-bold text-[10px] text-[#949494] uppercase">Использовано: {promo.used_count} {promo.usage_limit ? `из ${promo.usage_limit}` : '(без лимита)'}</span>
+                      </div>
+                      <button onClick={() => togglePromo(promo.id, promo.is_active)} className={`w-[50px] h-[30px] rounded-full p-[2px] transition-colors duration-300 ease-in-out flex shrink-0 ${promo.is_active ? 'bg-[#14FF00]' : 'bg-[#FF0040]'}`}>
+                        <motion.div layout className="w-[26px] h-[26px] bg-white rounded-full shadow-md" animate={{ x: promo.is_active ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
       </main>
+
+      {/* Модальное окно PIN-кода Босса */}
+        <AnimatePresence>
+          {showBossPrompt && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-[#110A1A]/90 backdrop-blur-md flex items-center justify-center p-[24px]">
+              <div className="w-full max-w-[320px] bg-white p-[24px] rounded-[30px] shadow-2xl flex flex-col items-center">
+                <span className="text-[40px] mb-[12px]">👑</span>
+                <h2 className="font-['Benzin'] font-extrabold text-[14px] uppercase text-center mb-[8px]">Доступ руководства</h2>
+                <p className="text-[10px] text-center text-[#949494] font-bold uppercase mb-[24px]">Введите PIN-код владельца</p>
+                <form onSubmit={handleBossAuth} className="w-full flex flex-col gap-[12px]">
+                  <input type="password" value={bossPin} onChange={e => setBossPin(e.target.value)} placeholder="PIN" maxLength={4} className="w-full h-[50px] bg-[#F2F2F7] rounded-[15px] text-center font-['Benzin'] tracking-[0.2em] outline-none" />
+                  <div className="flex gap-[8px]">
+                    <button type="button" onClick={() => setShowBossPrompt(false)} className="flex-1 h-[40px] bg-[#F2F2F7] text-[#949494] rounded-[10px] font-bold text-[10px] uppercase">Отмена</button>
+                    <button type="submit" className="flex-1 h-[40px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[10px] font-bold text-[10px] uppercase shadow-md">Войти</button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
     </div>
   );
 }
