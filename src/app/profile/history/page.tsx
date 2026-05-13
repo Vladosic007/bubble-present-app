@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation'; // ❗ ДОБАВИЛИ РОУТЕР
 
 // Функция для подбора цвета кнопки статуса
 const getStatusColor = (status: string) => {
@@ -72,6 +73,7 @@ const getImageByName = (name: string) => {
 };
 
 export default function HistoryPage() {
+  const router = useRouter(); // ❗ ДОБАВИЛИ ЭТУ СТРОЧКУ
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -161,6 +163,16 @@ export default function HistoryPage() {
       </div>
 
       <main className="relative w-full max-w-[402px] h-full bg-transparent overflow-y-auto no-scrollbar flex flex-col items-center pb-[120px] z-10 mx-auto">
+        
+        {/* ❗ КНОПКА НАЗАД (С РОЗОВОЙ СТРЕЛКОЙ ДЛЯ СВЕТЛОГО ФОНА) ❗ */}
+        <button 
+          onClick={() => router.back()} 
+          className="absolute top-[16px] left-[16px] w-[40px] h-[40px] bg-white rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.1)] z-50 active:scale-90 transition-transform"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF008C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
         
         {isLoading ? (
           <div className="flex flex-col items-center justify-center flex-1 w-full pb-[150px]">

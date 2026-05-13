@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { YMaps, Map, GeolocationControl, ZoomControl } from '@pbe/react-yandex-maps';
+import { useRouter } from 'next/navigation'; // ❗ ДОБАВИЛИ РОУТЕР
 
 const GlassInput = ({ label, name, value, onChange, type = "text", placeholder, required = false, rightIcon, onRightIconClick }: any) => (
   <div className="flex flex-col gap-[8px] w-[342px] shrink-0">
@@ -34,6 +35,7 @@ const GlassInput = ({ label, name, value, onChange, type = "text", placeholder, 
 );
 
 export default function InfoPage() {
+  const router = useRouter(); // ❗ ДОБАВИЛИ ЭТУ СТРОЧКУ
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -187,6 +189,17 @@ export default function InfoPage() {
       )}
 
       <main className="w-full max-w-[402px] h-full relative bg-[#FFFFFF] overflow-y-auto no-scrollbar flex flex-col items-center pt-[40px] pb-[150px]">
+        
+        {/* ❗ КНОПКА НАЗАД ❗ */}
+        <button 
+          onClick={() => router.back()} 
+          className="absolute top-[16px] left-[16px] w-[40px] h-[40px] bg-white rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.08)] z-50 active:scale-90 transition-transform border border-[#F2F2F7]"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF008C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+
         <section className="w-full flex flex-col items-center gap-[24px]">
           
           <GlassInput label="Имя" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="Твое имя" required />
