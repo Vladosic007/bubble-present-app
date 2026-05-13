@@ -60,7 +60,8 @@ export default function CoffeeMenu() {
             deliveryPrice: d.price_delivery,
             img: `/images/${slug}.jpg`,
             href: `/menu/coffee/${slug}`,
-            temp_type: d.temp_type
+            // ❗ ЕСЛИ ЭТО РАФ — СТАВИМ ТОЛЬКО ГОРЯЧИЙ, ДЛЯ ОСТАЛЬНЫХ БЕРЕМ ИЗ БАЗЫ ❗
+            temp_type: d.name === 'Сырный раф' ? 'hot_only' : d.temp_type 
           };
         });
         setCoffeeDrinks(formatted);

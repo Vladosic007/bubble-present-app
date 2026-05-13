@@ -32,7 +32,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
   const productName = 'Сырный раф';       
   const productImg = '/images/cheese-raf1.jpg'; // ❗❗❗ 3. ФОТКА ДЛЯ КОРЗИНЫ ❗❗❗
 
-  const [selectedType, setSelectedType] = useState('Холодный');
+  const [selectedType, setSelectedType] = useState('Горячий'); // ❗ СДЕЛАЛИ ГОРЯЧИМ ПО УМОЛЧАНИЮ ❗
   const [cheeseSelected, setCheeseSelected] = useState(false);
   const [isAddonsOpen, setIsAddonsOpen] = useState(false);
   
@@ -134,22 +134,15 @@ export default function CoffeeTemplatePage() { // весь блок добавл
             </div>
           </div>
 
-          {/* ТИП (314px внутри) */}
-          <div className="w-[314px] h-[138px] mt-[16px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
+          {/* ТИП (ТОЛЬКО ГОРЯЧИЙ) */}
+          <div className="w-[314px] h-[100px] mt-[16px] bg-[#AEAEAE]/20 rounded-[25px] flex flex-col box-border shrink-0" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
             <div className="mt-[16px] ml-[16px] shrink-0">
               <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Тип</span>
             </div>
             <div className="w-full flex justify-between items-center mt-[16px] px-[16px] box-border shrink-0">
-              <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Холодный</span>
-              <div onClick={() => setSelectedType('Холодный')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedType === 'Холодный' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
-                {selectedType === 'Холодный' && <CheckMark />}
-              </div>
-            </div>
-            <div className="w-[282px] h-[1px] bg-[#BEBEBE] rounded-full mx-auto mt-[12px] shrink-0"></div>
-            <div className="w-full flex justify-between items-center mt-[12px] px-[16px] box-border shrink-0">
               <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Горячий</span>
-              <div onClick={() => setSelectedType('Горячий')} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${selectedType === 'Горячий' ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
-                {selectedType === 'Горячий' && <CheckMark />}
+              <div className="w-[22px] h-[22px] rounded-[6px] border flex items-center justify-center shrink-0 bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]">
+                <CheckMark />
               </div>
             </div>
           </div>
