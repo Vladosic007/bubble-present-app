@@ -17,10 +17,8 @@ interface CartState {
   items: CartItem[];
   orderType: 'delivery' | 'pickup';
   
-  // ❗ ПОЛЯ ДЛЯ АКТИВНОГО ЗАКАЗА (ТРЕКИНГА) ❗
-  activeOrderId: number | null;
-  activeOrderStatus: string;
-  orderCreatedAt: number | null; 
+  // ❗ МАССИВ АКТИВНЫХ ЗАКАЗОВ (РАЗРЕШАЕМ НЕСКОЛЬКО) ❗
+  activeOrders: { id: number; status: string; time: number }[];
 
   setOrderType: (type: 'delivery' | 'pickup') => void;
   addItem: (item: CartItem) => void;
@@ -28,10 +26,10 @@ interface CartState {
   changeQuantity: (cartItemId: string, delta: number) => void;
   clearCart: () => void;
 
-  // ❗ НОВЫЕ МЕТОДЫ ДЛЯ ЗАКАЗА ❗
-  setActiveOrder: (id: number, status: string, time: number) => void;
-  clearActiveOrder: () => void;
-  updateOrderStatus: (status: string) => void;
+  // ❗ МЕТОДЫ ДЛЯ МНОЖЕСТВЕННЫХ ЗАКАЗОВ ❗
+  addActiveOrder: (id: number, status: string, time: number) => void;
+  removeActiveOrder: (id: number) => void;
+  updateOrderStatus: (id: number, status: string) => void;
 }
 
 // === САМО ХРАНИЛИЩЕ (С ПАМЯТЬЮ ЛОКАЛСТОРАДЖА) ===
@@ -41,9 +39,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       orderType: 'pickup',
       
-      activeOrderId: null,
-      activeOrderStatus: 'none',
-      orderCreatedAt: null,
+      activeOrders: [],
 
       setOrderType: (type) => set({ orderType: type }),
       
@@ -63,20 +59,20 @@ export const useCartStore = create<CartState>()(
       
       clearCart: () => set({ items: [] }),
 
-      // Функции управления активным заказом
-      setActiveOrder: (id, status, time) => set({ 
-        activeOrderId: id, 
-        activeOrderStatus: status, 
-        orderCreatedAt: time 
-      }),
+      // Функции управления МАССИВОМ активных заказов
+      addActiveOrder: (id, status, time) => set((state) => ({ 
+        activeOrders: [...state.activeOrders, { id, status, time }] 
+      })),
       
-      clearActiveOrder: () => set({ 
-        activeOrderId: null, 
-        activeOrderStatus: 'none', 
-        orderCreatedAt: null 
-      }),
+      removeActiveOrder: (id) => set((state) => ({ 
+        activeOrders: state.activeOrders.filter(order => order.id !== id) 
+      })),
       
-      updateOrderStatus: (status) => set({ activeOrderStatus: status })
+      updateOrderStatus: (id, status) => set((state) => ({ 
+        activeOrders: state.activeOrders.map(order => 
+          order.id === id ? { ...order, status } : order
+        )
+      }))
     }),
     {
       name: 'bubblik-storage', // ❗ Сохраняем всё в память телефона ❗

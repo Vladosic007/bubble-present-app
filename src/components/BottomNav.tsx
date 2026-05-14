@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react'; // ❗ ДОБАВИЛИ ХУКИ
 import { useCartStore } from '../store/cartStore'; // ❗ ДОБАВИЛИ ХРАНИЛИЩЕ ❗
 
 export default function BottomNav() {
@@ -12,6 +13,40 @@ export default function BottomNav() {
 
   // Проверяем, на странице ли мы баблика
   const isBubblikPage = pathname === '/bubblik';
+
+  // === ❗ ГЛОБАЛЬНЫЙ ТАЙМЕР ОПЛАТЫ ❗ ===
+  const router = useRouter();
+  const activeOrders = useCartStore(state => state.activeOrders || []);
+  const [unpaidOrder, setUnpaidOrder] = useState<{ id: number, timeLeft: number } | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // Ищем заказ, который ждет оплаты
+      const pendingOrder = activeOrders.find(o => o.status === 'pending_payment');
+      
+      if (pendingOrder) {
+        const elapsed = Math.floor((Date.now() - pendingOrder.time) / 1000);
+        const remaining = Math.max(600 - elapsed, 0); // 10 минут (600 сек)
+        
+        if (remaining > 0) {
+          setUnpaidOrder({ id: pendingOrder.id, timeLeft: remaining });
+        } else {
+          setUnpaidOrder(null);
+        }
+      } else {
+        setUnpaidOrder(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeOrders]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `0${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+  // ======================================
 
   // ВНИМАНИЕ: Проверь, чтобы названия файлов тут тооооочно совпадали с файлами в папке icons!
   const navItems = [
@@ -31,10 +66,22 @@ export default function BottomNav() {
     : navItems.findIndex(item => item.href === pathname);
 
   return (
-    <div className="fixed bottom-10 left-0 right-0 flex justify-center z-50">
+    // ❗ Добавили flex-col и pointer-events-none, чтобы клики мимо меню проходили насквозь
+    <div className="fixed bottom-10 left-0 right-0 flex flex-col items-center z-50 pointer-events-none">
       
-      {/* Главный контейнер меню УВЕЛИЧЕН: ширина 250px, высота 50px */}
-      <nav className="relative w-[250px] h-[50px] bg-[#6C6C6C]/20 backdrop-blur-xl rounded-full border border-[#FFFFFF]/40 shadow-[0px_4px_6px_2px_rgba(45,45,45,0.15)] flex items-center px-[4px] overflow-hidden">
+      {/* === ❗ ПЛАВАЮЩИЙ ТАЙМЕР ОПЛАТЫ ❗ === */}
+      {unpaidOrder && (
+        <div 
+          onClick={() => router.push('/cart')}
+          className="mb-[12px] bg-[#FF0040] text-white px-[16px] py-[8px] rounded-full shadow-[0_4px_15px_rgba(255,0,64,0.4)] flex items-center gap-[8px] pointer-events-auto cursor-pointer animate-pulse transition-all active:scale-95"
+        >
+          <span className="font-['Benzin'] text-[9px] font-extrabold uppercase mt-[1px]">Ждем оплату</span>
+          <span className="font-['Benzin'] text-[12px] font-black">{formatTime(unpaidOrder.timeLeft)}</span>
+        </div>
+      )}
+
+      {/* Главный контейнер меню (добавили pointer-events-auto, чтобы кнопки нажимались) */}
+      <nav className="relative w-[250px] h-[50px] bg-[#6C6C6C]/20 backdrop-blur-xl rounded-full border border-[#FFFFFF]/40 shadow-[0px_4px_6px_2px_rgba(45,45,45,0.15)] flex items-center px-[4px] overflow-hidden pointer-events-auto">
         
         {/* === АНИМИРОВАННЫЙ "ЖИДКИЙ" ПРЯМОУГОЛЬНИК (УВЕЛИЧЕН) === */}
         <div 
