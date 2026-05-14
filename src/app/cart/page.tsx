@@ -333,7 +333,7 @@ export default function CartPage() {
 
     checkActualStatus();
     checkTimeout();
-  }, [activeOrderId, activeOrderStatus, orderCreatedAt, setActiveOrder, clearActiveOrder]);
+  }, [activeOrderId, activeOrderStatus, orderCreatedAt, updateOrderStatus, removeActiveOrder]);
 
   useEffect(() => {
     if (!activeOrderId) return;
@@ -586,7 +586,7 @@ export default function CartPage() {
               Этот заказ был отменен.
             </p>
             <button 
-              onClick={() => { clearActiveOrder(); router.push('/'); }}
+              onClick={() => { if(activeOrderId) removeActiveOrder(activeOrderId); setIsHiddenStatus(false); router.push('/'); }}
               className="w-full h-[52px] rounded-[20px] bg-[#F2F2F7] text-[#333] font-['Arial'] font-bold uppercase text-[12px] active:scale-95 transition-transform"
             >
               Сделать новый заказ
