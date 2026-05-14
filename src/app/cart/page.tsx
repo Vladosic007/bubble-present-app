@@ -124,8 +124,14 @@ export default function CartPage() {
     setOrderType 
   } = useCartStore();
 
-  // Находим последний заказ для отображения статуса
-  const currentActiveOrder = activeOrders[activeOrders.length - 1];
+  // ❗ ЛОГИКА МНОЖЕСТВЕННЫХ ЗАКАЗОВ ❗
+  const realActiveOrders = activeOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
+  const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
+  
+  // Берем заказ по выбранной вкладке (либо падаем на последний, если заказ отменен/завершен)
+  const safeIndex = Math.min(selectedOrderIndex, Math.max(0, realActiveOrders.length - 1));
+  const currentActiveOrder = realActiveOrders[safeIndex] || activeOrders[activeOrders.length - 1]; 
+
   const activeOrderId = currentActiveOrder?.id;
   const activeOrderStatus = currentActiveOrder?.status;
   const orderCreatedAt = currentActiveOrder?.time;
@@ -407,6 +413,12 @@ export default function CartPage() {
   };
 
   const handleCheckoutClick = async () => {
+    // ❗ БЛОКИРУЕМ 3-Й ЗАКАЗ ❗
+    if (realActiveOrders.length >= 2) {
+      alert("Готовим твои заказы! Давай подождем, пока бариста их отдаст 🧋");
+      return;
+    }
+
     const savedPhone = localStorage.getItem('bubble_user_phone');
     const savedAddress = localStorage.getItem('bubble_user_address');
     const savedName = localStorage.getItem('bubble_user_name') || 'Гость';
@@ -615,6 +627,21 @@ export default function CartPage() {
           >
             <div className="w-[40px] h-[5px] bg-[#E5E5EA] rounded-full mb-[24px]" />
             
+            {/* ❗ ВКЛАДКИ ДЛЯ 2 ЗАКАЗОВ ❗ */}
+            {realActiveOrders.length > 1 && (
+              <div className="w-full flex gap-[8px] mb-[20px]">
+                {realActiveOrders.map((order, idx) => (
+                  <button 
+                    key={order.id}
+                    onClick={() => setSelectedOrderIndex(idx)}
+                    className={`flex-1 h-[40px] rounded-[15px] font-['Benzin'] font-extrabold text-[10px] uppercase transition-all ${safeIndex === idx ? 'bg-[#FF008C] text-white shadow-md' : 'bg-[#F2F2F7] text-[#949494]'}`}
+                  >
+                    Заказ #{idx + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <h2 className="text-[24px] font-['Benzin'] font-extrabold bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent uppercase text-center leading-none mb-[8px]">
               Заказ #{activeOrderId}
             </h2>
@@ -689,6 +716,18 @@ export default function CartPage() {
     return (
       <div className="bg-[#F2F2F7] min-h-[100dvh] w-full flex justify-center overflow-hidden font-sans">
         <main className="w-full max-w-[370px] relative bg-[#FFFFFF] flex flex-col items-center h-[100dvh]">
+          
+          {/* ❗ ПЛАШКА ВОЗВРАТА К ТРЕКИНГУ (ПУСТАЯ КОРЗИНА) ❗ */}
+          {realActiveOrders.length > 0 && isHiddenStatus && (
+            <div onClick={() => setIsHiddenStatus(false)} className="absolute top-[40px] w-[346px] bg-white rounded-[20px] p-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-[#FF008C]/20 flex items-center justify-between z-50 cursor-pointer active:scale-95 transition-transform">
+              <div className="flex flex-col">
+                <span className="font-['Benzin'] font-extrabold text-[12px] uppercase text-[#333]">Активных заказов: {realActiveOrders.length}</span>
+                <span className="font-['Arial'] font-bold text-[10px] uppercase text-[#949494]">Нажми, чтобы отследить 📦</span>
+              </div>
+              <div className="w-[30px] h-[30px] bg-[#FF008C]/10 rounded-full flex items-center justify-center text-[14px]">👀</div>
+            </div>
+          )}
+
           <div className="flex flex-col items-center mt-[232px] w-full">
             <div className="relative w-[214px] h-[310px] shrink-0 pointer-events-none">
               <Image src="/images/bubblik.png" alt="Пустая корзина" priority fill className="object-contain" />
@@ -728,6 +767,18 @@ export default function CartPage() {
                 <Image src="/images/logo.jpg" alt="Bubble Present" fill className="object-contain" priority />
               </div>
           </header>
+
+          {/* ❗ ПЛАШКА ВОЗВРАТА К ТРЕКИНГУ (С ТОВАРАМИ В КОРЗИНЕ) ❗ */}
+          {realActiveOrders.length > 0 && isHiddenStatus && (
+            <div onClick={() => setIsHiddenStatus(false)} className="w-[346px] mx-auto mb-[16px] bg-white rounded-[20px] p-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-[#FF008C]/20 flex items-center justify-between cursor-pointer active:scale-95 transition-transform z-10 relative">
+              <div className="flex flex-col">
+                <span className="font-['Benzin'] font-extrabold text-[12px] uppercase text-[#333]">Активных заказов: {realActiveOrders.length}</span>
+                <span className="font-['Arial'] font-bold text-[10px] uppercase text-[#949494]">Нажми, чтобы отследить 📦</span>
+              </div>
+              <div className="w-[30px] h-[30px] bg-[#FF008C]/10 rounded-full flex items-center justify-center text-[14px]">👀</div>
+            </div>
+          )}
+
           <section className="relative w-full flex flex-col items-center space-y-[16px] px-[12px]">
             {items.map(item => (
               <SwipeableCartItem 
