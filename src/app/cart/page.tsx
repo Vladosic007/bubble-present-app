@@ -120,10 +120,18 @@ export default function CartPage() {
   
   const { 
     items, changeQuantity, removeItem, orderType, clearCart,
-    activeOrderId, activeOrderStatus, orderCreatedAt,
-    setActiveOrder, updateOrderStatus, clearActiveOrder,
+    activeOrders, addActiveOrder, updateOrderStatus, removeActiveOrder,
     setOrderType 
   } = useCartStore();
+
+  // Находим последний заказ для отображения статуса
+  const currentActiveOrder = activeOrders[activeOrders.length - 1];
+  const activeOrderId = currentActiveOrder?.id;
+  const activeOrderStatus = currentActiveOrder?.status;
+  const orderCreatedAt = currentActiveOrder?.time;
+
+  // Стейт чтобы "свернуть" статус и собрать новую корзину
+  const [isHiddenStatus, setIsHiddenStatus] = useState(false);
   
   const [isPaying, setIsPaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -304,17 +312,17 @@ export default function CartPage() {
         .single();
 
       if (error || !data) {
-        clearActiveOrder();
-        return;
-      }
+          removeActiveOrder(activeOrderId);
+          return;
+        }
 
-      const dbTime = new Date(data.created_at).getTime();
-      if (data.status !== activeOrderStatus || dbTime !== orderCreatedAt) {
-        setActiveOrder(activeOrderId, data.status, dbTime);
-      }
-    };
+        const dbTime = new Date(data.created_at).getTime();
+        if (data.status !== activeOrderStatus || dbTime !== orderCreatedAt) {
+          updateOrderStatus(activeOrderId, data.status);
+        }
+      };
 
-    const checkTimeout = () => {
+      const checkTimeout = () => {
       if (activeOrderStatus === 'pending_payment' && orderCreatedAt) {
         const elapsed = (Date.now() - orderCreatedAt) / 1000;
         if (elapsed > 600) { 
@@ -336,7 +344,7 @@ export default function CartPage() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrderId}` },
         (payload) => {
-          updateOrderStatus(payload.new.status);
+          updateOrderStatus(activeOrderId, payload.new.status);
         }
       )
       .subscribe();
@@ -523,7 +531,8 @@ export default function CartPage() {
 
       if (isTestMode) {
         await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
-        setActiveOrder(orderId, 'accepted', dbTime);
+        addActiveOrder(orderId, 'accepted', dbTime);
+        setIsHiddenStatus(false);
         clearCart();
         setIsPaying(false);
         alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в Телеграм без оплаты!");
@@ -532,7 +541,8 @@ export default function CartPage() {
 
       if (paymentData.confirmation_url) {
         localStorage.setItem('last_payment_url', paymentData.confirmation_url); 
-        setActiveOrder(orderId, 'pending_payment', dbTime);
+        addActiveOrder(orderId, 'pending_payment', dbTime);
+        setIsHiddenStatus(false);
         clearCart(); 
         setIsPaying(false); 
 
@@ -587,7 +597,7 @@ export default function CartPage() {
     );
   }
 
-  if (activeOrderId && activeOrderStatus && statusConfig[activeOrderStatus]) {
+  if (!isHiddenStatus && activeOrderId && activeOrderStatus && statusConfig[activeOrderStatus]) {
     const currentInfo = statusConfig[activeOrderStatus];
 
     return (
@@ -656,17 +666,17 @@ export default function CartPage() {
 
             {activeOrderStatus === 'completed' ? (
               <button 
-                onClick={() => { clearActiveOrder(); router.push('/'); }}
+                onClick={() => { removeActiveOrder(activeOrderId); setIsHiddenStatus(false); }}
                 className="w-full h-[52px] rounded-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white font-['Arial'] font-bold uppercase text-[12px] active:scale-95 transition-transform"
               >
                 Отлично, спасибо!
               </button>
             ) : (
               <button 
-                onClick={() => router.push('/')}
+                onClick={() => setIsHiddenStatus(true)}
                 className="w-full h-[52px] rounded-[20px] bg-[#F2F2F7] text-[#949494] font-['Arial'] font-bold uppercase text-[12px] active:scale-95 transition-transform"
               >
-                В меню (Свернуть)
+                Собрать новый заказ (Свернуть)
               </button>
             )}
           </motion.div>
