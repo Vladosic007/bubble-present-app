@@ -40,6 +40,9 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
     else setTranslateX(0);
   };
 
+  // Преобразуем M и L в миллилитры
+  const displaySize = item.size === 'M' ? '500 мл' : item.size === 'L' ? '700 мл' : item.size;
+
   return (
     <div className="relative w-[346px] h-[139px] shrink-0 overflow-hidden rounded-[25px] touch-pan-y mx-auto">
       <div 
@@ -69,7 +72,11 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
             <li key={index} className="flex items-center text-[#949494] font-bold text-[8px] leading-none uppercase" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}><span className="w-1 h-1 bg-[#949494] rounded-full mr-[4px] shrink-0" />{topping}</li>
           ))}
         </ul>
-        <div className="absolute right-[16px] top-[8px] w-[30px] h-[30px] rounded-full bg-[#D9D9D9] flex items-center justify-center font-['Benzin'] font-extrabold text-[15px] text-white uppercase drop-shadow-sm pointer-events-none">{item.size}</div>
+        
+        {/* Обновленный бейджик размера */}
+        <div className="absolute right-[16px] top-[16px] px-[8px] h-[22px] rounded-[12px] bg-[#D9D9D9] flex items-center justify-center font-['Benzin'] font-extrabold text-[9px] text-white uppercase drop-shadow-sm pointer-events-none">
+          {displaySize}
+        </div>
         
         <button 
           onClick={(e) => { 
@@ -124,11 +131,9 @@ export default function CartPage() {
     setOrderType 
   } = useCartStore();
 
-  // ❗ ЛОГИКА МНОЖЕСТВЕННЫХ ЗАКАЗОВ ❗
   const realActiveOrders = activeOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
   const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
   
-  // Берем заказ по выбранной вкладке (либо падаем на последний, если заказ отменен/завершен)
   const safeIndex = Math.min(selectedOrderIndex, Math.max(0, realActiveOrders.length - 1));
   const currentActiveOrder = realActiveOrders[safeIndex] || activeOrders[activeOrders.length - 1]; 
 
@@ -136,21 +141,17 @@ export default function CartPage() {
   const activeOrderStatus = currentActiveOrder?.status;
   const orderCreatedAt = currentActiveOrder?.time;
 
-  // Стейт чтобы "свернуть" статус и собрать новую корзину
   const [isHiddenStatus, setIsHiddenStatus] = useState(false);
-  
   const [isPaying, setIsPaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isOpen, setIsOpen] = useState(true);
-  const [closeReason, setCloseReason] = useState(''); // ❗ Добавили причину закрытия
+  const [closeReason, setCloseReason] = useState(''); 
   const [isMounted, setIsMounted] = useState(false);
 
-  // СТЕЙТЫ ДЛЯ ПРОМОКОДОВ
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<{ code: string, discount: number } | null>(null);
   const [promoError, setPromoError] = useState('');
 
-  // СТЕЙТЫ ДЛЯ ВРЕМЕНИ ЗАКАЗА
   const [isTimeOrder, setIsTimeOrder] = useState(false);
   const [selectedTime, setSelectedTime] = useState('');
 
@@ -163,17 +164,17 @@ export default function CartPage() {
       const now = new Date();
       const hour = now.getHours();
       const min = now.getMinutes();
-      const day = now.getDay(); // 0 - воскресенье, 6 - суббота
+      const day = now.getDay(); 
       const totalMin = hour * 60 + min;
 
       const isWeekend = day === 0 || day === 6;
-      const openTime = 660; // 11:00 в минутах (11 * 60)
+      const openTime = 660; 
       
       let closeTime = 0;
       if (orderType === 'pickup') {
-        closeTime = isWeekend ? 1350 : 1290; // Выходные 22:30 (1350), Будни 21:30 (1290)
+        closeTime = isWeekend ? 1350 : 1290; 
       } else {
-        closeTime = isWeekend ? 1320 : 1260; // Выходные 22:00 (1320), Будни 21:00 (1260)
+        closeTime = isWeekend ? 1320 : 1260; 
       }
 
       if (totalMin < openTime) {
@@ -413,7 +414,6 @@ export default function CartPage() {
   };
 
   const handleCheckoutClick = async () => {
-    // ❗ БЛОКИРУЕМ 3-Й ЗАКАЗ ❗
     if (realActiveOrders.length >= 2) {
       alert("Готовим твои заказы! Давай подождем, пока бариста их отдаст 🧋");
       return;
@@ -442,7 +442,6 @@ export default function CartPage() {
       return;
     }
 
-    // Проверка выбора времени
     if (isTimeOrder) {
       if (!selectedTime) {
         alert("Укажите желаемое время заказа!");
@@ -454,7 +453,7 @@ export default function CartPage() {
       const day = new Date().getDay();
       const isWeekend = day === 0 || day === 6;
       
-      const openTime = 660; // 11:00
+      const openTime = 660; 
       const closeTime = orderType === 'pickup' 
         ? (isWeekend ? 1350 : 1290) 
         : (isWeekend ? 1320 : 1260);
@@ -479,7 +478,6 @@ export default function CartPage() {
       };
     });
 
-    // Записываем использование промокода
     if (appliedPromo) {
       await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }).catch(() => {});
     }
@@ -627,7 +625,6 @@ export default function CartPage() {
           >
             <div className="w-[40px] h-[5px] bg-[#E5E5EA] rounded-full mb-[24px]" />
             
-            {/* ❗ ВКЛАДКИ ДЛЯ 2 ЗАКАЗОВ ❗ */}
             {realActiveOrders.length > 1 && (
               <div className="w-full flex gap-[8px] mb-[20px]">
                 {realActiveOrders.map((order, idx) => (
@@ -717,7 +714,6 @@ export default function CartPage() {
       <div className="bg-[#F2F2F7] min-h-[100dvh] w-full flex justify-center overflow-hidden font-sans">
         <main className="w-full max-w-[370px] relative bg-[#FFFFFF] flex flex-col items-center h-[100dvh]">
           
-          {/* ❗ ПЛАШКА ВОЗВРАТА К ТРЕКИНГУ (ПУСТАЯ КОРЗИНА) ❗ */}
           {realActiveOrders.length > 0 && isHiddenStatus && (
             <div onClick={() => setIsHiddenStatus(false)} className="absolute top-[40px] w-[346px] bg-white rounded-[20px] p-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-[#FF008C]/20 flex items-center justify-between z-50 cursor-pointer active:scale-95 transition-transform">
               <div className="flex flex-col">
@@ -747,8 +743,7 @@ export default function CartPage() {
     <div className="bg-[#F2F2F7] min-h-[100dvh] w-full flex justify-center overflow-hidden font-sans relative">
       <main className="w-full max-w-[370px] relative bg-[#FFFFFF] flex flex-col h-[100dvh] overflow-hidden">
         
-        {/* Увеличили padding снизу до 390px, чтобы блок скроллился выше новой большой панели */}
-        <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[390px] overflow-x-hidden touch-pan-y">
+        <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[410px] overflow-x-hidden touch-pan-y">
           <AnimatePresence>
             {IS_OPENING_DAY && (
               <motion.div initial={{ y: -50 }} animate={{ y: 0 }} className="w-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] p-[10px] text-center z-50 shrink-0 shadow-md">
@@ -768,7 +763,6 @@ export default function CartPage() {
               </div>
           </header>
 
-          {/* ❗ ПЛАШКА ВОЗВРАТА К ТРЕКИНГУ (С ТОВАРАМИ В КОРЗИНЕ) ❗ */}
           {realActiveOrders.length > 0 && isHiddenStatus && (
             <div onClick={() => setIsHiddenStatus(false)} className="w-[346px] mx-auto mb-[16px] bg-white rounded-[20px] p-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-[#FF008C]/20 flex items-center justify-between cursor-pointer active:scale-95 transition-transform z-10 relative">
               <div className="flex flex-col">
@@ -793,11 +787,10 @@ export default function CartPage() {
           </section>
         </div>
 
-        {/* ПАНЕЛЬ ОПЛАТЫ И НАСТРОЕК УВЕЛИЧЕНА (h-[350px]) */}
-        <div className="absolute bottom-0 left-0 w-full h-[350px] rounded-t-[25px] bg-[#FFFFFF]/20 backdrop-blur-[30px] z-30 flex flex-col pointer-events-none" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px -4px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
+        {/* Увеличили панель и добавили отступ снизу */}
+        <div className="absolute bottom-0 left-0 w-full h-[380px] rounded-t-[25px] bg-[#FFFFFF]/20 backdrop-blur-[30px] z-30 flex flex-col pointer-events-none pb-[20px]" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px -4px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
           <div className="pt-[20px] px-[16px] pb-[10px] pointer-events-auto flex flex-col gap-[12px]">
             
-            {/* ПРОМОКОД */}
             <div className="flex gap-[8px] items-center mb-[4px]">
               <input 
                 type="text" 
@@ -826,9 +819,8 @@ export default function CartPage() {
             </div>
             {promoError && <span className={`text-[9px] font-bold uppercase mt-[-10px] ml-[4px] ${promoError === 'Применен!' ? 'text-[#0DAA00]' : 'text-[#FF0040]'}`}>{promoError}</span>}
 
-            <div className="flex items-center justify-between mt-[4px]">
-              {/* ИТОГОВАЯ ЦЕНА */}
-              <div className="flex flex-col">
+            <div className="flex items-start justify-between mt-[4px]">
+              <div className="flex flex-col mt-[4px]">
                 <span className="font-['Benzin'] font-extrabold text-[16px] uppercase tracking-[0.02em] text-[#413F40]/40 flex items-center gap-[8px]">
                   Итого: {dynamicTotal} руб
                   {appliedPromo && <span className="text-[10px] text-[#FF008C] bg-[#FF008C]/10 px-[6px] py-[2px] rounded-md">-{appliedPromo.discount}%</span>}
@@ -836,47 +828,50 @@ export default function CartPage() {
                 {appliedPromo && <span className="text-[10px] line-through text-[#949494] font-['Benzin']">{rawTotal} руб</span>}
               </div>
               
-              {/* ПЕРЕКЛЮЧАТЕЛИ ТИПА И ВРЕМЕНИ ЗАКАЗА */}
-              <div className="flex flex-col gap-[8px] w-[140px]">
-                <div className="flex bg-[#F2F2F7] rounded-[12px] p-[2px] border border-[#FFFFFF]/40">
+              {/* Обновленный блок выбора времени и типа */}
+              <div className="flex flex-col gap-[6px] w-[150px]">
+                <div className="flex bg-[#F2F2F7] rounded-[10px] p-[2px] border border-[#FFFFFF]/40 shadow-sm">
                   <button 
                     onClick={() => setOrderType('pickup')}
-                    className={`px-[6px] py-[6px] flex-1 rounded-[10px] text-[8px] font-bold uppercase transition-all ${orderType === 'pickup' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                    className={`px-[4px] py-[8px] flex-1 rounded-[8px] text-[9px] font-bold uppercase transition-all ${orderType === 'pickup' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
                   >
-                    Сам-з
+                    Самовывоз
                   </button>
                   <button 
                     onClick={() => setOrderType('delivery')}
-                    className={`px-[6px] py-[6px] flex-1 rounded-[10px] text-[8px] font-bold uppercase transition-all ${orderType === 'delivery' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                    className={`px-[4px] py-[8px] flex-1 rounded-[8px] text-[9px] font-bold uppercase transition-all ${orderType === 'delivery' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
                   >
-                    Дост-ка
+                    Доставка
                   </button>
                 </div>
                 
-                <div className="flex bg-[#F2F2F7] rounded-[12px] p-[2px] border border-[#FFFFFF]/40">
+                <div className="flex bg-[#F2F2F7] rounded-[10px] p-[2px] border border-[#FFFFFF]/40 shadow-sm">
                   <button 
                     onClick={() => setIsTimeOrder(false)}
-                    className={`px-[4px] py-[6px] flex-1 rounded-[10px] text-[7px] font-bold uppercase transition-all ${!isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                    className={`px-[4px] py-[8px] flex-1 rounded-[8px] text-[8px] font-bold uppercase transition-all ${!isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
                   >
-                    Быстрее
+                    Побыстрее
                   </button>
                   <button 
                     onClick={() => setIsTimeOrder(true)}
-                    className={`px-[4px] py-[6px] flex-1 rounded-[10px] text-[7px] font-bold uppercase transition-all ${isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
+                    className={`px-[4px] py-[8px] flex-1 rounded-[8px] text-[8px] font-bold uppercase transition-all ${isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
                   >
-                    Время
+                    Ко времени
                   </button>
                 </div>
                 
-                {/* ИНПУТ ВРЕМЕНИ ПОЯВЛЯЕТСЯ ТОЛЬКО ПРИ НАЖАТИИ "КО ВРЕМЕНИ" */}
-                {isTimeOrder && (
-                  <input 
-                    type="time" 
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="h-[28px] bg-[#F2F2F7] rounded-[10px] text-[12px] font-['Arial'] font-bold outline-none text-center border border-[#FFFFFF]/40 shadow-inner w-full text-[#333]"
-                  />
-                )}
+                <AnimatePresence>
+                  {isTimeOrder && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="w-full">
+                      <input 
+                        type="time" 
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                        className="h-[32px] bg-white rounded-[8px] text-[14px] font-['Arial'] font-bold outline-none text-center border border-[#FFFFFF]/40 shadow-sm w-full text-[#333]"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
             
@@ -885,10 +880,11 @@ export default function CartPage() {
             )}
           </div>
           
+          {/* Кнопка опущена ниже за счет отступа mt-auto */}
           <button 
             onClick={handleCheckoutClick} 
             disabled={isPaying || !isOpen}
-            className={`w-[346px] h-[49px] mx-auto mt-[4px] rounded-[25px] backdrop-blur-[30px] flex items-center justify-center shrink-0 transition-transform pointer-events-auto relative overflow-hidden
+            className={`w-[346px] h-[52px] mx-auto mt-auto mb-[10px] rounded-[25px] backdrop-blur-[30px] flex items-center justify-center shrink-0 transition-transform pointer-events-auto relative overflow-hidden
               ${!isOpen 
                 ? 'bg-[#949494]/20 border border-[#949494]/40 cursor-not-allowed' 
                 : 'bg-gradient-to-r from-[#FF00EE]/20 to-[#FF008C]/20 shadow-[0_4px_6px_2px_rgba(8,0,255,0.15)] active:scale-95'
@@ -906,7 +902,7 @@ export default function CartPage() {
             )}
           </button>
 
-          <p className="text-[7px] text-[#949494] font-bold uppercase text-center mt-[12px] px-[40px] leading-tight pointer-events-auto">
+          <p className="text-[7px] text-[#949494] font-bold uppercase text-center mt-[4px] px-[40px] leading-tight pointer-events-auto">
             Напиток в доставке и самовывозе может быть видоизменен
           </p>
         </div>
