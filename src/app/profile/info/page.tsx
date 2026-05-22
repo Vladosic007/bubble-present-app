@@ -4,6 +4,25 @@ import Image from 'next/image';
 import { YMaps, Map, GeolocationControl, ZoomControl } from '@pbe/react-yandex-maps';
 import { useRouter } from 'next/navigation'; // ❗ ДОБАВИЛИ РОУТЕР
 
+// Извлекает только цифры номера без кода страны (макс 10)
+const extractPhoneDigits = (val: string) => {
+  const all = val.replace(/\D/g, '');
+  let d = all;
+  if (d.startsWith('7') || d.startsWith('8')) d = d.slice(1);
+  return d.slice(0, 10);
+};
+
+// Форматирует 0–10 цифр в +7 (XXX) XXX-XX-XX
+const formatPhoneDigits = (d: string) => {
+  const s = d.slice(0, 10);
+  let result = '+7';
+  if (s.length > 0) result += ' (' + s.slice(0, 3);
+  if (s.length >= 3) result += ') ' + s.slice(3, 6);
+  if (s.length >= 6) result += '-' + s.slice(6, 8);
+  if (s.length >= 8) result += '-' + s.slice(8, 10);
+  return result;
+};
+
 const GlassInput = ({ label, name, value, onChange, type = "text", placeholder, required = false, rightIcon, onRightIconClick }: any) => (
   <div className="flex flex-col gap-[8px] w-[342px] shrink-0">
     <label className="ml-[16px] text-[10px] tracking-[0.02em] text-[#616161] uppercase font-['Arial'] font-bold">
@@ -61,7 +80,7 @@ export default function InfoPage() {
     setFormData({
       firstName: savedFirstName || '',
       lastName: savedLastName || '',
-      phone: savedPhone ? formatPhone(savedPhone) : '+7',
+      phone: savedPhone ? formatPhoneDigits(extractPhoneDigits(savedPhone)) : '+7',
       email: savedEmail || '',
       address: savedAddress || ''
     });
@@ -100,23 +119,21 @@ export default function InfoPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Форматирует номер в +7 (XXX) XXX-XX-XX, макс 10 цифр после +7
-  const formatPhone = (raw: string) => {
-    const digits = raw.replace(/\D/g, '');
-    let d = digits;
-    if (d.startsWith('7') || d.startsWith('8')) d = d.slice(1);
-    d = d.slice(0, 10);
-
-    let result = '+7';
-    if (d.length > 0) result += ' (' + d.slice(0, 3);
-    if (d.length >= 3) result += ') ' + d.slice(3, 6);
-    if (d.length >= 6) result += '-' + d.slice(6, 8);
-    if (d.length >= 8) result += '-' + d.slice(8, 10);
-    return result;
-  };
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, phone: formatPhone(e.target.value) });
+    const rawValue = e.target.value;
+    const prevValue = formData.phone;
+
+    const prevDigits = extractPhoneDigits(prevValue);
+    const newDigits = extractPhoneDigits(rawValue);
+
+    // Если количество цифр не изменилось, но строка стала короче —
+    // пользователь удалил разделитель (тире/скобку/пробел), удаляем последнюю цифру
+    let resultDigits = newDigits;
+    if (newDigits.length === prevDigits.length && rawValue.length < prevValue.length) {
+      resultDigits = prevDigits.slice(0, -1);
+    }
+
+    setFormData({ ...formData, phone: formatPhoneDigits(resultDigits) });
   };
 
   // ❗ ЖЕСТКАЯ ПРОВЕРКА И СОХРАНЕНИЕ ❗
