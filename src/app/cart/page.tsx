@@ -29,94 +29,106 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (touchStart === null) return;
-    const diff = e.targetTouches[0].clientX - touchStart; 
-    setTranslateX(diff > 0 ? diff : 0);
+    const diff = e.targetTouches[0].clientX - touchStart;
+    // Только свайп влево (отрицательные значения)
+    setTranslateX(diff < 0 ? diff : 0);
   };
 
   const handleTouchEnd = () => {
     setIsSwiping(false);
     setTouchStart(null);
-    if (translateX > 150) removeItem(item.cartItemId);
-    else if (translateX > 40) setTranslateX(80);
+    if (translateX < -100) removeItem(item.cartItemId);
     else setTranslateX(0);
   };
 
-  // Преобразуем M и L в миллилитры
   const displaySize = item.size === 'M' ? '500 мл' : item.size === 'L' ? '700 мл' : item.size;
 
   return (
-    <div className="relative w-[346px] h-[139px] shrink-0 overflow-hidden rounded-[25px] touch-pan-y mx-auto">
-      <div 
-        className="absolute top-0 bottom-0 left-0 bg-[#FF0040] flex items-center justify-start overflow-hidden z-0"
-        style={{ width: `${Math.max(translateX, 0)}px`, transition: isSwiping ? 'none' : 'width 0.3s ease-out' }}
+    <div className="relative w-[346px] shrink-0 overflow-hidden rounded-[22px] mx-auto touch-pan-y">
+      {/* Красная зона удаления — справа */}
+      <div
+        className="absolute top-0 right-0 bottom-0 bg-[#FF0040] flex items-center justify-center z-0 rounded-r-[22px]"
+        style={{ width: `${Math.max(-translateX, 0)}px`, transition: isSwiping ? 'none' : 'width 0.3s ease-out' }}
       >
-        <button onClick={() => removeItem(item.cartItemId)} className="w-[80px] h-full flex-shrink-0 flex items-center justify-center active:bg-black/10 transition-colors">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-        </button>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
       </div>
 
-      <article 
-        onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
+      {/* Карточка */}
+      <article
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{ transform: `translateX(${translateX}px)`, transition: isSwiping ? 'none' : 'transform 0.3s ease-out' }}
-        className="absolute inset-0 w-full h-full bg-[#FFFFFF]/20 box-border border border-[#FFFFFF]/40 shadow-[0_5px_5.7px_4px_rgba(255,0,140,0.25)] backdrop-blur-[30px] rounded-[25px] flex z-10"
+        className="relative w-full bg-white rounded-[22px] shadow-[0_4px_20px_rgba(255,0,140,0.18)] border border-[#FFE8F8] flex items-center p-[12px] gap-[12px] z-10"
       >
-        <div className="absolute left-[12px] top-[16px] w-[112px] h-[107px] rounded-[15px] shadow-[0_1px_4px_1px_rgba(0,0,0,0.25)] overflow-hidden bg-white/50 pointer-events-none">
+        {/* Фото */}
+        <div className="relative w-[95px] h-[95px] rounded-[15px] overflow-hidden shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
           <Image src={item.img} alt={item.name} fill className="object-cover" />
         </div>
-        <div className="absolute left-[140px] top-[16px] flex items-center justify-center bg-gradient-to-r from-[#FF00EE]/20 to-[#FF008C]/20 border border-[#FFFFFF]/40 shadow-[0_4px_6px_2px_rgba(8,0,255,0.15)] backdrop-blur-[30px] rounded-[10px] px-[8px] py-[4px] pointer-events-none w-[120px]">
-          <h2 className="text-[#FF00EE] uppercase font-['Benzin'] font-extrabold text-[8px] leading-[1.2] drop-shadow-[0_0_2px_white] text-center whitespace-normal break-words">
-            {item.name}
-          </h2>
-        </div>
-        <ul className="absolute left-[140px] top-[54px] flex flex-col gap-[8px] pointer-events-none">
-          {item.toppings?.map((topping: string, index: number) => (
-            <li key={index} className="flex items-center text-[#949494] font-bold text-[8px] leading-none uppercase" style={{ fontFamily: "'Benzin-Regular', sans-serif" }}><span className="w-1 h-1 bg-[#949494] rounded-full mr-[4px] shrink-0" />{topping}</li>
-          ))}
-        </ul>
-        
-        {/* Обновленный бейджик размера */}
-        <div className="absolute right-[16px] top-[16px] px-[8px] h-[22px] rounded-[12px] bg-[#D9D9D9] flex items-center justify-center font-['Benzin'] font-extrabold text-[9px] text-white uppercase drop-shadow-sm pointer-events-none">
-          {displaySize}
-        </div>
-        
-        <button 
-          onClick={(e) => { 
-            e.stopPropagation(); 
-            if (item.quantity > 1) {
-              changeQuantity(item.cartItemId, -1); 
-            } else {
-              removeItem(item.cartItemId); 
-            }
-          }} 
-          className="absolute left-[265px] top-[62px] w-[20px] h-[20px] active:scale-95 transition-transform flex items-center justify-center z-20"
-        >
-          <Image src="/icons/minus.svg" alt="-" fill className="object-contain" />
-        </button>
-        
-        <div className="absolute left-[293px] top-[62px] h-[20px] flex items-center justify-center pointer-events-none">
-          <span className="font-['Benzin'] font-extrabold text-[17px] text-[#949494] tracking-[0.02em] leading-none">{item.quantity}</span>
-        </div>
-        
-        <button 
-          onClick={(e) => { 
-            e.stopPropagation(); 
-            if (item.quantity < 9) changeQuantity(item.cartItemId, 1); 
-            else alert("У нас можно только максимум 9 одинаковых напитков))) 🧋");
-          }} 
-          className="absolute left-[310px] top-[62px] w-[20px] h-[20px] active:scale-95 transition-transform flex items-center justify-center z-20"
-        >
-          <Image src="/icons/plus.svg" alt="+" fill className="object-contain" />
-        </button>
 
-        <div className="absolute right-[16px] bottom-[16px] flex flex-col items-end pointer-events-none">
-          {originalPrice && originalPrice > currentItemPrice && (
-            <span className="text-[10px] text-[#949494] line-through font-['Benzin'] font-bold leading-none mb-[2px]">
-              {originalPrice * item.quantity} руб
-            </span>
+        {/* Контент */}
+        <div className="flex-1 flex flex-col" style={{ minHeight: '95px' }}>
+          {/* Название + размер */}
+          <div className="flex items-start justify-between mb-[6px]">
+            <div className="bg-gradient-to-r from-[#FF00EE]/15 to-[#FF008C]/15 border border-[#FF00EE]/25 rounded-[10px] px-[8px] py-[4px] max-w-[155px]">
+              <span className="text-[#FF00EE] font-['Benzin'] font-extrabold text-[9px] uppercase leading-tight">
+                {item.name}
+              </span>
+            </div>
+            <div className="bg-[#F2F2F7] rounded-[10px] px-[7px] py-[4px] shrink-0 ml-[4px]">
+              <span className="font-['Benzin'] font-bold text-[8px] text-[#999] uppercase">
+                {displaySize}
+              </span>
+            </div>
+          </div>
+
+          {/* Дополнения */}
+          {item.toppings && item.toppings.length > 0 && (
+            <div className="flex flex-col gap-[3px] mb-[8px]">
+              {item.toppings.map((topping: string, index: number) => (
+                <span key={index} className="text-[9px] text-[#ABABAB] font-bold uppercase flex items-center gap-[5px]">
+                  <span className="w-[3px] h-[3px] rounded-full bg-[#D0D0D0] shrink-0" />
+                  {topping}
+                </span>
+              ))}
+            </div>
           )}
-          <span className="font-['Benzin'] font-extrabold text-[16px] tracking-[0.02em] leading-none bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text uppercase">
-            {currentItemPrice * item.quantity} руб
-          </span>
+
+          {/* Кнопки кол-ва + цена */}
+          <div className="flex items-center justify-between mt-auto">
+            <div className="flex items-center gap-[10px]">
+              <button
+                onClick={(e) => { e.stopPropagation(); if (item.quantity > 1) changeQuantity(item.cartItemId, -1); else removeItem(item.cartItemId); }}
+                className="w-[30px] h-[30px] rounded-full bg-[#F2F2F7] flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <Image src="/icons/minus.svg" alt="-" width={12} height={12} className="object-contain" />
+              </button>
+              <span className="font-['Benzin'] font-extrabold text-[17px] text-[#333] w-[18px] text-center leading-none">
+                {item.quantity}
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); if (item.quantity < 9) changeQuantity(item.cartItemId, 1); else alert("У нас можно только максимум 9 одинаковых напитков))) 🧋"); }}
+                className="w-[30px] h-[30px] rounded-full bg-[#F2F2F7] flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <Image src="/icons/plus.svg" alt="+" width={12} height={12} className="object-contain" />
+              </button>
+            </div>
+
+            {/* Цена */}
+            <div className="flex flex-col items-end">
+              {originalPrice && originalPrice > currentItemPrice && (
+                <span className="text-[10px] text-[#C8C8C8] line-through font-['Benzin'] leading-none mb-[2px]">
+                  {originalPrice * item.quantity} руб
+                </span>
+              )}
+              <span className="font-['Benzin'] font-extrabold text-[19px] leading-none bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text">
+                {currentItemPrice * item.quantity} руб
+              </span>
+            </div>
+          </div>
         </div>
       </article>
     </div>
@@ -733,7 +745,7 @@ export default function CartPage() {
     <div className="bg-[#F2F2F7] min-h-[100dvh] w-full flex justify-center overflow-hidden font-sans relative">
       <main className="w-full max-w-[370px] relative bg-[#FFFFFF] flex flex-col h-[100dvh] overflow-hidden">
         
-        <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[410px] overflow-x-hidden touch-pan-y">
+        <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[480px] overflow-x-hidden touch-pan-y">
           <AnimatePresence>
             {IS_OPENING_DAY && (
               <motion.div initial={{ y: -50 }} animate={{ y: 0 }} className="w-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] p-[10px] text-center z-50 shrink-0 shadow-md">
@@ -777,122 +789,137 @@ export default function CartPage() {
           </section>
         </div>
 
-        {/* Увеличили панель и добавили отступ снизу */}
-        <div className="absolute bottom-0 left-0 w-full h-[380px] rounded-t-[25px] bg-[#FFFFFF]/20 backdrop-blur-[30px] z-30 flex flex-col pointer-events-none pb-[20px]" style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px -4px 5.7px 4px rgba(255, 0, 140, 0.25)' }}>
-          <div className="pt-[20px] px-[16px] pb-[10px] pointer-events-auto flex flex-col gap-[12px]">
-            
-            <div className="flex gap-[8px] items-center mb-[4px]">
-              <input 
-                type="text" 
-                value={promoCodeInput}
-                onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
-                placeholder="Промокод"
-                disabled={!!appliedPromo || (IS_OPENING_DAY && orderType === 'pickup')}
-                className="flex-1 h-[36px] bg-[#F2F2F7] rounded-[12px] px-[16px] text-[12px] font-['Arial'] font-bold outline-none placeholder:text-[#949494] disabled:opacity-50 border border-[#FFFFFF]/40 shadow-inner"
-              />
-              {!appliedPromo ? (
-                <button 
-                  onClick={handleApplyPromo}
-                  disabled={IS_OPENING_DAY && orderType === 'pickup'}
-                  className="h-[36px] px-[16px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[12px] text-[10px] font-['Benzin'] font-extrabold uppercase shadow-sm active:scale-95 disabled:opacity-50"
-                >
-                  Ок
-                </button>
-              ) : (
-                <button 
-                  onClick={() => { setAppliedPromo(null); setPromoCodeInput(''); setPromoError(''); }}
-                  className="h-[36px] px-[16px] bg-[#FF0040] text-white rounded-[12px] text-[10px] font-['Benzin'] font-extrabold uppercase shadow-sm active:scale-95"
-                >
-                  ✖
-                </button>
-              )}
-            </div>
-            {promoError && <span className={`text-[9px] font-bold uppercase mt-[-10px] ml-[4px] ${promoError === 'Применен!' ? 'text-[#0DAA00]' : 'text-[#FF0040]'}`}>{promoError}</span>}
+        {/* Нижняя панель — редизайн */}
+        <div className="absolute bottom-0 left-0 w-full bg-white rounded-t-[30px] z-30 flex flex-col px-[16px] pt-[14px] pb-[24px]" style={{ boxShadow: '0 -6px 30px rgba(255, 0, 140, 0.12), 0 -1px 0 rgba(255, 0, 140, 0.08)' }}>
 
-            <div className="flex items-start justify-between mt-[4px]">
-              <div className="flex flex-col mt-[4px]">
-                <span className="font-['Benzin'] font-extrabold text-[16px] uppercase tracking-[0.02em] text-[#413F40]/40 flex items-center gap-[8px]">
-                  Итого: {dynamicTotal} руб
-                  {appliedPromo && <span className="text-[10px] text-[#FF008C] bg-[#FF008C]/10 px-[6px] py-[2px] rounded-md">-{appliedPromo.discount}%</span>}
-                </span>
-                {appliedPromo && <span className="text-[10px] line-through text-[#949494] font-['Benzin']">{rawTotal} руб</span>}
-              </div>
-              
-              {/* Обновленный блок выбора времени и типа */}
-              <div className="flex flex-col gap-[6px] w-[150px]">
-                <div className="flex bg-[#F2F2F7] rounded-[10px] p-[2px] border border-[#FFFFFF]/40 shadow-sm">
-                  <button 
-                    onClick={() => setOrderType('pickup')}
-                    className={`px-[4px] py-[8px] flex-1 rounded-[8px] text-[9px] font-bold uppercase transition-all ${orderType === 'pickup' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
-                  >
-                    Самовывоз
-                  </button>
-                  <button 
-                    onClick={() => setOrderType('delivery')}
-                    className={`px-[4px] py-[8px] flex-1 rounded-[8px] text-[9px] font-bold uppercase transition-all ${orderType === 'delivery' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
-                  >
-                    Доставка
-                  </button>
-                </div>
-                
-                <div className="flex bg-[#F2F2F7] rounded-[10px] p-[2px] border border-[#FFFFFF]/40 shadow-sm">
-                  <button 
-                    onClick={() => setIsTimeOrder(false)}
-                    className={`px-[4px] py-[8px] flex-1 rounded-[8px] text-[8px] font-bold uppercase transition-all ${!isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
-                  >
-                    Побыстрее
-                  </button>
-                  <button 
-                    onClick={() => setIsTimeOrder(true)}
-                    className={`px-[4px] py-[8px] flex-1 rounded-[8px] text-[8px] font-bold uppercase transition-all ${isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#949494]'}`}
-                  >
-                    Ко времени
-                  </button>
-                </div>
-                
-                <AnimatePresence>
-                  {isTimeOrder && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="w-full">
-                      <input 
-                        type="time" 
-                        value={selectedTime}
-                        onChange={(e) => setSelectedTime(e.target.value)}
-                        className="h-[32px] bg-white rounded-[8px] text-[14px] font-['Arial'] font-bold outline-none text-center border border-[#FFFFFF]/40 shadow-sm w-full text-[#333]"
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-            
-            {IS_OPENING_DAY && orderType === 'pickup' && (
-               <span className="text-[10px] font-['Benzin'] font-bold text-[#FF0040] uppercase text-center mt-[4px]">🎉 Акция: -50% на самовывоз! 🎉</span>
+          {/* Ручка */}
+          <div className="w-[36px] h-[4px] bg-[#F0E0F0] rounded-full mx-auto mb-[14px]" />
+
+          {/* 1. Промокод */}
+          <div className="flex gap-[8px] mb-[4px]">
+            <input
+              type="text"
+              value={promoCodeInput}
+              onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+              placeholder="🎁 Промокод"
+              disabled={!!appliedPromo || (IS_OPENING_DAY && orderType === 'pickup')}
+              className="flex-1 h-[42px] bg-[#F7F7F7] rounded-[14px] px-[14px] text-[12px] font-bold outline-none placeholder:text-[#C8C8C8] disabled:opacity-50 border border-[#F0E8F8]"
+            />
+            {!appliedPromo ? (
+              <button
+                onClick={handleApplyPromo}
+                disabled={IS_OPENING_DAY && orderType === 'pickup'}
+                className="h-[42px] px-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] text-[11px] font-['Benzin'] font-extrabold uppercase shadow-[0_4px_12px_rgba(255,0,140,0.3)] active:scale-95 transition-transform disabled:opacity-40"
+              >
+                ОК
+              </button>
+            ) : (
+              <button
+                onClick={() => { setAppliedPromo(null); setPromoCodeInput(''); setPromoError(''); }}
+                className="h-[42px] px-[16px] bg-[#FF0040] text-white rounded-[14px] text-[11px] font-['Benzin'] font-extrabold shadow-sm active:scale-95 transition-transform"
+              >
+                ✖
+              </button>
             )}
           </div>
-          
-          {/* Кнопка опущена ниже за счет отступа mt-auto */}
-          <button 
-            onClick={handleCheckoutClick} 
+          {promoError && (
+            <span className={`text-[9px] font-bold uppercase ml-[4px] mb-[8px] block ${promoError === 'Применен!' ? 'text-[#0DAA00]' : 'text-[#FF0040]'}`}>
+              {promoError}
+            </span>
+          )}
+
+          {/* 2. Тип заказа */}
+          <div className="flex bg-[#F7F7F7] rounded-[16px] p-[3px] mb-[8px] mt-[6px]">
+            <button
+              onClick={() => setOrderType('pickup')}
+              className={`flex-1 py-[10px] rounded-[13px] text-[11px] font-['Benzin'] font-extrabold uppercase transition-all ${orderType === 'pickup' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#BBBBBB]'}`}
+            >
+              🏃 Самовывоз
+            </button>
+            <button
+              onClick={() => setOrderType('delivery')}
+              className={`flex-1 py-[10px] rounded-[13px] text-[11px] font-['Benzin'] font-extrabold uppercase transition-all ${orderType === 'delivery' ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#BBBBBB]'}`}
+            >
+              🚗 Доставка
+            </button>
+          </div>
+
+          {/* 3. Время */}
+          <div className="flex bg-[#F7F7F7] rounded-[16px] p-[3px] mb-[8px]">
+            <button
+              onClick={() => setIsTimeOrder(false)}
+              className={`flex-1 py-[10px] rounded-[13px] text-[10px] font-['Benzin'] font-extrabold uppercase transition-all ${!isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#BBBBBB]'}`}
+            >
+              ⚡ Побыстрее
+            </button>
+            <button
+              onClick={() => setIsTimeOrder(true)}
+              className={`flex-1 py-[10px] rounded-[13px] text-[10px] font-['Benzin'] font-extrabold uppercase transition-all ${isTimeOrder ? 'bg-white shadow-sm text-[#FF008C]' : 'text-[#BBBBBB]'}`}
+            >
+              ⏰ Ко времени
+            </button>
+          </div>
+          <AnimatePresence>
+            {isTimeOrder && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-[8px]">
+                <input
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className="w-full h-[46px] bg-[#F7F7F7] border border-[#F0E8F8] rounded-[14px] text-[16px] font-['Benzin'] font-bold outline-none text-center text-[#333]"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {IS_OPENING_DAY && orderType === 'pickup' && (
+            <div className="w-full bg-gradient-to-r from-[#FF00EE]/8 to-[#FF008C]/8 rounded-[12px] py-[6px] px-[12px] mb-[10px] text-center border border-[#FF008C]/10">
+              <span className="text-[10px] font-['Benzin'] font-bold text-[#FF0040] uppercase">🎉 Акция: -50% на самовывоз! 🎉</span>
+            </div>
+          )}
+
+          {/* 4. Итого */}
+          <div className="flex items-center justify-between mb-[14px] px-[4px]">
+            <div className="flex flex-col">
+              <span className="font-['Benzin'] font-extrabold text-[13px] text-[#C8C8C8] uppercase tracking-wider">Итого</span>
+              {appliedPromo && (
+                <span className="text-[10px] text-[#C8C8C8] line-through font-['Benzin'] leading-none">{rawTotal} руб</span>
+              )}
+            </div>
+            <div className="flex items-center gap-[8px]">
+              {appliedPromo && (
+                <span className="text-[10px] text-[#FF008C] bg-[#FF008C]/10 px-[8px] py-[3px] rounded-[8px] font-['Benzin'] font-bold">
+                  -{appliedPromo.discount}%
+                </span>
+              )}
+              <span className="font-['Benzin'] font-extrabold text-[26px] leading-none bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text">
+                {dynamicTotal} руб
+              </span>
+            </div>
+          </div>
+
+          {/* 5. Кнопка оплаты */}
+          <button
+            onClick={handleCheckoutClick}
             disabled={isPaying || !isOpen}
-            className={`w-[346px] h-[52px] mx-auto mt-auto mb-[10px] rounded-[25px] backdrop-blur-[30px] flex items-center justify-center shrink-0 transition-transform pointer-events-auto relative overflow-hidden
-              ${!isOpen 
-                ? 'bg-[#949494]/20 border border-[#949494]/40 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-[#FF00EE]/20 to-[#FF008C]/20 shadow-[0_4px_6px_2px_rgba(8,0,255,0.15)] active:scale-95'
+            className={`w-full h-[54px] rounded-[20px] flex items-center justify-center font-['Benzin'] font-extrabold text-[16px] uppercase transition-all active:scale-95
+              ${!isOpen
+                ? 'bg-[#F7F7F7] text-[#C8C8C8] cursor-not-allowed'
+                : isPaying
+                  ? 'bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white opacity-80'
+                  : 'bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white shadow-[0_6px_24px_rgba(255,0,140,0.4)]'
               }`}
-            style={{ boxShadow: isOpen ? 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4)' : 'none' }}
           >
             {!isOpen ? (
-               <span className="font-['Benzin'] font-extrabold text-[13px] text-[#949494] uppercase tracking-wide">
-                 {closeReason === 'early' ? 'Мы спим 😴 Откроемся в 11:00' : 'На сегодня всё 😴'}
-               </span>
+              closeReason === 'early' ? '😴 Откроемся в 11:00' : '😴 На сегодня всё'
             ) : isPaying ? (
-              <span className="font-['Benzin'] font-extrabold text-[18px] text-white uppercase animate-pulse">Оплата...</span>
+              <span className="animate-pulse">Оплата...</span>
             ) : (
-              <span className="font-['Benzin'] font-extrabold text-[18px] text-[#FF00EE] uppercase drop-shadow-[0_0_2px_white]">Оплатить (ЮKassa)</span>
+              '💳 Оплатить (ЮKassa)'
             )}
           </button>
 
-          <p className="text-[7px] text-[#949494] font-bold uppercase text-center mt-[4px] px-[40px] leading-tight pointer-events-auto">
+          <p className="text-[7px] text-[#D0D0D0] font-bold uppercase text-center mt-[10px] px-[20px] leading-tight">
             Напиток в доставке и самовывозе может быть видоизменен
           </p>
         </div>
