@@ -194,11 +194,7 @@ export default function CartPage() {
     return () => clearInterval(timer);
   }, [orderType]);
   
-  const [dbPrices, setDbPrices] = useState<Record<string, { pickup: number, delivery: number }>>({});
-
-  const BOT_TOKEN = '8754447020:AAEcItcGHk2sgrUHD_i534QmnN7HvV0GOy4';
-  const CHAT_ID = '-1002342434566'; 
-  const TOPIC_ID = '15103'; 
+  const [dbPrices, setDbPrices] = useState<Record<string, { pickup: number, delivery: number }>>({}); 
 
   const normalizeString = (str: string) => {
     if (!str) return '';
@@ -383,7 +379,7 @@ export default function CartPage() {
       if (!confirmCancel) return;
     }
 
-    const previousStatus = activeOrderStatus; 
+    const previousStatus = activeOrderStatus;
 
     const { error } = await supabase
       .from('orders')
@@ -393,21 +389,13 @@ export default function CartPage() {
     if (error) {
       if (!isAutoCancel) alert("Не удалось отменить заказ. Возможно, его уже начали готовить!");
     } else {
-      updateOrderStatus('cancelled');
+      updateOrderStatus(activeOrderId, 'cancelled');
       
       if (previousStatus !== 'pending_payment') {
-        const cancelMessage = `❌ ЗАКАЗ #${activeOrderId} ОТМЕНЕН КЛИЕНТОМ ❌\n\nКлиент передумал и отменил заказ. Не готовьте его! Возврат средств!`;
-        
-        const tgPayload: any = {
-          chat_id: CHAT_ID,
-          message_thread_id: TOPIC_ID,
-          text: cancelMessage,
-        };
-
-        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        fetch('/api/cancel-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(tgPayload)
+          body: JSON.stringify({ orderId: activeOrderId }),
         }).catch(err => console.error('Ошибка отправки отмены в ТГ', err));
       }
     }
