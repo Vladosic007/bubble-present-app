@@ -13,8 +13,8 @@ export async function POST(req: Request) {
     }
 
     // === 2. БОЕВОЙ РЕЖИМ ЮKASSA ===
-    const SHOP_ID = '1115596';
-    const SECRET_KEY = 'live_D2hcQYGW5-1cxXfj670DxCbteiISpkPm2d2WYwbBo7o';
+    const SHOP_ID = process.env.YOOKASSA_SHOP_ID;
+    const SECRET_KEY = process.env.YOOKASSA_SECRET_KEY;
 
     const authKey = Buffer.from(`${SHOP_ID}:${SECRET_KEY}`).toString('base64');
     const idempotenceKey = `order_${orderId}_${Date.now()}`; 

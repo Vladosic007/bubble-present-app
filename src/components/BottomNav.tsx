@@ -61,9 +61,8 @@ export default function BottomNav() {
   ];
 
   // Определяем активный индекс (0 - Дом, 1 - Баблик, 2 - Корзина)
-  const activeIndex = navItems.findIndex(item => item.href === pathname) === -1 
-    ? 0 
-    : navItems.findIndex(item => item.href === pathname);
+  const foundIndex = navItems.findIndex(item => item.href === pathname);
+  const activeIndex = foundIndex === -1 ? 0 : foundIndex;
 
   return (
     // ❗ Добавили flex-col и pointer-events-none, чтобы клики мимо меню проходили насквозь

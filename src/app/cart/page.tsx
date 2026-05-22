@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
-const IS_OPENING_DAY = true; // Поставь false, когда акция закончится
+const OPENING_PROMO_END = new Date('2026-06-01'); // Дата окончания акции — поменяй если нужно
+const IS_OPENING_DAY = new Date() < OPENING_PROMO_END;
 
 interface SwipeableCartItemProps {
   item: CartItem;
@@ -466,19 +467,15 @@ export default function CartPage() {
       };
     });
 
-    if (appliedPromo) {
-      await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }).catch(() => {});
-    }
-
     const { data, error } = await supabase
       .from('orders')
       .insert([
-        { 
+        {
           customer_name: savedName,
           phone: savedPhone,
           address: savedAddress || '',
           items: JSON.stringify(formattedItems),
-          total: dynamicTotal, 
+          total: dynamicTotal,
           order_type: orderType,
           status: 'pending_payment'
         }
@@ -490,6 +487,11 @@ export default function CartPage() {
       alert("Ошибка при создании заказа! Попробуй еще раз.");
       console.error(error);
       return;
+    }
+
+    // Инкрементируем промокод ТОЛЬКО после успешного создания заказа
+    if (appliedPromo) {
+      await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }).catch(() => {});
     }
 
     const orderId = data[0].id;
