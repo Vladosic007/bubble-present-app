@@ -61,7 +61,7 @@ export default function InfoPage() {
     setFormData({
       firstName: savedFirstName || '',
       lastName: savedLastName || '',
-      phone: savedPhone || '',
+      phone: savedPhone ? formatPhone(savedPhone) : '+7',
       email: savedEmail || '',
       address: savedAddress || ''
     });
@@ -98,6 +98,25 @@ export default function InfoPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Форматирует номер в +7 (XXX) XXX-XX-XX, макс 10 цифр после +7
+  const formatPhone = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    let d = digits;
+    if (d.startsWith('7') || d.startsWith('8')) d = d.slice(1);
+    d = d.slice(0, 10);
+
+    let result = '+7';
+    if (d.length > 0) result += ' (' + d.slice(0, 3);
+    if (d.length >= 3) result += ') ' + d.slice(3, 6);
+    if (d.length >= 6) result += '-' + d.slice(6, 8);
+    if (d.length >= 8) result += '-' + d.slice(8, 10);
+    return result;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, phone: formatPhone(e.target.value) });
   };
 
   // ❗ ЖЕСТКАЯ ПРОВЕРКА И СОХРАНЕНИЕ ❗
@@ -204,7 +223,7 @@ export default function InfoPage() {
           
           <GlassInput label="Имя" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="Твое имя" required />
           <GlassInput label="Фамилия" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Твоя фамилия" />
-          <GlassInput label="Телефон" name="phone" value={formData.phone} onChange={handleChange} type="tel" placeholder="+7 (999) 000-00-00" required />
+          <GlassInput label="Телефон" name="phone" value={formData.phone} onChange={handlePhoneChange} type="tel" placeholder="+7 (999) 000-00-00" required />
           <GlassInput label="Email" name="email" value={formData.email} onChange={handleChange} type="email" placeholder="example@mail.ru" />
           
           <GlassInput 
