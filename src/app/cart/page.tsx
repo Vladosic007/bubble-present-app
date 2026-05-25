@@ -564,11 +564,13 @@ export default function CartPage() {
         link.click();
         document.body.removeChild(link);
       } else {
-        throw new Error('Нет ссылки на оплату');
+        const errDetail = paymentData.yookassaError?.description || paymentData.yookassaError?.code || paymentData.error || 'Нет ссылки на оплату';
+        throw new Error(errDetail);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Ошибка инициализации оплаты:', err);
-      alert("Не удалось запустить оплату. Проверьте интернет или обратитесь к баристе.");
+      const msg = err?.message || String(err);
+      alert(`Не удалось запустить оплату.\n\n${msg}\n\nЕсли ошибка повторяется — обратитесь к баристе.`);
       setIsPaying(false);
     }
   };

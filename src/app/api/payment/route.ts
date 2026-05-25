@@ -33,6 +33,30 @@ export async function POST(req: Request) {
       payment_subject: 'commodity'
     }));
 
+    const paymentBody: any = {
+      amount: {
+        value: formattedAmount,
+        currency: 'RUB',
+      },
+      capture: true,
+      confirmation: {
+        type: 'redirect',
+        return_url: 'https://bubblepresent.ru/cart'
+      },
+      description: description,
+      metadata: {
+        order_id: orderId,
+      },
+    };
+
+    // Чек добавляем ТОЛЬКО если email указан (требует онлайн-кассу в ЮKassa)
+    if (email && email.trim() && email.includes('@')) {
+      paymentBody.receipt = {
+        customer: { email: email.trim() },
+        items: receiptItems
+      };
+    }
+
     const response = await fetch('https://api.yookassa.ru/v3/payments', {
       method: 'POST',
       headers: {
@@ -40,34 +64,14 @@ export async function POST(req: Request) {
         'Idempotence-Key': idempotenceKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        amount: {
-          value: formattedAmount,
-          currency: 'RUB',
-        },
-        capture: true,
-        confirmation: {
-          type: 'redirect',
-          return_url: 'https://bubblepresent.ru/cart'
-        },
-        description: description,
-        receipt: {
-          customer: {
-            email: email 
-          },
-          items: receiptItems
-        },
-        metadata: {
-          order_id: orderId,
-        },
-      }),
+      body: JSON.stringify(paymentBody),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('❌ ЮKASSA ВЫДАЛА ОШИБКУ:', data);
-      return NextResponse.json({ error: 'ЮKassa отклонила платеж', details: data }, { status: 500 });
+      console.error('❌ ЮKASSA ВЫДАЛА ОШИБКУ:', JSON.stringify(data));
+      return NextResponse.json({ error: 'ЮKassa отклонила платеж', yookassaError: data }, { status: 500 });
     }
 
     return NextResponse.json({ confirmation_url: data.confirmation.confirmation_url });
