@@ -36,8 +36,8 @@ export default function CoffeeTemplatePage() { // весь блок добавл
   // === СТЕЙТЫ ДЛЯ КЛИКОВ ===
   // Тип всегда "Холодный", поэтому стейта нет
   const [selectedVolume, setSelectedVolume] = useState('M'); // Стейт для Объёма (M или L)
-  const [isAddonsOpen, setIsAddonsOpen] = useState(false);
-const [hasOpenedAddons, setHasOpenedAddons] = useState(false);
+  const [isAddonsOpen, setIsAddonsOpen] = useState(false); // две строчки
+  const [hasOpenedAddons, setHasOpenedAddons] = useState(false);
   
   // Взаимоисключающие добавки
   const [tapiocaSelected, setTapiocaSelected] = useState(false);
