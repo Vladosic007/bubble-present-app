@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         capture: true,
         confirmation: {
           type: 'redirect',
-          return_url: 'https://bubble-present-app-2f9f.vercel.app/cart', 
+          return_url: 'https://bubblepresent.ru/cart'
         },
         description: description,
         receipt: {
