@@ -34,7 +34,8 @@ export default function CoffeeTemplatePage() { // весь блок добавл
 
   const [selectedType, setSelectedType] = useState('Холодный');
   const [cheeseSelected, setCheeseSelected] = useState(false);
-  const [isAddonsOpen, setIsAddonsOpen] = useState(false);
+  const [isAddonsOpen, setIsAddonsOpen] = useState(false); // две строчки нужно вставить
+  const [hasOpenedAddons, setHasOpenedAddons] = useState(false);
   
   // ❗ 1. Делаем Тапиоку включенной по умолчанию ❗
   const [tapiocaSelected, setTapiocaSelected] = useState(true);
@@ -135,10 +136,16 @@ export default function CoffeeTemplatePage() { // весь блок добавл
           className={`w-[346px] mb-[96px] bg-[#AEAEAE]/25 rounded-[25px] flex flex-col items-center z-20 box-border relative overflow-hidden shrink-0 transition-all duration-500 ease-in-out ${isAddonsOpen ? 'max-h-[2500px] pb-[32px]' : 'max-h-[52px]'}`}
           style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(8, 0, 255, 0.25)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}
         >
-          <div className="w-full h-[52px] flex justify-between items-center shrink-0 cursor-pointer px-[16px]" onClick={() => setIsAddonsOpen(!isAddonsOpen)}>
-            <div className="flex items-center justify-start">
-              <span className="text-[18px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Дополнения</span>
-            </div>
+         {/* весь блок вставить нужно */}
+        <div className="w-full min-h-[52px] flex justify-between items-center shrink-0 cursor-pointer px-[16px] py-[14px]" onClick={() => { setIsAddonsOpen(!isAddonsOpen); setHasOpenedAddons(true); }}>
+  <div className="flex flex-col">
+    <span className="text-[18px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none font-benzin font-extrabold">Дополнения</span>
+    {!hasOpenedAddons && !isAddonsOpen && (
+      <span className="text-[9px] text-[#FF008C]/60 font-benzin font-bold uppercase mt-[3px] animate-pulse">
+        Нажми, чтобы настроить 👆
+      </span>
+    )}
+  </div>
             <div className="w-[24px] h-[24px] relative shrink-0">
               <Image src="/icons/arrow.svg" alt="Стрелка" fill className={`object-contain transition-transform duration-300 ${isAddonsOpen ? 'rotate-90' : 'rotate-0'}`} />
             </div>
@@ -225,42 +232,45 @@ export default function CoffeeTemplatePage() { // весь блок добавл
           
         </div>
 
-        {/* ❗ УМНАЯ КНОПКА (С РЕШЕНИЕМ РАССИНХРОНА) ❗ */}
-        <div className="w-[346px] h-[56px] mb-[20px] z-20 shrink-0">
+        {/* УМНАЯ КНОПКА (С РЕШЕНИЕМ РАССИНХРОНА) весь блок нужно вставит */}
+        <div className="w-[346px] flex flex-col gap-[10px] mb-[20px] z-20 shrink-0">
           {!isMounted ? (
             /* Пока память подгружается - рисуем красивую заглушку */
-            <div className="w-full h-full bg-[#EEEEEE] rounded-[25px] flex justify-center items-center shadow-sm">
+            <div className="w-full h-[56px] bg-[#EEEEEE] rounded-[25px] flex justify-center items-center shadow-sm">
               <span className="text-[#949494] font-['Benzin'] text-[12px] uppercase">Сверка с корзиной...</span>
             </div>
           ) : itemInCart ? (
-            /* СЧЕТЧИК */
-            <div className="w-full h-full bg-[#FFFFFF]/30 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-between items-center px-[24px] box-border">
-              <button onClick={handleMinus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
-                <Image src="/icons/minus.svg" alt="-" width={20} height={20} className="object-contain" />
+            /* СЧЕТЧИК + КНОПКА ПЕРЕЙТИ */
+            <>
+              <div className="w-full h-[56px] bg-[#FFFFFF]/30 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-between items-center px-[24px] box-border">
+                <button onClick={handleMinus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
+                  <Image src="/icons/minus.svg" alt="-" width={20} height={20} className="object-contain" />
+                </button>
+                <span className="text-[22px] font-black tracking-[0.02em] text-[#FF008C] leading-none" style={{ fontFamily: "'Benzin', sans-serif" }}>
+                  {itemInCart.quantity}
+                </span>
+                <button onClick={handlePlus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
+                  <Image src="/icons/plus.svg" alt="+" width={20} height={20} className="object-contain" />
+                </button>
+              </div>
+              <button onClick={() => router.push('/cart')} className="w-full h-[52px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-[25px] flex items-center justify-center active:scale-95 transition-transform shadow-[0_4px_15px_rgba(255,0,140,0.35)]">
+                <span className="text-[16px] font-extrabold text-white uppercase tracking-wide" style={{ fontFamily: "'Benzin', sans-serif" }}>Перейти в корзину →</span>
               </button>
-              
-              <span className="text-[22px] font-black tracking-[0.02em] text-[#FF008C] leading-none" style={{ fontFamily: "'Benzin', sans-serif" }}>
-                {itemInCart.quantity}
-              </span>
-              
-              <button onClick={handlePlus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
-                <Image src="/icons/plus.svg" alt="+" width={20} height={20} className="object-contain" />
-              </button>
-            </div>
+            </>
           ) : (
             /* КНОПКА В КОРЗИНУ */
             <button 
               onClick={handleAddToCart} 
-              className="w-full h-full bg-[#FFD1F5]/40 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-center items-center active:scale-95 transition-transform"
+              className="w-full h-[56px] bg-[#FFD1F5]/40 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-center items-center active:scale-95 transition-transform"
             >
               <span className="text-[20px] font-black tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none flex items-center gap-[12px]" style={{ fontFamily: "'Benzin', sans-serif" }}>
                 <span>В корзину</span>
               </span>
             </button>
           )}
-        </div>
-        
-      </main>
-    </div>
-  );
-}
+            </div>
+                
+              </main>
+            </div>
+          );
+        }

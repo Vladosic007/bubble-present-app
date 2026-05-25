@@ -225,42 +225,45 @@ export default function CoffeeTemplatePage() { // весь блок добавл
           
         </div>
 
-        {/* ❗ УМНАЯ КНОПКА (С РЕШЕНИЕМ РАССИНХРОНА) ❗ */}
-        <div className="w-[346px] h-[56px] mb-[20px] z-20 shrink-0">
+        {/* УМНАЯ КНОПКА (С РЕШЕНИЕМ РАССИНХРОНА) весь блок нужно вставит */}
+        <div className="w-[346px] flex flex-col gap-[10px] mb-[20px] z-20 shrink-0">
           {!isMounted ? (
             /* Пока память подгружается - рисуем красивую заглушку */
-            <div className="w-full h-full bg-[#EEEEEE] rounded-[25px] flex justify-center items-center shadow-sm">
+            <div className="w-full h-[56px] bg-[#EEEEEE] rounded-[25px] flex justify-center items-center shadow-sm">
               <span className="text-[#949494] font-['Benzin'] text-[12px] uppercase">Сверка с корзиной...</span>
             </div>
           ) : itemInCart ? (
-            /* СЧЕТЧИК */
-            <div className="w-full h-full bg-[#FFFFFF]/30 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-between items-center px-[24px] box-border">
-              <button onClick={handleMinus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
-                <Image src="/icons/minus.svg" alt="-" width={20} height={20} className="object-contain" />
+            /* СЧЕТЧИК + КНОПКА ПЕРЕЙТИ */
+            <>
+              <div className="w-full h-[56px] bg-[#FFFFFF]/30 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-between items-center px-[24px] box-border">
+                <button onClick={handleMinus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
+                  <Image src="/icons/minus.svg" alt="-" width={20} height={20} className="object-contain" />
+                </button>
+                <span className="text-[22px] font-black tracking-[0.02em] text-[#FF008C] leading-none" style={{ fontFamily: "'Benzin', sans-serif" }}>
+                  {itemInCart.quantity}
+                </span>
+                <button onClick={handlePlus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
+                  <Image src="/icons/plus.svg" alt="+" width={20} height={20} className="object-contain" />
+                </button>
+              </div>
+              <button onClick={() => router.push('/cart')} className="w-full h-[52px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-[25px] flex items-center justify-center active:scale-95 transition-transform shadow-[0_4px_15px_rgba(255,0,140,0.35)]">
+                <span className="text-[16px] font-extrabold text-white uppercase tracking-wide" style={{ fontFamily: "'Benzin', sans-serif" }}>Перейти в корзину →</span>
               </button>
-              
-              <span className="text-[22px] font-black tracking-[0.02em] text-[#FF008C] leading-none" style={{ fontFamily: "'Benzin', sans-serif" }}>
-                {itemInCart.quantity}
-              </span>
-              
-              <button onClick={handlePlus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
-                <Image src="/icons/plus.svg" alt="+" width={20} height={20} className="object-contain" />
-              </button>
-            </div>
+            </>
           ) : (
             /* КНОПКА В КОРЗИНУ */
             <button 
               onClick={handleAddToCart} 
-              className="w-full h-full bg-[#FFD1F5]/40 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-center items-center active:scale-95 transition-transform"
+              className="w-full h-[56px] bg-[#FFD1F5]/40 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-center items-center active:scale-95 transition-transform"
             >
               <span className="text-[20px] font-black tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text leading-none flex items-center gap-[12px]" style={{ fontFamily: "'Benzin', sans-serif" }}>
                 <span>В корзину</span>
               </span>
             </button>
           )}
-        </div>
-        
-      </main>
-    </div>
-  );
-}
+            </div>
+                
+              </main>
+            </div>
+          );
+        }

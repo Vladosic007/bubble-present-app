@@ -31,7 +31,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
 
   const [selectedType, setSelectedType] = useState('Холодный');
   const [cheeseSelected, setCheeseSelected] = useState(false);
-  const [isAddonsOpen, setIsAddonsOpen] = useState(false);
+  const [isAddonsOpen, setIsAddonsOpen] = useState(false); // две строчки нужно вставить
   const [hasOpenedAddons, setHasOpenedAddons] = useState(false);
   
   // ❗ 1. Делаем Тапиоку включенной по умолчанию ❗
@@ -131,7 +131,8 @@ export default function CoffeeTemplatePage() { // весь блок добавл
           className={`w-[346px] mb-[96px] bg-[#AEAEAE]/25 rounded-[25px] flex flex-col items-center z-20 box-border relative overflow-hidden shrink-0 transition-all duration-500 ease-in-out ${isAddonsOpen ? 'max-h-[2500px] pb-[32px]' : 'max-h-[52px]'}`}
           style={{ boxShadow: 'inset 0px 0px 0px 1px rgba(255, 255, 255, 0.4), 0px 5px 5.7px 4px rgba(8, 0, 255, 0.25)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}
         >
-          <div className="w-full min-h-[52px] flex justify-between items-center shrink-0 cursor-pointer px-[16px] py-[14px]" onClick={() => { setIsAddonsOpen(!isAddonsOpen); setHasOpenedAddons(true); }}>
+          {/* весь блок вставить нужно */}
+        <div className="w-full min-h-[52px] flex justify-between items-center shrink-0 cursor-pointer px-[16px] py-[14px]" onClick={() => { setIsAddonsOpen(!isAddonsOpen); setHasOpenedAddons(true); }}>
   <div className="flex flex-col">
     <span className="text-[18px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none font-benzin font-extrabold">Дополнения</span>
     {!hasOpenedAddons && !isAddonsOpen && (
@@ -223,7 +224,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
           
         </div>
 
-        {/* УМНАЯ КНОПКА (С РЕШЕНИЕМ РАССИНХРОНА) */}
+        {/* УМНАЯ КНОПКА (С РЕШЕНИЕМ РАССИНХРОНА) весь блок нужно вставит */}
 <div className="w-[346px] flex flex-col gap-[10px] mb-[20px] z-20 shrink-0">
   {!isMounted ? (
     /* Пока память подгружается - рисуем красивую заглушку */
@@ -259,7 +260,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
       </span>
     </button>
   )}
-</div>
+    </div>
         
       </main>
     </div>
