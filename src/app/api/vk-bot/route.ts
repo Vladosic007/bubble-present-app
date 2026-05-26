@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 const VK_TOKEN = process.env.VK_TOKEN!;
-const VK_GROUP_ID = Number(process.env.VK_GROUP_ID);
 const VK_CONFIRMATION = process.env.VK_CONFIRMATION!;
 
 // Отправка сообщения в ВК
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // Подтверждение адреса (одноразовая проверка при настройке)
-    if (body.type === 'confirmation' && body.group_id === VK_GROUP_ID) {
+    if (body.type === 'confirmation') {
       return new Response(VK_CONFIRMATION, {
         status: 200,
         headers: { 'Content-Type': 'text/plain' },
