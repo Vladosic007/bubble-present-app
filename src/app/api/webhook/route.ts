@@ -59,19 +59,31 @@ export async function POST(req: Request) {
         `🛒 Заказ:\n${itemsText}\n\n` +
         `💰 ОПЛАЧЕНО: ${orderData.total} руб. ✅`;
 
-      const BOT_TOKEN = '8754447020:AAEcItcGHk2sgrUHD_i534QmnN7HvV0GOy4';
-      const CHAT_ID = '-1002342434566';
-      const TOPIC_ID = '15103';
-
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      // === 3. ОТПРАВЛЯЕМ В ТЕЛЕГРАМ ===
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: CHAT_ID,
-          message_thread_id: Number(TOPIC_ID),
+          chat_id: process.env.TELEGRAM_CHAT_ID,
+          message_thread_id: Number(process.env.TELEGRAM_TOPIC_ID),
           text: tgMessage,
         })
       }).catch(err => console.error('Ошибка отправки в ТГ из вебхука:', err));
+
+      // === 4. ОТПРАВЛЯЕМ КУРЬЕРУ В ВК ===
+      const vkMessage = `🚨 НОВЫЙ ЗАКАЗ #${orderId} 🚨\n\n` +
+        `📦 ${orderData.order_type === 'delivery' ? '🚗 ДОСТАВКА' : '🏃 САМОВЫВОЗ'}\n` +
+        `👤 ${orderData.customer_name}\n` +
+        `📞 ${orderData.phone}\n` +
+        (orderData.order_type === 'delivery' ? `📍 ${orderData.address}\n\n` : `\n`) +
+        `🛒 ${itemsText}\n\n` +
+        `💰 Оплачено: ${orderData.total} руб. ✅`;
+
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://bubblepresent.ru'}/api/vk-notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, orderText: vkMessage }),
+      }).catch(err => console.error('Ошибка отправки в ВК:', err));
 
       console.log(`✅ Заказ #${orderId} успешно обработан вебхуком!`);
     }
