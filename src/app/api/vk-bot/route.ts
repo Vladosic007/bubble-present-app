@@ -27,9 +27,13 @@ export async function POST(req: Request) {
 
     // Подтверждение адреса (одноразовая проверка при настройке)
     if (body.type === 'confirmation') {
-      return new Response(VK_CONFIRMATION, {
+      const confirmStr = process.env.VK_CONFIRMATION ?? '';
+      return new Response(confirmStr, {
         status: 200,
-        headers: { 'Content-Type': 'text/plain' },
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Length': Buffer.byteLength(confirmStr).toString(),
+        },
       });
     }
 
