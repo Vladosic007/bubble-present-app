@@ -8,13 +8,44 @@ export async function POST(req: Request) {
     // ❗ Слушаем только событие "Оплата прошла успешно" ❗
     if (body.event === 'payment.succeeded') {
       const paymentObj = body.object;
-      
-      // Достаем ID заказа, который мы передали в ЮKassa при создании платежа
-      const orderId = paymentObj.metadata?.order_id;
+      const paymentId = paymentObj?.id;
+
+      if (!paymentId) {
+        console.error('Webhook: нет payment_id');
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+
+      // === ЗАЩИТА: ПРОВЕРЯЕМ ПЛАТЁЖ НАПРЯМУЮ У ЮKASSA ===
+      const SHOP_ID = process.env.YOOKASSA_SHOP_ID;
+      const SECRET_KEY = process.env.YOOKASSA_SECRET_KEY;
+      const authKey = Buffer.from(`${SHOP_ID}:${SECRET_KEY}`).toString('base64');
+
+      const verifyResponse = await fetch(`https://api.yookassa.ru/v3/payments/${paymentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${authKey}`,
+        },
+      });
+
+      if (!verifyResponse.ok) {
+        console.error(`Webhook: ЮKassa не подтвердила платёж ${paymentId}, статус ${verifyResponse.status}`);
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+
+      const verifiedPayment = await verifyResponse.json();
+
+      // Проверяем что платёж реально оплачен
+      if (verifiedPayment.status !== 'succeeded') {
+        console.error(`Webhook: платёж ${paymentId} имеет статус "${verifiedPayment.status}", а не "succeeded". Игнорируем.`);
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+
+      // Достаем ID заказа из подтверждённого платежа (не из webhook body!)
+      const orderId = verifiedPayment.metadata?.order_id;
 
       if (!orderId) {
-        console.error('Ошибка: ЮKassa не прислала order_id в metadata');
-        return NextResponse.json({ error: 'Order ID not found' }, { status: 400 });
+        console.error('Webhook: ЮKassa не прислала order_id в metadata');
+        return NextResponse.json({ success: true }, { status: 200 });
       }
 
       // === 1. МЕНЯЕМ СТАТУС В БАЗЕ (Заказ оплачен!) ===
@@ -28,7 +59,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
       }
 
-      // === 2. ПОЛУЧАЕМ ДАННЫЕ ЗАКАЗА (Чтобы красиво написать в ТГ) ===
+      // === 2. ПОЛУЧАЕМ ДАННЫЕ ЗАКАЗА ===
       const { data: orderData, error: fetchError } = await supabase
         .from('orders')
         .select('*')
@@ -40,14 +71,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 });
       }
 
-      // === 3. ОТПРАВЛЯЕМ СООБЩЕНИЕ БАРИСТЕ В ТЕЛЕГРАМ ===
-      // Распаковываем список товаров
+      // === 3. ФОРМИРУЕМ ТЕКСТ ===
       const itemsText = (() => {
         try {
           const parsed = JSON.parse(orderData.items);
           return parsed.map((i: any) => `▫️ ${i.name} x${i.qty}`).join('\n');
         } catch {
-          return orderData.items; // если вдруг там не JSON
+          return orderData.items;
         }
       })();
 
@@ -59,7 +89,7 @@ export async function POST(req: Request) {
         `🛒 Заказ:\n${itemsText}\n\n` +
         `💰 ОПЛАЧЕНО: ${orderData.total} руб. ✅`;
 
-      // === 3. ОТПРАВЛЯЕМ В ТЕЛЕГРАМ ===
+      // === 4. ОТПРАВЛЯЕМ В ТЕЛЕГРАМ ===
       await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,9 +98,9 @@ export async function POST(req: Request) {
           message_thread_id: Number(process.env.TELEGRAM_TOPIC_ID),
           text: tgMessage,
         })
-      }).catch(err => console.error('Ошибка отправки в ТГ из вебхука:', err));
+      }).catch(err => console.error('Ошибка отправки в ТГ:', err));
 
-      // === 4. ОТПРАВЛЯЕМ КУРЬЕРУ В ВК ===
+      // === 5. ОТПРАВЛЯЕМ КУРЬЕРУ В ВК ===
       const vkMessage = `🚨 НОВЫЙ ЗАКАЗ #${orderId} 🚨\n\n` +
         `📦 ${orderData.order_type === 'delivery' ? '🚗 ДОСТАВКА' : '🏃 САМОВЫВОЗ'}\n` +
         `👤 ${orderData.customer_name}\n` +
@@ -79,16 +109,16 @@ export async function POST(req: Request) {
         `🛒 ${itemsText}\n\n` +
         `💰 Оплачено: ${orderData.total} руб. ✅`;
 
-      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://bubblepresent.ru'}/api/vk-notify`, {
+      await fetch(`https://www.bubblepresent.ru/api/vk-notify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId, orderText: vkMessage }),
       }).catch(err => console.error('Ошибка отправки в ВК:', err));
 
-      console.log(`✅ Заказ #${orderId} успешно обработан вебхуком!`);
+      console.log(`✅ Заказ #${orderId} успешно обработан (платёж ${paymentId} подтверждён)`);
     }
 
-    // ЮKassa требует, чтобы мы всегда отвечали 200 OK
+    // ЮKassa требует 200 OK всегда
     return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (error) {
