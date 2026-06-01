@@ -545,10 +545,10 @@ export default function CartPage() {
         await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
 
         // Отправляем в ТГ
-        await fetch('/api/cancel-order', {
+        await fetch('/api/tg-notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, message: `🛠 ТЕСТОВЫЙ ЗАКАЗ #${orderId}\n\n${tgMessage}` }),
+          body: JSON.stringify({ message: `🛠 ТЕСТОВЫЙ ЗАКАЗ #${orderId}\n\n${tgMessage}` }),
         }).catch(() => {});
 
         // Отправляем курьеру в ВК
