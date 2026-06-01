@@ -37,7 +37,7 @@ export default function Home() {
         {/* Логотип строго по центру */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center items-center pointer-events-none">
           <Image 
-            src="/images/logo.jpg" 
+            src="/images/logo.png" 
             alt="Bubble Present" 
             width={160} 
             height={45} 

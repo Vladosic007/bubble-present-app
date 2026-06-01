@@ -99,7 +99,7 @@ export default function CoffeeMenu() {
         {/* ЛОГОТИП СТРОГО ПО ЦЕНТРУ */}
         <Link href="/" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 active:scale-95 transition-transform flex justify-center items-center">
           <Image
-            src="/images/logo.jpg" 
+            src="/images/logo.png" 
             alt="Логотип кофейни"
             width={160} 
             height={45}

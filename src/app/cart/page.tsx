@@ -779,7 +779,7 @@ export default function CartPage() {
                 onClick={() => router.push('/')} 
                 className="relative h-[40px] w-[180px] pointer-events-auto cursor-pointer active:scale-95 transition-transform"
               >
-                <Image src="/images/logo.jpg" alt="Bubble Present" fill className="object-contain" priority />
+                <Image src="/images/logo.png" alt="Bubble Present" fill className="object-contain" priority />
               </div>
           </header>
 
