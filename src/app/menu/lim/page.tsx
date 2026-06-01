@@ -23,7 +23,7 @@ export default function LimMenu() {
   const [isLoading, setIsLoading] = useState(true);
 
   // ❗ Стейт для Умной Аватарки ❗
-  const [avatar, setAvatar] = useState('/images/avatar.jpg');
+  const [avatar, setAvatar] = useState('/images/avatar1.jpg');
 
   // ❗ Достаем фотку профиля из памяти ❗
   useEffect(() => {

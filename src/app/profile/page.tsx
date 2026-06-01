@@ -8,7 +8,7 @@ export default function ProfilePage() {
   const [userName, setUserName] = useState("Гость");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("/images/avatar.jpg"); 
+  const [photoUrl, setPhotoUrl] = useState("/images/avatar1.jpg"); 
   
   const [isInfoPressed, setIsInfoPressed] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);

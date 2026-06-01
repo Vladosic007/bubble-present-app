@@ -48,7 +48,7 @@ export default function TeaMenu() {
   const menuRef = useRef<HTMLDivElement>(null); 
   const { orderType, setOrderType } = useCartStore();
 
-  const [avatar, setAvatar] = useState('/images/avatar.jpg');
+  const [avatar, setAvatar] = useState('/images/avatar1.jpg');
 
   const [milkDrinks, setMilkDrinks] = useState<any[]>([]);
   const [sweeterDrinks, setSweeterDrinks] = useState<any[]>([]);
