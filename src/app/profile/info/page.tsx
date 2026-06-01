@@ -297,8 +297,8 @@ export default function InfoPage() {
                    ]
                  }}
                >
-               <GeolocationControl options={{ float: 'right' }} />
-                <ZoomControl options={{ float: 'right' }} />
+               <GeolocationControl options={{ float: 'right' } as any} />
+                <ZoomControl options={{ float: 'right' } as any} />
               </Map>
             </YMaps>
 

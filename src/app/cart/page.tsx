@@ -503,7 +503,7 @@ export default function CartPage() {
 
     // Инкрементируем промокод ТОЛЬКО после успешного создания заказа
     if (appliedPromo) {
-      await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }).catch(() => {});
+      try { await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }); } catch {};
     }
 
     const orderId = data[0].id;

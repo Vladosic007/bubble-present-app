@@ -4,8 +4,8 @@ import withPWA from "@ducanh2912/next-pwa";
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
-    // Отключаем строгие проверки TypeScript при деплое
-    ignoreBuildErrors: true,
+    // TypeScript проверки включены — ошибки ломают билд (так и должно быть!)
+    ignoreBuildErrors: false,
   },
   // ❗ ВОТ ОНА, ТАБЛЕТКА ОТ ОШИБКИ TURBOPACK ❗
   turbopack: {},
