@@ -595,6 +595,7 @@ export default function CartPage() {
     accepted: { title: "Заказ оформлен", desc: "Мы получили твой заказ", emoji: "📝", progress: "15%" },
     preparing: { title: "Бариста колдует", desc: "Готовим с любовью", emoji: "🧑‍🍳", progress: "45%" },
     ready_for_courier: { title: "Ждет курьера", desc: "Скоро поедет к тебе", emoji: "📦", progress: "70%" },
+    on_the_way: { title: "В пути", desc: "Курьер уже мчит", emoji: "🛵", progress: "85%" },
     delivering: { title: "В пути", desc: "Курьер уже мчит", emoji: "🛵", progress: "85%" },
     ready_for_pickup: { title: "Ждет выдачи", desc: "Можно забирать", emoji: "🛍", progress: "90%" },
     completed: { title: "Заказ завершен", desc: "Приятного аппетита!", emoji: "✅", progress: "100%" }

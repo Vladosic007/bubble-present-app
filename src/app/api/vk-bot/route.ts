@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 const VK_TOKEN = process.env.VK_TOKEN!;
-const VK_CONFIRMATION = process.env.VK_CONFIRMATION!;
 
 // Отправка сообщения в ВК
 async function sendVK(peer_id: number, message: string) {
@@ -21,6 +20,37 @@ async function sendVK(peer_id: number, message: string) {
   });
 }
 
+// Ответ на нажатие callback-кнопки (убирает "загрузку" на кнопке)
+async function answerCallback(event_id: string, user_id: number, peer_id: number, text: string) {
+  const params = new URLSearchParams({
+    event_id,
+    user_id: user_id.toString(),
+    peer_id: peer_id.toString(),
+    event_data: JSON.stringify({ type: 'show_snackbar', text }),
+    access_token: VK_TOKEN,
+    v: '5.131',
+  });
+
+  await fetch('https://api.vk.com/method/messages.sendMessageEventAnswer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+}
+
+// Отправка в ТГ
+async function sendTG(text: string) {
+  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: process.env.TELEGRAM_CHAT_ID,
+      message_thread_id: Number(process.env.TELEGRAM_TOPIC_ID),
+      text,
+    }),
+  }).catch(() => {});
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -30,61 +60,36 @@ export async function POST(req: Request) {
       return new Response('420b621c', { status: 200 });
     }
 
-    // Курьер нажал кнопку
+    // Курьер нажал callback-кнопку
     if (body.type === 'message_event') {
-      const { peer_id, payload } = body.object;
+      const { event_id, user_id, peer_id, payload } = body.object;
       const { action, order_id } = payload;
 
       if (action === 'accepted') {
         await supabase.from('orders').update({ status: 'accepted' }).eq('id', order_id);
+        await answerCallback(event_id, user_id, peer_id, `✅ Заказ #${order_id} принят!`);
         await sendVK(peer_id, `✅ Заказ #${order_id} принят! Начинаем готовить.`);
-
-        // Уведомление в TG
-        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: process.env.TELEGRAM_CHAT_ID,
-            message_thread_id: Number(process.env.TELEGRAM_TOPIC_ID),
-            text: `✅ Заказ #${order_id} принят курьером`,
-          }),
-        }).catch(() => {});
+        await sendTG(`✅ Заказ #${order_id} принят курьером`);
       }
 
       if (action === 'on_the_way') {
         await supabase.from('orders').update({ status: 'on_the_way' }).eq('id', order_id);
-        await sendVK(peer_id, `🚗 Заказ #${order_id} — курьер выехал!`);
-
-        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: process.env.TELEGRAM_CHAT_ID,
-            message_thread_id: Number(process.env.TELEGRAM_TOPIC_ID),
-            text: `🚗 Заказ #${order_id} — курьер в пути`,
-          }),
-        }).catch(() => {});
+        await answerCallback(event_id, user_id, peer_id, `🚗 Заказ #${order_id} — выехал!`);
+        await sendVK(peer_id, `🚗 Заказ #${order_id} — курьер выехал к клиенту!`);
+        await sendTG(`🚗 Заказ #${order_id} — курьер в пути`);
       }
 
       if (action === 'completed') {
         await supabase.from('orders').update({ status: 'completed' }).eq('id', order_id);
-        await sendVK(peer_id, `🎉 Заказ #${order_id} доставлен! Спасибо.`);
-
-        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: process.env.TELEGRAM_CHAT_ID,
-            message_thread_id: Number(process.env.TELEGRAM_TOPIC_ID),
-            text: `🎉 Заказ #${order_id} доставлен!`,
-          }),
-        }).catch(() => {});
+        await answerCallback(event_id, user_id, peer_id, `🎉 Заказ #${order_id} доставлен!`);
+        await sendVK(peer_id, `🎉 Заказ #${order_id} доставлен! Отличная работа.`);
+        await sendTG(`🎉 Заказ #${order_id} доставлен!`);
       }
     }
 
     return new Response('ok', { status: 200 });
   } catch (error) {
     console.error('Ошибка ВК бота:', error);
-    return new Response('ok', { status: 200 }); // ВК требует 200 даже при ошибкеее 
+    return new Response('ok', { status: 200 });
   }
 }
