@@ -543,12 +543,27 @@ export default function CartPage() {
 
       if (isTestMode) {
         await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
+
+        // Отправляем в ТГ
+        await fetch('/api/cancel-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, message: `🛠 ТЕСТОВЫЙ ЗАКАЗ #${orderId}\n\n${tgMessage}` }),
+        }).catch(() => {});
+
+        // Отправляем курьеру в ВК
+        await fetch('/api/vk-notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, orderText: `🛠 ТЕСТ #${orderId}\n\n${tgMessage}` }),
+        }).catch(() => {});
+
         addActiveOrder(orderId, 'accepted', dbTime);
         setIsHiddenStatus(false);
         clearCart();
         setIsPaying(false);
-        alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в Телеграм без оплаты!");
-        return; 
+        alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в ТГ и ВК без оплаты!");
+        return;
       }
 
       if (paymentData.confirmation_url) {
