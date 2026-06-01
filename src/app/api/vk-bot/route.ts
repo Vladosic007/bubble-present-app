@@ -85,6 +85,6 @@ export async function POST(req: Request) {
     return new Response('ok', { status: 200 });
   } catch (error) {
     console.error('Ошибка ВК бота:', error);
-    return new Response('ok', { status: 200 }); // ВК требует 200 даже при ошибке
+    return new Response('ok', { status: 200 }); // ВК требует 200 даже при ошибкеее 
   }
 }
