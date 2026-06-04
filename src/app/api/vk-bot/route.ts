@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
     // Подтверждение адреса (одноразовая проверка при настройке)
     if (body.type === 'confirmation') {
-      return new Response('420b621c', { status: 200 });
+      return new Response(process.env.VK_CONFIRMATION || '420b621c', { status: 200 });
     }
 
     // Курьер нажал callback-кнопку
