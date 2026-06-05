@@ -11,7 +11,7 @@ import { supabase } from '../../../lib/supabase'; // ❗ Проверь путь
 const slugMap: Record<string, string> = {
   'изумрудный бриз': 'emerald-breeze1',
   'карамельная малина': 'caramel-rasp1',
-  'райзсан': 'raiesan1', 
+  'райзсан': 'raiesan1',    
   'банановый': 'banana-lim1',
   'щавелевый': 'sorrel',
   'мохито': 'mojito1'
@@ -33,7 +33,7 @@ export default function LimMenu() {
     }
   }, []);
 
-  // === ТЯНЕМ МЕНЮ ИЗ БАЗЫ + ФИЛЬТРУЕМ СТОП-ЛИСТ ===
+  // === ТЯНЕМ МЕНЮ ИЗ БАЗЫ + ФИЛЬТРУЕМ СТОП-ЛИСТ
   useEffect(() => {
     const fetchDrinks = async () => {
       const { data, error } = await supabase
