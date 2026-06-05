@@ -4,20 +4,23 @@ export async function POST(req: Request) {
   try {
     const { orderId } = await req.json();
 
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-    const TOPIC_ID = process.env.TELEGRAM_TOPIC_ID;
+    const VK_TOKEN = process.env.VK_TOKEN!;
+    const VK_PEER_ID = Number(process.env.VK_PEER_ID);
 
-    const cancelMessage = `❌ ЗАКАЗ #${orderId} ОТМЕНЕН КЛИЕНТОМ ❌\n\nКлиент передумал и отменил заказ. Не готовьте его! Возврат средств!`;
+    const cancelMessage = `❌ ЗАКАЗ #${orderId} ОТМЕНЕН КЛИЕНТОМ ❌\n\nКлиент передумал и отменил заказ. Не готовьте его!`;
 
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const params = new URLSearchParams({
+      peer_id: VK_PEER_ID.toString(),
+      message: cancelMessage,
+      random_id: Date.now().toString(),
+      access_token: VK_TOKEN,
+      v: '5.131',
+    });
+
+    await fetch('https://api.vk.com/method/messages.send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        message_thread_id: Number(TOPIC_ID),
-        text: cancelMessage,
-      }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
     });
 
     return NextResponse.json({ success: true });

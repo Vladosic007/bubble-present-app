@@ -1,89 +1,216 @@
-import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 const VK_TOKEN = process.env.VK_TOKEN!;
 
 // Отправка сообщения в ВК
-async function sendVK(peer_id: number, message: string) {
-  const params = new URLSearchParams({
+async function sendVK(peer_id: number, message: string, keyboard?: object) {
+  const params: Record<string, string> = {
     peer_id: peer_id.toString(),
     message,
     random_id: Date.now().toString(),
     access_token: VK_TOKEN,
     v: '5.131',
-  });
+  };
+  if (keyboard) params.keyboard = JSON.stringify(keyboard);
 
   await fetch('https://api.vk.com/method/messages.send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
+    body: new URLSearchParams(params).toString(),
   });
 }
 
-// Ответ на нажатие callback-кнопки (убирает "загрузку" на кнопке)
+// Ответ на callback-кнопку (снэкбар)
 async function answerCallback(event_id: string, user_id: number, peer_id: number, text: string) {
-  const params = new URLSearchParams({
-    event_id,
-    user_id: user_id.toString(),
-    peer_id: peer_id.toString(),
-    event_data: JSON.stringify({ type: 'show_snackbar', text }),
-    access_token: VK_TOKEN,
-    v: '5.131',
-  });
-
   await fetch('https://api.vk.com/method/messages.sendMessageEventAnswer', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
+    body: new URLSearchParams({
+      event_id,
+      user_id: user_id.toString(),
+      peer_id: peer_id.toString(),
+      event_data: JSON.stringify({ type: 'show_snackbar', text }),
+      access_token: VK_TOKEN,
+      v: '5.131',
+    }).toString(),
   });
 }
 
-// Отправка в ТГ
-async function sendTG(text: string) {
-  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: process.env.TELEGRAM_CHAT_ID,
-      message_thread_id: Number(process.env.TELEGRAM_TOPIC_ID),
-      text,
-    }),
-  }).catch(() => {});
+// Генерируем ссылку на Яндекс Карты с маршрутом
+function getYandexMapsLink(address: string): string {
+  const encoded = encodeURIComponent(address);
+  return `https://yandex.ru/maps/?rtext=~${encoded}&rtt=auto`;
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Подтверждение адреса (одноразовая проверка при настройке)
+    // Подтверждение Callback API
     if (body.type === 'confirmation') {
       return new Response(process.env.VK_CONFIRMATION || '420b621c', { status: 200 });
     }
 
-    // Курьер нажал callback-кнопку
+    // Нажатие callback-кнопки
     if (body.type === 'message_event') {
       const { event_id, user_id, peer_id, payload } = body.object;
-      const { action, order_id } = payload;
+      const { action, order_id, order_type, address } = payload;
 
+      // ========== ПРИНЯЛ ==========
       if (action === 'accepted') {
-        await supabase.from('orders').update({ status: 'accepted' }).eq('id', order_id);
+        await supabase.from('orders').update({ status: 'preparing' }).eq('id', order_id);
         await answerCallback(event_id, user_id, peer_id, `✅ Заказ #${order_id} принят!`);
-        await sendVK(peer_id, `✅ Заказ #${order_id} принят! Начинаем готовить.`);
-        await sendTG(`✅ Заказ #${order_id} принят курьером`);
+
+        // Следующая кнопка: Готовлю
+        const nextKeyboard = {
+          inline: true,
+          buttons: [[{
+            action: {
+              type: 'callback',
+              label: '🧑‍🍳 Готовлю',
+              payload: JSON.stringify({ action: 'preparing', order_id, order_type, address }),
+            },
+            color: 'primary',
+          }]],
+        };
+        await sendVK(peer_id, `✅ Заказ #${order_id} принят! Начинаем готовить.`, nextKeyboard);
       }
 
+      // ========== ГОТОВЛЮ ==========
+      if (action === 'preparing') {
+        const isDelivery = order_type === 'delivery';
+
+        if (isDelivery) {
+          // Доставка → следующий статус: ждёт курьера
+          await supabase.from('orders').update({ status: 'ready_for_courier' }).eq('id', order_id);
+          await answerCallback(event_id, user_id, peer_id, `📦 Заказ #${order_id} ждёт курьера!`);
+
+          const nextKeyboard = {
+            inline: true,
+            buttons: [[{
+              action: {
+                type: 'callback',
+                label: '📦 Готов — ждёт курьера',
+                payload: JSON.stringify({ action: 'ready_for_courier', order_id, order_type, address }),
+              },
+              color: 'primary',
+            }]],
+          };
+          await sendVK(peer_id, `🧑‍🍳 Заказ #${order_id} готовится...`, nextKeyboard);
+        } else {
+          // Самовывоз → следующий статус: готов к выдаче
+          await supabase.from('orders').update({ status: 'ready_for_pickup' }).eq('id', order_id);
+          await answerCallback(event_id, user_id, peer_id, `🛍 Заказ #${order_id} готов!`);
+
+          const nextKeyboard = {
+            inline: true,
+            buttons: [[{
+              action: {
+                type: 'callback',
+                label: '🛍 Готов — забирай!',
+                payload: JSON.stringify({ action: 'ready_for_pickup', order_id, order_type, address }),
+              },
+              color: 'positive',
+            }]],
+          };
+          await sendVK(peer_id, `🧑‍🍳 Заказ #${order_id} готовится...`, nextKeyboard);
+        }
+      }
+
+      // ========== ГОТОВ К ВЫДАЧЕ (самовывоз) ==========
+      if (action === 'ready_for_pickup') {
+        await supabase.from('orders').update({ status: 'ready_for_pickup' }).eq('id', order_id);
+        await answerCallback(event_id, user_id, peer_id, `🛍 Заказ #${order_id} ждёт клиента!`);
+
+        const nextKeyboard = {
+          inline: true,
+          buttons: [[{
+            action: {
+              type: 'callback',
+              label: '✅ Выдан клиенту',
+              payload: JSON.stringify({ action: 'completed', order_id, order_type, address }),
+            },
+            color: 'positive',
+          }]],
+        };
+        await sendVK(peer_id, `🛍 Заказ #${order_id} готов! Ждём клиента.`, nextKeyboard);
+      }
+
+      // ========== ЖДЁТ КУРЬЕРА (доставка) ==========
+      if (action === 'ready_for_courier') {
+        await supabase.from('orders').update({ status: 'ready_for_courier' }).eq('id', order_id);
+        await answerCallback(event_id, user_id, peer_id, `📦 Заказ #${order_id} ждёт курьера!`);
+
+        // Получаем полные данные заказа для курьера
+        const { data: orderData } = await supabase
+          .from('orders').select('*').eq('id', order_id).single();
+
+        let itemsText = '';
+        if (orderData) {
+          try {
+            const parsed = JSON.parse(orderData.items);
+            itemsText = parsed.map((i: any) => `▫️ ${i.name} x${i.qty}`).join('\n');
+          } catch { itemsText = orderData.items; }
+        }
+
+        const mapsLink = getYandexMapsLink(address || orderData?.address || '');
+
+        // Отдельное сообщение для курьера
+        let courierMsg = `🚗 ДОСТАВКА — ЗАКАЗ #${order_id} 🚗\n\n`;
+        courierMsg += `👤 ${orderData?.customer_name || 'Клиент'}\n`;
+        courierMsg += `📞 ${orderData?.phone || ''}\n`;
+        courierMsg += `📍 Адрес: ${address || orderData?.address || ''}\n`;
+        courierMsg += `🗺 Маршрут: ${mapsLink}\n\n`;
+        courierMsg += `🛒 Заказ:\n${itemsText}\n\n`;
+        courierMsg += `💰 ${orderData?.total || ''} руб.\n\n`;
+        courierMsg += `⬇️ Нажми когда выехал:`;
+
+        const courierKeyboard = {
+          inline: true,
+          buttons: [[{
+            action: {
+              type: 'callback',
+              label: '🚗 Курьер в пути',
+              payload: JSON.stringify({ action: 'on_the_way', order_id, order_type, address }),
+            },
+            color: 'primary',
+          }]],
+        };
+
+        await sendVK(peer_id, `📦 Заказ #${order_id} готов и ждёт курьера!`);
+        await sendVK(peer_id, courierMsg, courierKeyboard);
+      }
+
+      // ========== КУРЬЕР В ПУТИ ==========
       if (action === 'on_the_way') {
         await supabase.from('orders').update({ status: 'on_the_way' }).eq('id', order_id);
-        await answerCallback(event_id, user_id, peer_id, `🚗 Заказ #${order_id} — выехал!`);
-        await sendVK(peer_id, `🚗 Заказ #${order_id} — курьер выехал к клиенту!`);
-        await sendTG(`🚗 Заказ #${order_id} — курьер в пути`);
+        await answerCallback(event_id, user_id, peer_id, `🚗 Заказ #${order_id} — едем!`);
+
+        const nextKeyboard = {
+          inline: true,
+          buttons: [[{
+            action: {
+              type: 'callback',
+              label: '🎉 Доставлен!',
+              payload: JSON.stringify({ action: 'completed', order_id, order_type, address }),
+            },
+            color: 'positive',
+          }]],
+        };
+        await sendVK(peer_id, `🚗 Заказ #${order_id} — курьер выехал к клиенту!`, nextKeyboard);
       }
 
+      // ========== ЗАВЕРШЕН ==========
       if (action === 'completed') {
         await supabase.from('orders').update({ status: 'completed' }).eq('id', order_id);
-        await answerCallback(event_id, user_id, peer_id, `🎉 Заказ #${order_id} доставлен!`);
-        await sendVK(peer_id, `🎉 Заказ #${order_id} доставлен! Отличная работа.`);
-        await sendTG(`🎉 Заказ #${order_id} доставлен!`);
+        await answerCallback(event_id, user_id, peer_id, `🎉 Заказ #${order_id} завершён!`);
+
+        const isDelivery = order_type === 'delivery';
+        const doneMsg = isDelivery
+          ? `🎉 Заказ #${order_id} доставлен! Отличная работа.`
+          : `🎉 Заказ #${order_id} выдан клиенту! Отличная работа.`;
+
+        await sendVK(peer_id, doneMsg);
       }
     }
 
