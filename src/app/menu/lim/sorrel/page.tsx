@@ -175,7 +175,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
     if (itemInCart && itemInCart.quantity < 9) {
       changeQuantity(currentCartItemId, 1);
     } else {
-      alert("Бро, максимум 9 штук одного напитка в одни руки! 🧋");
+      alert("Максимум 9 напитков одного вида в заказе 🧋");
     }
   };
 
