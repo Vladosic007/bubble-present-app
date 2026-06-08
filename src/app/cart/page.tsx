@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
-const OPENING_PROMO_END = new Date('2026-06-07'); // Дата окончания акции — поменяй если нужно
+const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00'); // Дата окончания акции (МСК) — поменяй если нужно
 const IS_OPENING_DAY = new Date() < OPENING_PROMO_END;
 
 interface SwipeableCartItemProps {
