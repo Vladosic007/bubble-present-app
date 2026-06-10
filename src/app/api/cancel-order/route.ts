@@ -5,23 +5,26 @@ export async function POST(req: Request) {
     const { orderId } = await req.json();
 
     const VK_TOKEN = process.env.VK_TOKEN!;
-    const VK_PEER_ID = Number(process.env.VK_PEER_ID);
+    const peerIds = (process.env.VK_PEER_ID || '').split(',').map(s => s.trim()).filter(Boolean);
 
     const cancelMessage = `❌ ЗАКАЗ #${orderId} ОТМЕНЕН КЛИЕНТОМ ❌\n\nКлиент передумал и отменил заказ. Не готовьте его!`;
 
-    const params = new URLSearchParams({
-      peer_id: VK_PEER_ID.toString(),
-      message: cancelMessage,
-      random_id: Date.now().toString(),
-      access_token: VK_TOKEN,
-      v: '5.131',
-    });
+    // Шлём отмену всем получателям
+    for (const peerId of peerIds) {
+      const params = new URLSearchParams({
+        peer_id: peerId,
+        message: cancelMessage,
+        random_id: (Date.now() + Math.floor(Math.random() * 100000)).toString(),
+        access_token: VK_TOKEN,
+        v: '5.131',
+      });
 
-    await fetch('https://api.vk.com/method/messages.send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
+      await fetch('https://api.vk.com/method/messages.send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

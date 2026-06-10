@@ -5,7 +5,8 @@ export async function POST(req: Request) {
     const { orderId, orderType, customerName, phone, address, items, total } = await req.json();
 
     const VK_TOKEN = process.env.VK_TOKEN!;
-    const VK_PEER_ID = Number(process.env.VK_PEER_ID);
+    // Список получателей через запятую (ты, баристы, управляющий)
+    const peerIds = (process.env.VK_PEER_ID || '').split(',').map(s => s.trim()).filter(Boolean);
 
     // Формируем текст заказа
     let itemsText = '';
@@ -46,25 +47,27 @@ export async function POST(req: Request) {
       ],
     };
 
-    const params = new URLSearchParams({
-      peer_id: VK_PEER_ID.toString(),
-      message,
-      random_id: Date.now().toString(),
-      keyboard: JSON.stringify(keyboard),
-      access_token: VK_TOKEN,
-      v: '5.131',
-    });
+    // Отправляем заказ КАЖДОМУ получателю (ты, баристы, управляющий)
+    for (const peerId of peerIds) {
+      const params = new URLSearchParams({
+        peer_id: peerId,
+        message,
+        random_id: (Date.now() + Math.floor(Math.random() * 100000)).toString(),
+        keyboard: JSON.stringify(keyboard),
+        access_token: VK_TOKEN,
+        v: '5.131',
+      });
 
-    const res = await fetch('https://api.vk.com/method/messages.send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
+      const res = await fetch('https://api.vk.com/method/messages.send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
 
-    const data = await res.json();
-    if (data.error) {
-      console.error('Ошибка VK API:', data.error);
-      return NextResponse.json({ error: data.error }, { status: 500 });
+      const data = await res.json();
+      if (data.error) {
+        console.error(`Ошибка VK API для peer ${peerId}:`, data.error);
+      }
     }
 
     return NextResponse.json({ success: true });
