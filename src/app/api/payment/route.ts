@@ -3,8 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // ❗ Добавили tgMessage и isTest, которые прилетят с телефона
-    const { orderId, amount, description, email, items, tgMessage, isTest } = body;
+    const { orderId, amount, description, email, items, isTest } = body;
 
     // === 1. ЕСЛИ ЭТО РЕЖИМ "ТЕСТ" ===
     // Возвращаем фейковый ответ, не дергая ЮKassa

@@ -420,6 +420,13 @@ export default function CartPage() {
       return;
     }
 
+    // Минимум 2 напитка для доставки
+    const totalDrinks = items.reduce((sum, item) => sum + item.quantity, 0);
+    if (orderType === 'delivery' && totalDrinks < 2) {
+      alert("Минимальный заказ на доставку — 2 напитка 🧋 Добавь ещё один или выбери самовывоз!");
+      return;
+    }
+
     const savedPhone = localStorage.getItem('bubble_user_phone');
     const savedAddress = localStorage.getItem('bubble_user_address');
     const savedName = localStorage.getItem('bubble_user_name') || 'Гость';
@@ -489,6 +496,7 @@ export default function CartPage() {
           items: JSON.stringify(formattedItems),
           total: dynamicTotal,
           order_type: orderType,
+          order_time: isTimeOrder && selectedTime ? selectedTime : null,
           status: 'pending_payment'
         }
       ])
@@ -508,19 +516,7 @@ export default function CartPage() {
 
     const orderId = data[0].id;
     const dbTime = new Date(data[0].created_at).getTime();
-
-    const timeInfo = isTimeOrder ? `⏰ КО ВРЕМЕНИ: ${selectedTime}` : '🚀 КАК МОЖНО СКОРЕЕ';
-
-    const tgMessage = `🚨 НОВЫЙ ЗАКАЗ #${orderId} 🚨\n\n` +
-      `📦 Тип: ${orderType === 'delivery' ? '🚗 ДОСТАВКА' : '🏃 САМОВЫВОЗ'}\n` +
-      `${timeInfo}\n` +
-      `👤 Имя: ${savedName}\n` +
-      `📞 Телефон: ${savedPhone}\n` +
-      (orderType === 'delivery' ? `📍 Адрес: ${savedAddress}\n\n` : `\n`) +
-      `🛒 Заказ:\n` +
-      formattedItems.map((i: any) => `▫️ ${i.name} x${i.qty}`).join('\n') + `\n\n` +
-      (appliedPromo ? `🎁 ПРОМОКОД: ${appliedPromo.code} (-${appliedPromo.discount}%)\n` : '') +
-      `💰 Итого: ${dynamicTotal} руб.`;
+    const orderTimeValue = isTimeOrder && selectedTime ? selectedTime : null;
 
     const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
 
@@ -534,8 +530,7 @@ export default function CartPage() {
           description: `Заказ #${orderId} (Bubble Present)`,
           email: savedEmail,
           items: formattedItems,
-          tgMessage: tgMessage, 
-          isTest: isTestMode    
+          isTest: isTestMode
         }),
       });
 
@@ -556,6 +551,7 @@ export default function CartPage() {
             address: savedAddress || '',
             items: JSON.stringify(formattedItems),
             total: dynamicTotal,
+            orderTime: orderTimeValue,
           }),
         }).catch(() => {});
 

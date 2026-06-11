@@ -187,10 +187,10 @@ export default function InfoPage() {
       return alert("❌ Введи корректный номер телефона!");
     }
 
-    // 3. Проверка почты (стандартный формат с @ и точкой)
+    // 3. Проверка почты (обязательна — нужна для чека об оплате)
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,10}$/;
-    if (email && !emailRegex.test(email)) {
-      return alert("❌ Введи нормальную электронную почту (например, example@gmail.com)!");
+    if (!email || !emailRegex.test(email)) {
+      return alert("❌ Введи электронную почту — на неё придёт чек об оплате (например, example@gmail.com)!");
     }
 
     // Если код дошел сюда, значит данные идеальные! Сохраняем.
@@ -241,7 +241,7 @@ export default function InfoPage() {
           <GlassInput label="Имя" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="Твое имя" required />
           <GlassInput label="Фамилия" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Твоя фамилия" />
           <GlassInput label="Телефон" name="phone" value={formData.phone} onChange={handlePhoneChange} type="tel" placeholder="+7 (999) 000-00-00" required />
-          <GlassInput label="Email" name="email" value={formData.email} onChange={handleChange} type="email" placeholder="example@mail.ru" />
+          <GlassInput label="Email" name="email" value={formData.email} onChange={handleChange} type="email" placeholder="example@mail.ru" required />
           
           <GlassInput 
             label="Адрес доставки" 

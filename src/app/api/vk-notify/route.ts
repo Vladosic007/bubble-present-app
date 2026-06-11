@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { orderId, orderType, customerName, phone, address, items, total } = await req.json();
+    const { orderId, orderType, customerName, phone, address, items, total, orderTime } = await req.json();
 
     const VK_TOKEN = process.env.VK_TOKEN!;
     // Список получателей через запятую (ты, баристы, управляющий)
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
 
     let message = `🚨 НОВЫЙ ЗАКАЗ #${orderId} 🚨\n\n`;
     message += `📦 ${typeEmoji}\n`;
+    message += orderTime ? `⏰ КО ВРЕМЕНИ: ${orderTime}\n` : `🚀 КАК МОЖНО СКОРЕЕ\n`;
     message += `👤 ${customerName}\n`;
     message += `📞 ${phone}\n`;
     if (isDelivery && address) {

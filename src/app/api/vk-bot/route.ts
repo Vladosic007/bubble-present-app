@@ -167,6 +167,7 @@ export async function POST(req: Request) {
 
         // Отдельное сообщение для курьера
         let courierMsg = `🚗 ДОСТАВКА — ЗАКАЗ #${order_id} 🚗\n\n`;
+        courierMsg += orderData?.order_time ? `⏰ КО ВРЕМЕНИ: ${orderData.order_time}\n` : `🚀 КАК МОЖНО СКОРЕЕ\n`;
         courierMsg += `👤 ${orderData?.customer_name || 'Клиент'}\n`;
         courierMsg += `📞 ${orderData?.phone || ''}\n`;
         courierMsg += `📍 Адрес: ${address || orderData?.address || ''}\n`;

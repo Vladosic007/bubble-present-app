@@ -63,6 +63,7 @@ export async function POST(req: Request) {
           address: orderData.address || '',
           items: orderData.items,
           total: orderData.total,
+          orderTime: orderData.order_time || null,
         }),
       }).catch(err => console.error('Ошибка отправки в ВК:', err));
 
