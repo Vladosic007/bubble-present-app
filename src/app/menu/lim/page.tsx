@@ -35,30 +35,44 @@ export default function LimMenu() {
 
   // === ТЯНЕМ МЕНЮ ИЗ БАЗЫ + ФИЛЬТРУЕМ СТОП-ЛИСТ
   useEffect(() => {
+    const processData = (data: any[]) => {
+      const formatted = data.map(d => {
+        const normalizedName = d.name.toLowerCase().trim();
+        const slug = slugMap[normalizedName] || 'default-slug';
+        return {
+          id: slug,
+          name: d.name,
+          pickupPrice: d.price_pickup,
+          deliveryPrice: d.price_delivery,
+          img: `/images/${slug}.jpg`,
+          href: `/menu/lim/${slug}`,
+          temp_type: d.temp_type
+        };
+      });
+      setLimDrinks(formatted);
+    };
+
+    // 1. МГНОВЕННО из кэша
+    try {
+      const cached = localStorage.getItem('menu_lim_cache');
+      if (cached) {
+        processData(JSON.parse(cached));
+        setIsLoading(false);
+      }
+    } catch {}
+
+    // 2. В ФОНЕ свежие данные
     const fetchDrinks = async () => {
       const { data, error } = await supabase
         .from('drinks')
         .select('*')
-        .eq('category', 'Бабл лим') // ❗ Фильтруем только лимонады
-        .eq('is_active', true) 
+        .eq('category', 'Бабл лим')
+        .eq('is_active', true)
         .order('id', { ascending: true });
 
       if (data && !error) {
-        const formatted = data.map(d => {
-          const normalizedName = d.name.toLowerCase().trim();
-          const slug = slugMap[normalizedName] || 'default-slug';
-          
-          return {
-            id: slug,
-            name: d.name,
-            pickupPrice: d.price_pickup,
-            deliveryPrice: d.price_delivery,
-            img: `/images/${slug}.jpg`,
-            href: `/menu/lim/${slug}`,
-            temp_type: d.temp_type
-          };
-        });
-        setLimDrinks(formatted);
+        processData(data);
+        try { localStorage.setItem('menu_lim_cache', JSON.stringify(data)); } catch {}
       }
       setIsLoading(false);
     };

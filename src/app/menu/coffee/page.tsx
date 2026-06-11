@@ -41,30 +41,43 @@ export default function CoffeeMenu() {
 
   // ❗ ТЯНЕМ МЕНЮ ИЗ БАЗЫ + ФИЛЬТРУЕМ СТОП-ЛИСТ ❗
   useEffect(() => {
+    const processData = (data: any[]) => {
+      const formatted = data.map(d => {
+        const slug = slugMap[d.name] || 'default-slug';
+        return {
+          id: slug,
+          name: d.name,
+          pickupPrice: d.price_pickup,
+          deliveryPrice: d.price_delivery,
+          img: `/images/${slug}.jpg`,
+          href: `/menu/coffee/${slug}`,
+          temp_type: d.name === 'Сырный раф' ? 'hot_only' : d.temp_type
+        };
+      });
+      setCoffeeDrinks(formatted);
+    };
+
+    // 1. МГНОВЕННО из кэша
+    try {
+      const cached = localStorage.getItem('menu_coffee_cache');
+      if (cached) {
+        processData(JSON.parse(cached));
+        setIsLoading(false);
+      }
+    } catch {}
+
+    // 2. В ФОНЕ свежие данные
     const fetchDrinks = async () => {
       const { data, error } = await supabase
         .from('drinks')
         .select('*')
         .eq('category', 'Бабл кофе')
-        .eq('is_active', true) // Скрываем выключенные баристой
+        .eq('is_active', true)
         .order('id', { ascending: true });
 
       if (data && !error) {
-        // Превращаем данные из БД в формат для наших карточек
-        const formatted = data.map(d => {
-          const slug = slugMap[d.name] || 'default-slug';
-          return {
-            id: slug,
-            name: d.name,
-            pickupPrice: d.price_pickup,
-            deliveryPrice: d.price_delivery,
-            img: `/images/${slug}.jpg`,
-            href: `/menu/coffee/${slug}`,
-            // ❗ ЕСЛИ ЭТО РАФ — СТАВИМ ТОЛЬКО ГОРЯЧИЙ, ДЛЯ ОСТАЛЬНЫХ БЕРЕМ ИЗ БАЗЫ ❗
-            temp_type: d.name === 'Сырный раф' ? 'hot_only' : d.temp_type 
-          };
-        });
-        setCoffeeDrinks(formatted);
+        processData(data);
+        try { localStorage.setItem('menu_coffee_cache', JSON.stringify(data)); } catch {}
       }
       setIsLoading(false);
     };

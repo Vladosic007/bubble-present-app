@@ -1,5 +1,6 @@
 import '@/app/globals.css';
 import BottomNav from "../components/BottomNav";
+import BubblikBackground from "../components/BubblikBackground";
 import type { Metadata } from 'next';
 
 // ❗ ЗАПРЕЩАЕМ ЗУМ (ЧТОБЫ ВЫГЛЯДЕЛО КАК НАСТОЯЩЕЕ ПРИЛОЖЕНИЕ) ❗
@@ -54,12 +55,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#FF008C" />
         <link rel="apple-touch-icon" href="/images/icon-192.png" />
       </head>
-      <body className="antialiased bg-white text-black" suppressHydrationWarning>
+      <body className="antialiased text-black" suppressHydrationWarning>
 
-        <main className="min-h-screen pb-24">
+        {/* Летающий баблик на фоне (виден на ПК по бокам) */}
+        <BubblikBackground />
+
+        {/* Само приложение — центрированная колонка поверх фона */}
+        <main className="relative z-10 min-h-screen pb-24 max-w-[440px] mx-auto">
           {children}
         </main>
-        
+
         <BottomNav />
       </body>
     </html>

@@ -64,49 +64,65 @@ export default function TeaMenu() {
   }, []);
 
   useEffect(() => {
+    // Раскладываем сырые данные из базы по 4 подкатегориям
+    const processData = (data: any[]) => {
+      const milk: any[] = [];
+      const sweeter: any[] = [];
+      const sour: any[] = [];
+      const withSour: any[] = [];
+
+      data.forEach(d => {
+        const normalizedName = d.name.toLowerCase().trim();
+        const slug = slugMap[normalizedName] || 'default-slug';
+
+        let displayName = d.name;
+        if (normalizedName === 'вильвет') {
+          displayName = 'Вельвет';
+        }
+
+        const drinkObj = {
+          id: slug,
+          name: displayName,
+          pickupPrice: d.price_pickup,
+          deliveryPrice: d.price_delivery,
+          img: `/images/${slug}.jpg`,
+          href: `/menu/tea/${slug}`,
+          temp_type: d.temp_type
+        };
+
+        if (d.subcategory === 'Молочные') milk.push(drinkObj);
+        else if (d.subcategory === 'Послаще') sweeter.push(drinkObj);
+        else if (d.subcategory === 'Покислее') sour.push(drinkObj);
+        else if (d.subcategory === 'С кислинкой') withSour.push(drinkObj);
+      });
+
+      setMilkDrinks(milk);
+      setSweeterDrinks(sweeter);
+      setSourDrinks(sour);
+      setWithSourDrinks(withSour);
+    };
+
+    // 1. МГНОВЕННО показываем меню из кэша (если есть)
+    try {
+      const cached = localStorage.getItem('menu_tea_cache');
+      if (cached) {
+        processData(JSON.parse(cached));
+        setIsLoading(false);
+      }
+    } catch {}
+
+    // 2. В ФОНЕ тянем свежие данные и обновляем
     const fetchDrinks = async () => {
       const { data, error } = await supabase
         .from('drinks')
         .select('*')
         .eq('category', 'Бабл милк ти')
-        .eq('is_active', true) 
+        .eq('is_active', true)
         .order('id', { ascending: true });
 
       if (data && !error) {
-        const milk: any[] = [];
-        const sweeter: any[] = [];
-        const sour: any[] = [];
-        const withSour: any[] = [];
-
-        data.forEach(d => {
-          const normalizedName = d.name.toLowerCase().trim();
-          const slug = slugMap[normalizedName] || 'default-slug';
-          
-          let displayName = d.name;
-          if (normalizedName === 'вильвет') {
-            displayName = 'Вельвет';
-          }
-
-          const drinkObj = {
-            id: slug,
-            name: displayName,
-            pickupPrice: d.price_pickup,
-            deliveryPrice: d.price_delivery,
-            img: `/images/${slug}.jpg`,
-            href: `/menu/tea/${slug}`,
-            temp_type: d.temp_type
-          };
-
-          if (d.subcategory === 'Молочные') milk.push(drinkObj);
-          else if (d.subcategory === 'Послаще') sweeter.push(drinkObj);
-          else if (d.subcategory === 'Покислее') sour.push(drinkObj);
-          else if (d.subcategory === 'С кислинкой') withSour.push(drinkObj);
-        });
-
-        setMilkDrinks(milk);
-        setSweeterDrinks(sweeter);
-        setSourDrinks(sour);
-        setWithSourDrinks(withSour);
+        processData(data);
+        try { localStorage.setItem('menu_tea_cache', JSON.stringify(data)); } catch {}
       }
       setIsLoading(false);
     };
