@@ -2,12 +2,15 @@ import { supabase } from '@/lib/supabase';
 
 const VK_TOKEN = process.env.VK_TOKEN!;
 
+// Список курьеров (отдельный канал только для доставки)
+const COURIER_PEERS = (process.env.VK_PEER_ID_COURIER || '').split(',').map(s => s.trim()).filter(Boolean);
+
 // Отправка сообщения в ВК
-async function sendVK(peer_id: number, message: string, keyboard?: object) {
+async function sendVK(peer_id: number | string, message: string, keyboard?: object) {
   const params: Record<string, string> = {
     peer_id: peer_id.toString(),
     message,
-    random_id: Date.now().toString(),
+    random_id: (Date.now() + Math.floor(Math.random() * 100000)).toString(),
     access_token: VK_TOKEN,
     v: '5.131',
   };
@@ -18,6 +21,13 @@ async function sendVK(peer_id: number, message: string, keyboard?: object) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams(params).toString(),
   });
+}
+
+// Отправка сообщения ВСЕМ курьерам
+async function sendToCouriers(message: string, keyboard?: object) {
+  for (const peer of COURIER_PEERS) {
+    await sendVK(peer, message, keyboard);
+  }
 }
 
 // Ответ на callback-кнопку (снэкбар)
@@ -177,8 +187,16 @@ export async function POST(req: Request) {
           }]],
         };
 
-        await sendVK(peer_id, `📦 Заказ #${order_id} готов и ждёт курьера!`);
-        await sendVK(peer_id, courierMsg, courierKeyboard);
+        // Бариста видит что заказ передан курьеру
+        await sendVK(peer_id, `📦 Заказ #${order_id} передан курьеру! Ждём доставку.`);
+
+        // Курьеру в его ОТДЕЛЬНЫЙ канал — только доставка с адресом и кнопками
+        if (COURIER_PEERS.length > 0) {
+          await sendToCouriers(courierMsg, courierKeyboard);
+        } else {
+          // Если курьер не настроен — шлём баристе как раньше (запасной вариант)
+          await sendVK(peer_id, courierMsg, courierKeyboard);
+        }
       }
 
       // ========== КУРЬЕР В ПУТИ ==========
