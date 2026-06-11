@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { YMaps, Map, GeolocationControl, ZoomControl } from '@pbe/react-yandex-maps';
 import { useRouter } from 'next/navigation'; // ❗ ДОБАВИЛИ РОУТЕР
@@ -65,9 +65,10 @@ export default function InfoPage() {
   
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [ymapsInstance, setYmapsInstance] = useState<any>(null);
-  const [mapCenter, setMapCenter] = useState([47.2197, 38.9325]); 
+  const [mapCenter] = useState([47.2197, 38.9325]);
   const [currentAddress, setCurrentAddress] = useState("Двигай карту, чтобы выбрать адрес");
-  const [geocodeTimeout, setGeocodeTimeout] = useState<any>(null);
+  const mapInstanceRef = useRef<any>(null);   // сам объект карты (для плавного центрирования)
+  const geocodeTimerRef = useRef<any>(null);  // таймер геокодирования (без ре-рендеров)
 
   // ❗ ПРИ ЗАГРУЗКЕ ЧИТАЕМ ВСЕ ДАННЫЕ ИЗ ПАМЯТИ ❗
   useEffect(() => {
@@ -91,7 +92,9 @@ export default function InfoPage() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const newCoords = [position.coords.latitude, position.coords.longitude];
-          setMapCenter(newCoords);
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.setCenter(newCoords, 16, { duration: 300 });
+          }
           if (ymapsInstance) fetchAddress(newCoords, ymapsInstance);
         },
         (error) => console.log("Геолокация отклонена", error)
@@ -270,23 +273,22 @@ export default function InfoPage() {
       {isMapOpen && (
         <div className="fixed top-0 left-0 w-full h-[100dvh] z-[99999] bg-[#E5E5EA] flex flex-col mx-auto animate-in fade-in duration-200">
           <div className="flex-1 relative bg-[#D6D6D8] overflow-hidden">
-            <YMaps query={{ apikey: '9acfbbff-9cc7-4ed2-a594-019b271209eb', load: 'package.full' }}>
+            <YMaps query={{ apikey: '9acfbbff-9cc7-4ed2-a594-019b271209eb', load: 'Map,geocode,control.ZoomControl,control.GeolocationControl' }}>
               <Map
-                state={{ center: mapCenter, zoom: 16 }}
+                defaultState={{ center: mapCenter, zoom: 16 }}
                 width="100%"
                 height="100%"
+                instanceRef={mapInstanceRef}
                 onLoad={(ymaps) => {
                   setYmapsInstance(ymaps);
                   fetchAddress(mapCenter, ymaps);
                 }}
                 onBoundsChange={(e: any) => {
                   const newCoords = e.get('newCenter');
-                  setMapCenter(newCoords);
-                  if (geocodeTimeout) clearTimeout(geocodeTimeout);
-                  const newTimeout = setTimeout(() => {
+                  if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
+                  geocodeTimerRef.current = setTimeout(() => {
                     fetchAddress(newCoords, ymapsInstance);
                   }, 500);
-                  setGeocodeTimeout(newTimeout);
                  }}
                /* ❗ ЖЕСТКИЕ ГРАНИЦЫ ТАГАНРОГА ❗ */
                options={{ 
