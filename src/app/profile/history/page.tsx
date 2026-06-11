@@ -78,6 +78,16 @@ export default function HistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // 1. МГНОВЕННО показываем историю из кэша
+    try {
+      const cached = localStorage.getItem('history_cache');
+      if (cached) {
+        setOrders(JSON.parse(cached));
+        setIsLoading(false);
+      }
+    } catch {}
+
+    // 2. В ФОНЕ тянем свежую историю
     const fetchHistory = async () => {
       const phone = localStorage.getItem('bubble_user_phone');
       if (!phone) {
@@ -130,6 +140,7 @@ export default function HistoryPage() {
         });
 
         setOrders(formattedOrders);
+        try { localStorage.setItem('history_cache', JSON.stringify(formattedOrders)); } catch {}
       }
       setIsLoading(false);
     };

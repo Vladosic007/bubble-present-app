@@ -43,11 +43,21 @@ export default function BubblikPage() {
     const savedName = localStorage.getItem('bubblik_custom_name');
     if (savedName) setBubblikName(savedName);
 
+    // 1. МГНОВЕННО показываем баблика из кэша
+    try {
+      const cachedCups = localStorage.getItem('bubblik_cups_cache');
+      if (cachedCups !== null) {
+        setCurrentDrinks(Number(cachedCups) || 0);
+        setIsLoading(false);
+      }
+    } catch {}
+
+    // 2. В ФОНЕ считаем свежее число напитков
     const fetchDrinksData = async () => {
       const phone = localStorage.getItem('bubble_user_phone');
       if (!phone) {
         setIsLoading(false); // Если гость, то вырубаем загрузку сразу
-        return; 
+        return;
       }
 
       const { data, error } = await supabase
@@ -67,9 +77,9 @@ export default function BubblikPage() {
           } catch(e) {}
         });
         setCurrentDrinks(totalCups);
+        try { localStorage.setItem('bubblik_cups_cache', String(totalCups)); } catch {}
       }
-      
-      // Выключаем загрузку ТОЛЬКО когда всё посчитали
+
       setIsLoading(false);
     };
 
