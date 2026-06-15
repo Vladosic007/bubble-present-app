@@ -2,7 +2,6 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation'; // ❗ ДОБАВИЛИ РОУТЕР
 
 // Функция для подбора цвета кнопки статуса
@@ -95,13 +94,14 @@ export default function HistoryPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('phone', phone)
-        .order('created_at', { ascending: false });
+      let data: any[] | null = null;
+      try {
+        const res = await fetch(`/api/history?phone=${encodeURIComponent(phone)}`);
+        const json = await res.json();
+        data = json.orders || [];
+      } catch { data = null; }
 
-      if (data && !error) {
+      if (data) {
         // ❗ ЖЕСТКИЙ ФИЛЬТР: УБИРАЕМ ВСЕ ОТМЕНЕННЫЕ ЗАКАЗЫ ИЗ СПИСКА ❗
         const activeData = data.filter((order: any) => order.status !== 'cancelled');
 

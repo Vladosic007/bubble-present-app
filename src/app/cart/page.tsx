@@ -320,28 +320,25 @@ export default function CartPage() {
   useEffect(() => {
     const checkActualStatus = async () => {
       if (!activeOrderId) return;
-      
-      const { data, error } = await supabase
-        .from('orders')
-        .select('status, created_at') 
-        .eq('id', activeOrderId)
-        .single();
 
-      if (error || !data) {
+      try {
+        const res = await fetch(`/api/order/status?id=${activeOrderId}`);
+        if (!res.ok) {
           removeActiveOrder(activeOrderId);
           return;
         }
-
+        const data = await res.json();
         const dbTime = new Date(data.created_at).getTime();
         if (data.status !== activeOrderStatus || dbTime !== orderCreatedAt) {
           updateOrderStatus(activeOrderId, data.status);
         }
-      };
+      } catch {}
+    };
 
-      const checkTimeout = () => {
+    const checkTimeout = () => {
       if (activeOrderStatus === 'pending_payment' && orderCreatedAt) {
         const elapsed = (Date.now() - orderCreatedAt) / 1000;
-        if (elapsed > 600) { 
+        if (elapsed > 600) {
           handleCancelOrder(true);
         }
       }
@@ -351,23 +348,21 @@ export default function CartPage() {
     checkTimeout();
   }, [activeOrderId, activeOrderStatus, orderCreatedAt, updateOrderStatus, removeActiveOrder]);
 
+  // Опрос статуса заказа каждые 5 сек (вместо realtime, т.к. база закрыта)
   useEffect(() => {
     if (!activeOrderId) return;
 
-    const channel = supabase
-      .channel(`order_tracking_${activeOrderId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrderId}` },
-        (payload) => {
-          updateOrderStatus(activeOrderId, payload.new.status);
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/order/status?id=${activeOrderId}`);
+        if (res.ok) {
+          const data = await res.json();
+          updateOrderStatus(activeOrderId, data.status);
         }
-      )
-      .subscribe();
+      } catch {}
+    }, 5000);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => clearInterval(poll);
   }, [activeOrderId, updateOrderStatus]);
 
   useEffect(() => {
@@ -392,25 +387,21 @@ export default function CartPage() {
       if (!confirmCancel) return;
     }
 
-    const previousStatus = activeOrderStatus;
+    try {
+      // Сервер сам отменит заказ в базе и пошлёт уведомление в ВК (если был оплачен)
+      const res = await fetch('/api/order/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: activeOrderId }),
+      });
 
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: 'cancelled' })
-      .eq('id', activeOrderId);
-
-    if (error) {
-      if (!isAutoCancel) alert("Не удалось отменить заказ. Возможно, его уже начали готовить!");
-    } else {
-      updateOrderStatus(activeOrderId, 'cancelled');
-      
-      if (previousStatus !== 'pending_payment') {
-        fetch('/api/cancel-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: activeOrderId }),
-        }).catch(err => console.error('Ошибка отправки отмены в ТГ', err));
+      if (res.ok) {
+        updateOrderStatus(activeOrderId, 'cancelled');
+      } else if (!isAutoCancel) {
+        alert("Не удалось отменить заказ. Возможно, его уже начали готовить!");
       }
+    } catch {
+      if (!isAutoCancel) alert("Не удалось отменить заказ. Проверьте интернет.");
     }
   };
 
@@ -486,10 +477,16 @@ export default function CartPage() {
       };
     });
 
-    const { data, error } = await supabase
-      .from('orders')
-      .insert([
-        {
+    const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
+
+    // Создаём заказ через сервер (база защищена секретным ключом)
+    let orderId: number;
+    let dbTime: number;
+    try {
+      const createRes = await fetch('/api/order/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           customer_name: savedName,
           phone: savedPhone,
           address: savedAddress || '',
@@ -497,27 +494,33 @@ export default function CartPage() {
           total: dynamicTotal,
           order_type: orderType,
           order_time: isTimeOrder && selectedTime ? selectedTime : null,
-          status: 'pending_payment'
-        }
-      ])
-      .select();
-
-    if (error || !data || !data[0]) {
+          isTest: isTestMode,
+        }),
+      });
+      const createData = await createRes.json();
+      if (!createRes.ok || !createData.id) throw new Error('create failed');
+      orderId = createData.id;
+      dbTime = new Date(createData.created_at).getTime();
+    } catch {
       setIsPaying(false);
       alert("Ошибка при создании заказа! Попробуй еще раз.");
-      console.error(error);
       return;
     }
 
-    // Инкрементируем промокод ТОЛЬКО после успешного создания заказа
+    // Инкрементируем промокод после успешного создания заказа
     if (appliedPromo) {
-      try { await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }); } catch {};
+      try { await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }); } catch {}
     }
 
-    const orderId = data[0].id;
-    const dbTime = new Date(data[0].created_at).getTime();
-
-    const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
+    // ТЕСТОВЫЙ РЕЖИМ: сервер уже принял заказ и отправил в ВК
+    if (isTestMode) {
+      addActiveOrder(orderId, 'accepted', dbTime);
+      setIsHiddenStatus(false);
+      clearCart();
+      setIsPaying(false);
+      alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в ВК без оплаты!");
+      return;
+    }
 
     try {
       const response = await fetch('/api/payment', {
@@ -534,24 +537,6 @@ export default function CartPage() {
       });
 
       const paymentData = await response.json();
-
-      if (isTestMode) {
-        await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
-
-        // Отправляем в ВК (vk-notify сам возьмёт данные из базы)
-        await fetch('/api/vk-notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId }),
-        }).catch(() => {});
-
-        addActiveOrder(orderId, 'accepted', dbTime);
-        setIsHiddenStatus(false);
-        clearCart();
-        setIsPaying(false);
-        alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в ВК без оплаты!");
-        return;
-      }
 
       if (paymentData.confirmation_url) {
         localStorage.setItem('last_payment_url', paymentData.confirmation_url); 

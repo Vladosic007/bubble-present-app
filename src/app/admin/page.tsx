@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
+  const [adminKey, setAdminKey] = useState(''); // PIN для серверных запросов
   const [activeTab, setActiveTab] = useState<'orders' | 'drinks' | 'toppings' | 'promos'>('orders');
   
   const [drinks, setDrinks] = useState<any[]>([]);
@@ -28,52 +29,66 @@ export default function AdminPage() {
   }, []);
 
   // === ЛОГИКА АВТОРИЗАЦИИ ===
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // ❗ МЕСТО №1: МЕНЯЕМ ПАРОЛЬ ТУТ (в кавычках) ❗
-    if (pin === '123456') { 
-      setIsAuthenticated(true);
-      fetchData(); 
-    } else {
-      alert('Неверный PIN-код!');
-      setPin('');
+    setIsLoading(true);
+    // Проверяем PIN на сервере (заказы отдаются только с верным ключом)
+    try {
+      const res = await fetch('/api/admin/orders', { headers: { 'x-admin-key': pin } });
+      if (res.ok) {
+        setAdminKey(pin);
+        setIsAuthenticated(true);
+        const json = await res.json();
+        setOrders(json.orders || []);
+        fetchSideData();
+      } else {
+        alert('Неверный PIN-код!');
+        setPin('');
+      }
+    } catch {
+      alert('Ошибка соединения. Попробуй ещё раз.');
     }
+    setIsLoading(false);
   };
 
-  // === ЗАГРУЗКА ИЗ SUPABASE ===
-  const fetchData = async () => {
-    setIsLoading(true);
+  // Заказы — через защищённый серверный роут
+  const fetchOrders = async (key = adminKey) => {
+    try {
+      const res = await fetch('/api/admin/orders', { headers: { 'x-admin-key': key } });
+      if (res.ok) {
+        const json = await res.json();
+        setOrders(json.orders || []);
+      }
+    } catch {}
+  };
+
+  // Напитки/топпинги/промокоды — пока напрямую (там нет персональных данных)
+  const fetchSideData = async () => {
     const { data: drinksData } = await supabase.from('drinks').select('*').order('id', { ascending: true });
     const { data: toppingsData } = await supabase.from('toppings').select('*').order('id', { ascending: true });
-    const { data: ordersData } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
     const { data: promosData } = await supabase.from('promocodes').select('*').order('created_at', { ascending: false });
 
     if (drinksData) setDrinks(drinksData);
     if (toppingsData) setToppings(toppingsData);
-    if (ordersData) setOrders(ordersData);
     if (promosData) setPromocodes(promosData);
+  };
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchOrders(), fetchSideData()]);
     setIsLoading(false);
   };
 
-  // REALTIME МАГИЯ
+  // Опрос новых заказов каждые 10 сек (вместо realtime, т.к. база закрыта)
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const channel = supabase
-      .channel('admin_all_orders')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          fetchData();
-        }
-      )
-      .subscribe();
+    const poll = setInterval(() => {
+      fetchOrders();
+    }, 10000);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isAuthenticated]);
+    return () => clearInterval(poll);
+  }, [isAuthenticated, adminKey]);
 
   // === ЛОГИКА ТУМБЛЕРОВ ===
   const toggleDrink = async (id: number, currentStatus: boolean) => {
@@ -91,7 +106,11 @@ export default function AdminPage() {
   // === ИЗМЕНЕНИЕ СТАТУСА ЗАКАЗА ===
   const changeOrderStatus = async (id: number, newStatus: string) => {
     setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
-    await supabase.from('orders').update({ status: newStatus }).eq('id', id);
+    await fetch('/api/admin/order-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ orderId: id, status: newStatus }),
+    }).catch(() => {});
   };
 
   // === ЛОГИКА ПРОМОКОДОВ И БОССА ===

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../../lib/supabase'; // ❗ Твой путь до supabase
 
 // === МАССИВ УРОВНЕЙ С ТОЧНЫМИ МАКСИМУМАМИ ===
 const BUBBLIK_LEVELS = [
@@ -60,25 +59,13 @@ export default function BubblikPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('orders')
-        .select('items')
-        .eq('phone', phone)
-        .eq('status', 'completed');
-
-      if (data && !error) {
-        let totalCups = 0;
-        data.forEach(order => {
-          try {
-            const parsedItems = JSON.parse(order.items);
-            parsedItems.forEach((item: any) => {
-              totalCups += item.qty;
-            });
-          } catch(e) {}
-        });
+      try {
+        const res = await fetch(`/api/bublik?phone=${encodeURIComponent(phone)}`);
+        const json = await res.json();
+        const totalCups = json.cups || 0;
         setCurrentDrinks(totalCups);
         try { localStorage.setItem('bubblik_cups_cache', String(totalCups)); } catch {}
-      }
+      } catch {}
 
       setIsLoading(false);
     };
