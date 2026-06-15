@@ -61,38 +61,19 @@ export default function LimMenu() {
       }
     } catch {}
 
-    // 2. В ФОНЕ свежие данные
+    // 2. В ФОНЕ свежие данные (через сервер)
     const fetchDrinks = async () => {
-      const { data, error } = await supabase
-        .from('drinks')
-        .select('*')
-        .eq('category', 'Бабл лим')
-        .eq('is_active', true)
-        .order('id', { ascending: true });
-
-      if (data && !error) {
+      try {
+        const res = await fetch('/api/drinks?category=' + encodeURIComponent('Бабл лим'));
+        const json = await res.json();
+        const data = json.drinks || [];
         processData(data);
         try { localStorage.setItem('menu_lim_cache', JSON.stringify(data)); } catch {}
-      }
+      } catch {}
       setIsLoading(false);
     };
 
     fetchDrinks();
-
-    // === РЕАЛТАЙМ МАГИЯ ===
-    const channel = supabase.channel('realtime_lim_menu')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'drinks', filter: "category=eq.Бабл лим" },
-        () => {
-          fetchDrinks(); 
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   return (

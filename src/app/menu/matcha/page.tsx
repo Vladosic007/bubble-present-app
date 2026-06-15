@@ -58,38 +58,19 @@ export default function MatchaMenu() {
       }
     } catch {}
 
-    // 2. В ФОНЕ свежие данные
+    // 2. В ФОНЕ свежие данные (через сервер)
     const fetchDrinks = async () => {
-      const { data, error } = await supabase
-        .from('drinks')
-        .select('*')
-        .eq('category', 'Бабл матча')
-        .eq('is_active', true)
-        .order('id', { ascending: true });
-
-      if (data && !error) {
+      try {
+        const res = await fetch('/api/drinks?category=' + encodeURIComponent('Бабл матча'));
+        const json = await res.json();
+        const data = json.drinks || [];
         processData(data);
         try { localStorage.setItem('menu_matcha_cache', JSON.stringify(data)); } catch {}
-      }
+      } catch {}
       setIsLoading(false);
     };
 
     fetchDrinks();
-
-    // === РЕАЛТАЙМ МАГИЯ ===
-    const channel = supabase.channel('realtime_matcha_menu')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'drinks', filter: "category=eq.Бабл матча" },
-        () => {
-          fetchDrinks(); 
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   return (

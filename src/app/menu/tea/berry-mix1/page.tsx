@@ -57,10 +57,10 @@ export default function CoffeeTemplatePage() { // весь блок добавл
   
   useEffect(() => {
     const fetchActiveToppings = async () => {
-      const { data, error } = await supabase
-        .from('toppings')
-        .select('name')
-        .eq('is_active', true);
+      const res = await fetch('/api/toppings');
+        const json = await res.json();
+        const data = json.toppings || [];
+        const error = null;
 
       if (data && !error) {
         const activeNames = data.map((t: any) => t.name);

@@ -111,29 +111,19 @@ export default function TeaMenu() {
       }
     } catch {}
 
-    // 2. В ФОНЕ тянем свежие данные и обновляем
+    // 2. В ФОНЕ тянем свежие данные и обновляем (через сервер)
     const fetchDrinks = async () => {
-      const { data, error } = await supabase
-        .from('drinks')
-        .select('*')
-        .eq('category', 'Бабл милк ти')
-        .eq('is_active', true)
-        .order('id', { ascending: true });
-
-      if (data && !error) {
+      try {
+        const res = await fetch('/api/drinks?category=' + encodeURIComponent('Бабл милк ти'));
+        const json = await res.json();
+        const data = json.drinks || [];
         processData(data);
         try { localStorage.setItem('menu_tea_cache', JSON.stringify(data)); } catch {}
-      }
+      } catch {}
       setIsLoading(false);
     };
 
     fetchDrinks();
-
-    const channel = supabase.channel('realtime_tea_menu')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks', filter: "category=eq.Бабл милк ти" }, fetchDrinks)
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const scrollToCategory = (id: string) => {

@@ -216,15 +216,16 @@ export default function CartPage() {
 
   useEffect(() => {
     const fetchPrices = async () => {
-      const { data, error } = await supabase.from('drinks').select('name, price_pickup, price_delivery');
-      if (data && !error) {
+      try {
+        const res = await fetch('/api/drinks');
+        const json = await res.json();
         const pricesMap: Record<string, { pickup: number, delivery: number }> = {};
-        data.forEach(d => {
+        (json.drinks || []).forEach((d: any) => {
           const cleanName = normalizeString(d.name);
           pricesMap[cleanName] = { pickup: d.price_pickup, delivery: d.price_delivery };
         });
         setDbPrices(pricesMap);
-      }
+      } catch {}
     };
     fetchPrices();
   }, []);
@@ -241,30 +242,26 @@ export default function CartPage() {
     }
 
     setPromoError('');
-    
-    const { data, error } = await supabase
-      .from('promocodes')
-      .select('*')
-      .eq('code', promoCodeInput.trim().toUpperCase())
-      .single();
 
-    if (error || !data) {
-      setPromoError('Код не найден');
-      return;
+    try {
+      const res = await fetch('/api/promo-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: promoCodeInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error === 'not found') setPromoError('Код не найден');
+        else if (data.error === 'inactive') setPromoError('Код неактивен');
+        else if (data.error === 'limit') setPromoError('Лимит исчерпан');
+        else setPromoError('Ошибка');
+        return;
+      }
+      setAppliedPromo({ code: data.code, discount: data.discount });
+      setPromoError('Применен!');
+    } catch {
+      setPromoError('Ошибка соединения');
     }
-
-    if (!data.is_active) {
-      setPromoError('Код неактивен');
-      return;
-    }
-
-    if (data.usage_limit && data.used_count >= data.usage_limit) {
-      setPromoError('Лимит исчерпан');
-      return;
-    }
-
-    setAppliedPromo({ code: data.code, discount: data.discount_percent });
-    setPromoError('Применен!');
   };
 
   const getCorrectItemPrice = (item: CartItem, applyOpeningPromo = true) => {
@@ -479,9 +476,10 @@ export default function CartPage() {
 
     const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
 
-    // Создаём заказ через сервер (база защищена секретным ключом)
+    // Создаём заказ через сервер (база защищена секретным ключом, цена считается на сервере)
     let orderId: number;
     let dbTime: number;
+    let serverTotal: number = dynamicTotal;
     try {
       const createRes = await fetch('/api/order/create', {
         method: 'POST',
@@ -491,25 +489,30 @@ export default function CartPage() {
           phone: savedPhone,
           address: savedAddress || '',
           items: JSON.stringify(formattedItems),
-          total: dynamicTotal,
           order_type: orderType,
           order_time: isTimeOrder && selectedTime ? selectedTime : null,
           isTest: isTestMode,
+          promo_code: appliedPromo?.code || null,
         }),
       });
       const createData = await createRes.json();
       if (!createRes.ok || !createData.id) throw new Error('create failed');
       orderId = createData.id;
       dbTime = new Date(createData.created_at).getTime();
+      if (typeof createData.total === 'number') serverTotal = createData.total;
     } catch {
       setIsPaying(false);
       alert("Ошибка при создании заказа! Попробуй еще раз.");
       return;
     }
 
-    // Инкрементируем промокод после успешного создания заказа
+    // Инкрементируем промокод после успешного создания заказа (через сервер)
     if (appliedPromo) {
-      try { await supabase.rpc('increment_promocode_usage', { code_param: appliedPromo.code }); } catch {}
+      fetch('/api/promo-increment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: appliedPromo.code }),
+      }).catch(() => {});
     }
 
     // ТЕСТОВЫЙ РЕЖИМ: сервер уже принял заказ и отправил в ВК
@@ -528,7 +531,7 @@ export default function CartPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: orderId,
-          amount: dynamicTotal,
+          amount: serverTotal,
           description: `Заказ #${orderId} (Bubble Present)`,
           email: savedEmail,
           items: formattedItems,

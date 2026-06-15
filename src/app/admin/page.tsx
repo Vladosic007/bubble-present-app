@@ -93,14 +93,22 @@ export default function AdminPage() {
   // === ЛОГИКА ТУМБЛЕРОВ ===
   const toggleDrink = async (id: number, currentStatus: boolean) => {
     setDrinks(drinks.map(d => d.id === id ? { ...d, is_active: !currentStatus } : d));
-    const { error } = await supabase.from('drinks').update({ is_active: !currentStatus }).eq('id', id);
-    if (error) setDrinks(drinks.map(d => d.id === id ? { ...d, is_active: currentStatus } : d));
+    const res = await fetch('/api/admin/drink-toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ id, is_active: !currentStatus }),
+    }).catch(() => null);
+    if (!res || !res.ok) setDrinks(drinks.map(d => d.id === id ? { ...d, is_active: currentStatus } : d));
   };
 
   const toggleTopping = async (id: number, currentStatus: boolean) => {
     setToppings(toppings.map(t => t.id === id ? { ...t, is_active: !currentStatus } : t));
-    const { error } = await supabase.from('toppings').update({ is_active: !currentStatus }).eq('id', id);
-    if (error) setToppings(toppings.map(t => t.id === id ? { ...t, is_active: currentStatus } : t));
+    const res = await fetch('/api/admin/topping-toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ id, is_active: !currentStatus }),
+    }).catch(() => null);
+    if (!res || !res.ok) setToppings(toppings.map(t => t.id === id ? { ...t, is_active: currentStatus } : t));
   };
 
   // === ИЗМЕНЕНИЕ СТАТУСА ЗАКАЗА ===
@@ -122,19 +130,38 @@ export default function AdminPage() {
     setActiveTab(tab);
   };
 
-  const handleBossAuth = (e: React.FormEvent) => {
+  const [bossKey, setBossKey] = useState(''); // PIN босса для серверных запросов
+
+  const handleBossAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (bossPin === '8888') { // ❗ ПАРОЛЬ ВЛАДЕЛЬЦА ТУТ ❗
-      setIsBoss(true);
-      setShowBossPrompt(false);
-      setActiveTab('promos');
-      localStorage.setItem('bubble_boss_mode', 'true');
-      setBossPin('');
-    } else {
-      alert('Неверный PIN босса!');
-      setBossPin('');
+    try {
+      const res = await fetch('/api/admin/boss-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: bossPin }),
+      });
+      if (res.ok) {
+        setBossKey(bossPin);
+        setIsBoss(true);
+        setShowBossPrompt(false);
+        setActiveTab('promos');
+        localStorage.setItem('bubble_boss_mode', 'true');
+        localStorage.setItem('bubble_boss_pin', bossPin); // запоминаем для следующих заходов
+        setBossPin('');
+      } else {
+        alert('Неверный PIN босса!');
+        setBossPin('');
+      }
+    } catch {
+      alert('Ошибка соединения');
     }
   };
+
+  // Восстанавливаем PIN босса из памяти при загрузке
+  useEffect(() => {
+    const savedBossPin = localStorage.getItem('bubble_boss_pin');
+    if (savedBossPin) setBossKey(savedBossPin);
+  }, []);
 
   const handleCreatePromo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,19 +170,32 @@ export default function AdminPage() {
     const discount = parseInt(newPromoDiscount);
     const limit = newPromoLimit ? parseInt(newPromoLimit) : null;
 
-    const { data, error } = await supabase.from('promocodes').insert([{ code, discount_percent: discount, usage_limit: limit }]).select();
-    if (error) {
-      alert('Ошибка! Возможно такой код уже существует.');
-    } else if (data) {
-      setPromocodes([data[0], ...promocodes]);
+    try {
+      const res = await fetch('/api/admin/promo-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-boss-key': bossKey },
+        body: JSON.stringify({ code, discount_percent: discount, usage_limit: limit }),
+      });
+      if (!res.ok) {
+        alert('Ошибка! Возможно такой код уже существует.');
+        return;
+      }
+      const { promo } = await res.json();
+      setPromocodes([promo, ...promocodes]);
       setNewPromoCode(''); setNewPromoDiscount(''); setNewPromoLimit('');
+    } catch {
+      alert('Ошибка соединения');
     }
   };
 
   const togglePromo = async (id: string, currentStatus: boolean) => {
     setPromocodes(promocodes.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p));
-    const { error } = await supabase.from('promocodes').update({ is_active: !currentStatus }).eq('id', id);
-    if (error) setPromocodes(promocodes.map(p => p.id === id ? { ...p, is_active: currentStatus } : p));
+    const res = await fetch('/api/admin/promo-toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-boss-key': bossKey },
+      body: JSON.stringify({ id, is_active: !currentStatus }),
+    }).catch(() => null);
+    if (!res || !res.ok) setPromocodes(promocodes.map(p => p.id === id ? { ...p, is_active: currentStatus } : p));
   };
 
   // === ЭКРАН ВХОДА ===
