@@ -63,6 +63,12 @@ export async function POST(req: Request) {
 
     // Нажатие callback-кнопки
     if (body.type === 'message_event') {
+      // Защита: принимаем только запросы с верным секретом ВК
+      if (process.env.VK_SECRET && body.secret !== process.env.VK_SECRET) {
+        console.warn('VK-bot: отклонён запрос с неверным секретом');
+        return new Response('ok', { status: 200 });
+      }
+
       const { event_id, user_id, peer_id, payload } = body.object;
       const { action, order_id, order_type, address } = payload;
 

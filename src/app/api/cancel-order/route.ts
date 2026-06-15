@@ -1,15 +1,27 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
   try {
     const { orderId } = await req.json();
+
+    if (!orderId) {
+      return NextResponse.json({ error: 'no orderId' }, { status: 400 });
+    }
+
+    // Проверяем что заказ реально существует и отменён (защита от спама)
+    const { data: order, error } = await supabase
+      .from('orders').select('id, status').eq('id', orderId).single();
+
+    if (error || !order || order.status !== 'cancelled') {
+      return NextResponse.json({ error: 'order not cancellable' }, { status: 400 });
+    }
 
     const VK_TOKEN = process.env.VK_TOKEN!;
     const peerIds = (process.env.VK_PEER_ID || '').split(',').map(s => s.trim()).filter(Boolean);
 
     const cancelMessage = `❌ ЗАКАЗ #${orderId} ОТМЕНЕН КЛИЕНТОМ ❌\n\nКлиент передумал и отменил заказ. Не готовьте его!`;
 
-    // Шлём отмену всем получателям
     for (const peerId of peerIds) {
       const params = new URLSearchParams({
         peer_id: peerId,

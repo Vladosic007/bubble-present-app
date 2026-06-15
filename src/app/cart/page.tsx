@@ -516,7 +516,6 @@ export default function CartPage() {
 
     const orderId = data[0].id;
     const dbTime = new Date(data[0].created_at).getTime();
-    const orderTimeValue = isTimeOrder && selectedTime ? selectedTime : null;
 
     const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
 
@@ -539,20 +538,11 @@ export default function CartPage() {
       if (isTestMode) {
         await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
 
-        // Отправляем в ВК
+        // Отправляем в ВК (vk-notify сам возьмёт данные из базы)
         await fetch('/api/vk-notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId,
-            orderType,
-            customerName: savedName,
-            phone: savedPhone,
-            address: savedAddress || '',
-            items: JSON.stringify(formattedItems),
-            total: dynamicTotal,
-            orderTime: orderTimeValue,
-          }),
+          body: JSON.stringify({ orderId }),
         }).catch(() => {});
 
         addActiveOrder(orderId, 'accepted', dbTime);
