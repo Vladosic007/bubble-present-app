@@ -75,6 +75,7 @@ export async function POST(req: Request) {
           order_type,
           order_time: order_time || null,
           status: initialStatus,
+          vk_notified: isTest ? true : false,
         },
       ])
       .select();

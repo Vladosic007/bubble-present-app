@@ -51,12 +51,18 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true }, { status: 200 });
       }
 
-      // === 3. ОТПРАВЛЯЕМ В ВК (vk-notify сам возьмёт данные из базы) ===
-      await fetch(`https://www.bubblepresent.ru/api/vk-notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
-      }).catch(err => console.error('Ошибка отправки в ВК:', err));
+      // === 3. ОТПРАВЛЯЕМ В ВК ===
+      // Заказ "ко времени" — уведомление отправит планировщик за ~35 мин до времени.
+      // Заказ "как можно скорее" — шлём сразу.
+      if (orderData.order_time) {
+        console.log(`⏰ Заказ #${orderId} ко времени ${orderData.order_time} — уведомление отложено планировщиком`);
+      } else {
+        await fetch(`https://www.bubblepresent.ru/api/vk-notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId }),
+        }).catch(err => console.error('Ошибка отправки в ВК:', err));
+      }
 
       console.log(`✅ Заказ #${orderId} обработан (платёж ${paymentId})`);
     }
