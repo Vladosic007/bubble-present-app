@@ -25,7 +25,12 @@ export default function AdminPage() {
   const [newPromoLimit, setNewPromoLimit] = useState('');
 
   useEffect(() => {
-    if (localStorage.getItem('bubble_boss_mode') === 'true') setIsBoss(true);
+    // Авто-вход в режим босса ТОЛЬКО если есть сохранённый PIN — иначе все запросы будут падать с 403
+    const savedBossPin = localStorage.getItem('bubble_boss_pin');
+    if (savedBossPin) {
+      setBossKey(savedBossPin);
+      setIsBoss(true);
+    }
   }, []);
 
   // === ЛОГИКА АВТОРИЗАЦИИ ===
@@ -156,12 +161,6 @@ export default function AdminPage() {
       alert('Ошибка соединения');
     }
   };
-
-  // Восстанавливаем PIN босса из памяти при загрузке
-  useEffect(() => {
-    const savedBossPin = localStorage.getItem('bubble_boss_pin');
-    if (savedBossPin) setBossKey(savedBossPin);
-  }, []);
 
   const handleCreatePromo = async (e: React.FormEvent) => {
     e.preventDefault();
