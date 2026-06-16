@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { orderId, amount, description, email, items, isTest } = body;
+    const { orderId, description, email, items, isTest } = body;
+
+    // ВАЖНО: берём сумму из БАЗЫ, а не от клиента
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from('orders').select('total').eq('id', orderId).single();
+    if (orderErr || !order) {
+      console.error('Заказ не найден:', orderId, orderErr);
+      return NextResponse.json({ error: 'Заказ не найден' }, { status: 404 });
+    }
+    const amount = order.total;
 
     // === 1. ЕСЛИ ЭТО РЕЖИМ "ТЕСТ" ===
     // Возвращаем фейковый ответ, не дергая ЮKassa
@@ -20,17 +30,35 @@ export async function POST(req: Request) {
 
     const formattedAmount = Number(amount).toFixed(2);
 
-    const receiptItems = items.map((item: any) => ({
-      description: item.name.substring(0, 128),
-      quantity: item.qty.toString(),
-      amount: {
-        value: Number(item.price).toFixed(2),
-        currency: 'RUB'
-      },
-      vat_code: 1, 
-      payment_mode: 'full_prepayment',
-      payment_subject: 'commodity'
-    }));
+    // Чек: цены позиций должны в сумме давать ровно amount (требование ЮKassa)
+    // Пересчитываем пропорционально серверной сумме
+    const clientSum = items.reduce((s: number, it: any) => s + Number(it.price) * Number(it.qty), 0);
+    const ratio = clientSum > 0 ? amount / clientSum : 1;
+
+    const receiptItems = items.map((item: any, idx: number) => {
+      // Берём цену с пропорцией, округляем до копеек
+      let perItem = Math.round(Number(item.price) * ratio * 100) / 100;
+      return {
+        description: item.name.substring(0, 128),
+        quantity: item.qty.toString(),
+        amount: { value: perItem.toFixed(2), currency: 'RUB' },
+        vat_code: 1,
+        payment_mode: 'full_prepayment',
+        payment_subject: 'commodity'
+      };
+    });
+
+    // Подгоняем последнюю позицию так, чтобы сумма чека ТОЧНО равнялась amount
+    const receiptTotal = receiptItems.reduce(
+      (s: number, ri: any) => s + Number(ri.amount.value) * Number(ri.quantity), 0
+    );
+    const diff = Math.round((amount - receiptTotal) * 100) / 100;
+    if (diff !== 0 && receiptItems.length > 0) {
+      const last = receiptItems[receiptItems.length - 1];
+      const qty = Number(last.quantity);
+      const newVal = Number(last.amount.value) + diff / qty;
+      last.amount.value = (Math.round(newVal * 100) / 100).toFixed(2);
+    }
 
     const paymentBody: any = {
       amount: {
