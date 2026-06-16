@@ -385,16 +385,19 @@ export default function CartPage() {
     }
 
     try {
-      // Сервер сам отменит заказ в базе и пошлёт уведомление в ВК (если был оплачен)
+      // Сервер сам отменит заказ в базе и пошлёт уведомление в ВК (если был оплачен).
+      // auto=true (таймаут) — сервер отменит ТОЛЬКО неоплаченный заказ.
       const res = await fetch('/api/order/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: activeOrderId }),
+        body: JSON.stringify({ orderId: activeOrderId, auto: isAutoCancel }),
       });
 
-      if (res.ok) {
+      const result = await res.json().catch(() => ({}));
+
+      if (res.ok && !result.skipped) {
         updateOrderStatus(activeOrderId, 'cancelled');
-      } else if (!isAutoCancel) {
+      } else if (!isAutoCancel && !res.ok) {
         alert("Не удалось отменить заказ. Возможно, его уже начали готовить!");
       }
     } catch {

@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
+    const { orderId, auto } = await req.json();
     if (!orderId) return NextResponse.json({ error: 'no orderId' }, { status: 400 });
 
     // Читаем текущий статус
@@ -23,6 +23,15 @@ export async function POST(req: Request) {
     }
 
     const previousStatus = order.status;
+
+    // ЗАЩИТА: авто-отмена (по таймауту 10 мин) разрешена ТОЛЬКО для неоплаченных заказов.
+    // Если заказ уже оплачен (accepted и т.д.) — НЕ отменяем (клиент мог просто потерять связь).
+    if (auto && previousStatus !== 'pending_payment') {
+      console.log(`🛡 Авто-отмена заказа #${orderId} отклонена — он уже оплачен (статус ${previousStatus})`);
+      return NextResponse.json({ skipped: true });
+    }
+
+    console.log(`🚫 Отмена заказа #${orderId} (был статус: ${previousStatus}, авто: ${!!auto})`);
 
     // Отменяем
     const { error: updErr } = await supabaseAdmin
