@@ -215,7 +215,7 @@ export default function ProfilePage() {
 
               {/* ❗ ВСТАВЬ СВОЙ ТЕЛЕГРАМ НИЖЕ ❗ */}
               <a 
-                href="https://t.me/BubblePresentSupport" 
+                href="https://t.me/altov_dm"
                 target="_blank" 
                 rel="noreferrer" 
                 className="w-[346px] h-[52px] rounded-[20px] bg-[#0088CC]/10 text-[#0088CC] border border-[#0088CC]/30 font-['Arial'] font-bold uppercase text-[14px] active:scale-95 transition-transform flex items-center justify-center gap-2 mb-[16px]"
