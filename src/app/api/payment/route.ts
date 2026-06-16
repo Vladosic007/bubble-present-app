@@ -30,35 +30,22 @@ export async function POST(req: Request) {
 
     const formattedAmount = Number(amount).toFixed(2);
 
-    // Чек: цены позиций должны в сумме давать ровно amount (требование ЮKassa)
-    // Пересчитываем пропорционально серверной сумме
-    const clientSum = items.reduce((s: number, it: any) => s + Number(it.price) * Number(it.qty), 0);
-    const ratio = clientSum > 0 ? amount / clientSum : 1;
+    // Чек ОДНОЙ строкой на всю сумму заказа — гарантирует что сумма позиций == сумма чека
+    // (исключает ошибку ЮKassa "Сумма по товарным позициям не равна сумме чека")
+    const itemsCount = Array.isArray(items)
+      ? items.reduce((s: number, it: any) => s + (Number(it.qty) || 1), 0)
+      : 0;
 
-    const receiptItems = items.map((item: any, idx: number) => {
-      // Берём цену с пропорцией, округляем до копеек
-      let perItem = Math.round(Number(item.price) * ratio * 100) / 100;
-      return {
-        description: item.name.substring(0, 128),
-        quantity: item.qty.toString(),
-        amount: { value: perItem.toFixed(2), currency: 'RUB' },
+    const receiptItems = [
+      {
+        description: `Заказ #${orderId} (напитков: ${itemsCount || 1})`.substring(0, 128),
+        quantity: '1',
+        amount: { value: formattedAmount, currency: 'RUB' },
         vat_code: 1,
         payment_mode: 'full_prepayment',
-        payment_subject: 'commodity'
-      };
-    });
-
-    // Подгоняем последнюю позицию так, чтобы сумма чека ТОЧНО равнялась amount
-    const receiptTotal = receiptItems.reduce(
-      (s: number, ri: any) => s + Number(ri.amount.value) * Number(ri.quantity), 0
-    );
-    const diff = Math.round((amount - receiptTotal) * 100) / 100;
-    if (diff !== 0 && receiptItems.length > 0) {
-      const last = receiptItems[receiptItems.length - 1];
-      const qty = Number(last.quantity);
-      const newVal = Number(last.amount.value) + diff / qty;
-      last.amount.value = (Math.round(newVal * 100) / 100).toFixed(2);
-    }
+        payment_subject: 'commodity',
+      },
+    ];
 
     const paymentBody: any = {
       amount: {
