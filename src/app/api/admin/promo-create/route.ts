@@ -8,14 +8,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 
-    const { code, discount_percent, usage_limit } = await req.json();
+    const { code, discount_percent, usage_limit, applies_to, valid_until } = await req.json();
     if (!code || !discount_percent) {
       return NextResponse.json({ error: 'missing fields' }, { status: 400 });
     }
 
+    const insertRow: any = {
+      code,
+      discount_percent,
+      usage_limit: usage_limit || null,
+      applies_to: applies_to || null,        // null = на всё меню; "category:..." | "drink:..."
+      valid_until: valid_until || null,      // null = бессрочно
+    };
+
     const { data, error } = await supabaseAdmin
       .from('promocodes')
-      .insert([{ code, discount_percent, usage_limit: usage_limit || null }])
+      .insert([insertRow])
       .select();
 
     if (error || !data) {

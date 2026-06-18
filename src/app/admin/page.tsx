@@ -23,6 +23,8 @@ export default function AdminPage() {
   const [newPromoCode, setNewPromoCode] = useState('');
   const [newPromoDiscount, setNewPromoDiscount] = useState('');
   const [newPromoLimit, setNewPromoLimit] = useState('');
+  const [newPromoAppliesTo, setNewPromoAppliesTo] = useState(''); // '' = на всё, 'category:X', 'drink:Y'
+  const [newPromoValidUntil, setNewPromoValidUntil] = useState(''); // YYYY-MM-DD или ''
 
   useEffect(() => {
     // Авто-вход в режим босса ТОЛЬКО если есть сохранённый PIN — иначе все запросы будут падать с 403
@@ -168,12 +170,15 @@ export default function AdminPage() {
     const code = newPromoCode.trim().toUpperCase();
     const discount = parseInt(newPromoDiscount);
     const limit = newPromoLimit ? parseInt(newPromoLimit) : null;
+    const applies_to = newPromoAppliesTo || null;
+    // YYYY-MM-DD → конец дня по МСК
+    const valid_until = newPromoValidUntil ? `${newPromoValidUntil}T23:59:59+03:00` : null;
 
     try {
       const res = await fetch('/api/admin/promo-create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-boss-key': bossKey },
-        body: JSON.stringify({ code, discount_percent: discount, usage_limit: limit }),
+        body: JSON.stringify({ code, discount_percent: discount, usage_limit: limit, applies_to, valid_until }),
       });
       if (!res.ok) {
         alert('Ошибка! Возможно такой код уже существует.');
@@ -182,6 +187,7 @@ export default function AdminPage() {
       const { promo } = await res.json();
       setPromocodes([promo, ...promocodes]);
       setNewPromoCode(''); setNewPromoDiscount(''); setNewPromoLimit('');
+      setNewPromoAppliesTo(''); setNewPromoValidUntil('');
     } catch {
       alert('Ошибка соединения');
     }
@@ -359,21 +365,71 @@ export default function AdminPage() {
                       <input type="number" placeholder="Скидка %" value={newPromoDiscount} onChange={e => setNewPromoDiscount(e.target.value)} required min="1" max="99" className="flex-1 h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none" />
                       <input type="number" placeholder="Лимит (шт)" value={newPromoLimit} onChange={e => setNewPromoLimit(e.target.value)} min="1" className="flex-1 h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none" />
                     </div>
+
+                    {/* На что действует промокод */}
+                    <div className="flex flex-col gap-[6px]">
+                      <label className="text-[9px] font-bold text-[#949494] uppercase">На что действует</label>
+                      <select
+                        value={newPromoAppliesTo}
+                        onChange={e => setNewPromoAppliesTo(e.target.value)}
+                        className="w-full h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none"
+                      >
+                        <option value="">🎁 На всё меню</option>
+                        <optgroup label="🏷 На категорию">
+                          <option value="category:Бабл милк ти">Все Бабл-ти</option>
+                          <option value="category:Бабл кофе">Все Бабл-кофе</option>
+                          <option value="category:Бабл лим">Все Бабл-лим</option>
+                          <option value="category:Бабл матча">Вся Бабл-матча</option>
+                        </optgroup>
+                        <optgroup label="🥤 На конкретный напиток">
+                          {drinks.map(d => (
+                            <option key={d.id} value={`drink:${d.name.toLowerCase().trim()}`}>{d.name} ({d.category})</option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    {/* Срок действия */}
+                    <div className="flex flex-col gap-[6px]">
+                      <label className="text-[9px] font-bold text-[#949494] uppercase">Действует до (необязательно)</label>
+                      <input
+                        type="date"
+                        value={newPromoValidUntil}
+                        onChange={e => setNewPromoValidUntil(e.target.value)}
+                        className="w-full h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none"
+                      />
+                    </div>
+
                     <button type="submit" className="w-full h-[40px] bg-[#333] text-white rounded-[10px] font-bold text-[10px] uppercase active:scale-95 transition-transform">Создать</button>
                   </form>
 
                   {/* Список */}
-                  {promocodes.map(promo => (
-                    <div key={promo.id} className={`w-full bg-white p-[16px] rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex items-center justify-between border ${!promo.is_active ? 'border-[#FF0040] opacity-60' : 'border-[#E5E5EA]'}`}>
-                      <div className="flex flex-col gap-[4px]">
-                        <span className="font-['Benzin'] font-extrabold text-[14px] text-[#333] uppercase leading-tight">{promo.code} <span className="text-[#FF008C]">-{promo.discount_percent}%</span></span>
-                        <span className="font-['Arial'] font-bold text-[10px] text-[#949494] uppercase">Использовано: {promo.used_count} {promo.usage_limit ? `из ${promo.usage_limit}` : '(без лимита)'}</span>
+                  {promocodes.map(promo => {
+                    // Расшифровка applies_to
+                    let appliesLabel = '🎁 На всё меню';
+                    if (promo.applies_to) {
+                      if (promo.applies_to.startsWith('category:')) appliesLabel = '🏷 ' + promo.applies_to.slice(9);
+                      else if (promo.applies_to.startsWith('drink:')) appliesLabel = '🥤 ' + promo.applies_to.slice(6);
+                    }
+                    const expired = promo.valid_until && new Date(promo.valid_until) < new Date();
+                    const validUntilLabel = promo.valid_until
+                      ? `до ${new Date(promo.valid_until).toLocaleDateString('ru-RU')}`
+                      : 'бессрочно';
+                    return (
+                      <div key={promo.id} className={`w-full bg-white p-[16px] rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex items-center justify-between border ${(!promo.is_active || expired) ? 'border-[#FF0040] opacity-60' : 'border-[#E5E5EA]'}`}>
+                        <div className="flex flex-col gap-[4px]">
+                          <span className="font-['Benzin'] font-extrabold text-[14px] text-[#333] uppercase leading-tight">{promo.code} <span className="text-[#FF008C]">-{promo.discount_percent}%</span></span>
+                          <span className="font-['Arial'] font-bold text-[9px] text-[#666] uppercase">{appliesLabel}</span>
+                          <span className="font-['Arial'] font-bold text-[9px] text-[#949494] uppercase">
+                            {validUntilLabel}{expired && ' ❌'} · Использовано: {promo.used_count}{promo.usage_limit ? ` / ${promo.usage_limit}` : ''}
+                          </span>
+                        </div>
+                        <button onClick={() => togglePromo(promo.id, promo.is_active)} className={`w-[50px] h-[30px] rounded-full p-[2px] transition-colors duration-300 ease-in-out flex shrink-0 ${promo.is_active ? 'bg-[#14FF00]' : 'bg-[#FF0040]'}`}>
+                          <motion.div layout className="w-[26px] h-[26px] bg-white rounded-full shadow-md" animate={{ x: promo.is_active ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+                        </button>
                       </div>
-                      <button onClick={() => togglePromo(promo.id, promo.is_active)} className={`w-[50px] h-[30px] rounded-full p-[2px] transition-colors duration-300 ease-in-out flex shrink-0 ${promo.is_active ? 'bg-[#14FF00]' : 'bg-[#FF0040]'}`}>
-                        <motion.div layout className="w-[26px] h-[26px] bg-white rounded-full shadow-md" animate={{ x: promo.is_active ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>

@@ -8,15 +8,28 @@ const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-\.,()]/g,
 
 // Пересчёт суммы заказа на сервере (защита от подмены цены)
 async function calcTotal(items: any[], order_type: string, promo_code: string | null): Promise<number> {
-  const { data: drinks } = await supabaseAdmin.from('drinks').select('name, price_pickup, price_delivery');
+  const { data: drinks } = await supabaseAdmin.from('drinks').select('name, category, price_pickup, price_delivery');
   if (!drinks) return 0;
 
-  const priceMap: Record<string, { pickup: number, delivery: number }> = {};
+  const priceMap: Record<string, { pickup: number, delivery: number, category: string }> = {};
   drinks.forEach((d: any) => {
-    priceMap[normalize(d.name)] = { pickup: d.price_pickup, delivery: d.price_delivery };
+    priceMap[normalize(d.name)] = { pickup: d.price_pickup, delivery: d.price_delivery, category: d.category };
   });
 
   const isOpening = IS_OPENING_DAY() && order_type === 'pickup';
+
+  // Загружаем промокод заранее (если есть)
+  let promo: any = null;
+  if (promo_code && !isOpening) {
+    const { data } = await supabaseAdmin.from('promocodes').select('*')
+      .eq('code', promo_code.toUpperCase()).single();
+    if (data && data.is_active
+        && (!data.usage_limit || data.used_count < data.usage_limit)
+        && (!data.valid_until || new Date(data.valid_until) >= new Date())) {
+      promo = data;
+    }
+  }
+
   let total = 0;
   for (const it of items) {
     const cleanName = normalize((it.name || '').replace(/\s*\(.+/, ''));
@@ -33,17 +46,32 @@ async function calcTotal(items: any[], order_type: string, promo_code: string | 
     if (name.includes('сырн')) itemPrice += 70;
     if (name.includes('2x') || name.includes('2х')) itemPrice += 80;
     if (isOpening) itemPrice = Math.round(itemPrice / 2);
+
+    // Применение промокода к этой позиции (если подходит)
+    if (promo) {
+      const apply = !promo.applies_to || promoMatchesItem(promo.applies_to, it.slug || it.id, base.category, cleanName);
+      if (apply) {
+        itemPrice = Math.round(itemPrice * (1 - promo.discount_percent / 100));
+      }
+    }
+
     total += itemPrice * (it.qty || 1);
   }
 
-  if (promo_code && !isOpening) {
-    const { data: promo } = await supabaseAdmin.from('promocodes').select('*')
-      .eq('code', promo_code.toUpperCase()).single();
-    if (promo && promo.is_active && (!promo.usage_limit || promo.used_count < promo.usage_limit)) {
-      total = Math.round(total * (1 - promo.discount_percent / 100));
-    }
-  }
   return total;
+}
+
+function promoMatchesItem(appliesTo: string, slug: string | undefined, category: string | undefined, cleanName: string): boolean {
+  if (!appliesTo) return true;
+  if (appliesTo.startsWith('drink:')) {
+    const wantedSlug = appliesTo.slice(6).toLowerCase();
+    // На клиенте slug не всегда есть — сверяем ещё и по cleanName
+    return (slug || '').toLowerCase() === wantedSlug || cleanName.includes(wantedSlug);
+  }
+  if (appliesTo.startsWith('category:')) {
+    return (category || '').toLowerCase() === appliesTo.slice(9).toLowerCase();
+  }
+  return false;
 }
 
 export async function POST(req: Request) {

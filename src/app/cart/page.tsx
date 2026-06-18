@@ -293,16 +293,24 @@ export default function CartPage() {
     setPromoError('');
 
     try {
+      // Передаём состав корзины — сервер проверит подходит ли промокод
+      const cartItems = items.map((it: CartItem) => ({
+        name: it.name,
+        slug: it.id,
+        qty: it.quantity,
+      }));
       const res = await fetch('/api/promo-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCodeInput }),
+        body: JSON.stringify({ code: promoCodeInput, items: cartItems }),
       });
       const data = await res.json();
       if (!res.ok) {
         if (data.error === 'not found') setPromoError('Код не найден');
         else if (data.error === 'inactive') setPromoError('Код неактивен');
         else if (data.error === 'limit') setPromoError('Лимит исчерпан');
+        else if (data.error === 'expired') setPromoError('Срок действия истёк');
+        else if (data.error === 'not_applicable') setPromoError('Не для этих напитков');
         else setPromoError('Ошибка');
         return;
       }
