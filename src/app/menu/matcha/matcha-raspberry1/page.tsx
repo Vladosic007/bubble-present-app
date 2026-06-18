@@ -37,6 +37,11 @@ export default function CoffeeTemplatePage() { // весь блок добавл
   const [selectedType, setSelectedType] = useState('Холодный'); // ❗ ДОБАВИЛИ ТИП ❗
   const [selectedVolume, setSelectedVolume] = useState('M'); // M или L
   const [cheeseSelected, setCheeseSelected] = useState(false);
+  // Стоп-лист
+  const [cheeseInStop, setCheeseInStop] = useState(false);
+  const [tapiocaInStop, setTapiocaInStop] = useState(false);
+  const [tapioca2xInStop, setTapioca2xInStop] = useState(false);
+  const [juice2xInStop, setJuice2xInStop] = useState(false);
   const [isAddonsOpen, setIsAddonsOpen] = useState(false); // две строчки
   const [hasOpenedAddons, setHasOpenedAddons] = useState(false);
   
@@ -60,7 +65,20 @@ export default function CoffeeTemplatePage() { // весь блок добавл
         const error = null;
   
         if (data && !error) {
-          const activeNames = data.map((t: any) => t.name);
+          const activeNames: string[] = data.map((t: any) => t.name);
+        const lowerActive = activeNames.map((n: string) => n.toLowerCase());
+        const cheeseActive = lowerActive.some((n: string) => n.includes('сырн'));
+        const tapiocaActive = lowerActive.some((n: string) => n.includes('тапиока') && !n.includes('2x') && !n.includes('2х'));
+        const tapioca2xActive = lowerActive.some((n: string) => n.includes('тапиока') && (n.includes('2x') || n.includes('2х')));
+        const juice2xActive = lowerActive.some((n: string) => (n.includes('джус') || n.includes('боллы')) && (n.includes('2x') || n.includes('2х')));
+        setCheeseInStop(!cheeseActive);
+        setTapiocaInStop(!tapiocaActive);
+        setTapioca2xInStop(!tapioca2xActive);
+        setJuice2xInStop(!juice2xActive);
+        if (!cheeseActive) setCheeseSelected(false);
+        if (typeof setTapiocaSelected === 'function' && !tapiocaActive) setTapiocaSelected(false);
+        if (typeof setTapiocaX2Selected === 'function' && !tapioca2xActive) setTapiocaX2Selected(false);
+        if (typeof setJuiceX2Selected === 'function' && !juice2xActive) setJuiceX2Selected(false);
           
           // 1. ФИЛЬТРУЕМ МУСОР (Тапиока, Сыр и бронебойная защита от 2X/Крафтинга)
           const flavorsOnly = activeNames.filter((name: string) => {
@@ -277,7 +295,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
             <div className="w-full flex justify-between items-center mt-[16px] px-[16px] shrink-0">
               <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Тапиока</span>
               <div className="flex items-center gap-[10px] shrink-0">
-                <div onClick={handleTapiocaClick} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${tapiocaSelected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
+                <div onClick={tapiocaInStop ? undefined : handleTapiocaClick} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${tapiocaSelected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
                   {tapiocaSelected && <CheckMark />}
                 </div>
               </div>
@@ -305,7 +323,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
               <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Сырная шапка</span>
               <div className="flex items-center gap-[10px] shrink-0">
                 <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${cheeseSelected ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>+ 70 ₽</span>
-                <div onClick={() => setCheeseSelected(!cheeseSelected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${cheeseSelected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
+                <div onClick={cheeseInStop ? undefined : () => setCheeseSelected(!cheeseSelected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${cheeseSelected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
                   {cheeseSelected && <CheckMark />}
                 </div>
               </div>
@@ -321,7 +339,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
               <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Тапиока 2X</span>
               <div className="flex items-center gap-[10px] shrink-0">
                 <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${tapiocaX2Selected ? 'opacity-100' : 'opacity-0'}`}>+ 80 ₽</span>
-                <div onClick={() => setTapiocaX2Selected(!tapiocaX2Selected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${tapiocaX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{tapiocaX2Selected && <CheckMark />}</div>
+                <div onClick={tapioca2xInStop ? undefined : () => setTapiocaX2Selected(!tapiocaX2Selected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${tapiocaX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{tapiocaX2Selected && <CheckMark />}</div>
               </div>
             </div>
             <div className="w-[282px] h-[1px] bg-[#BEBEBE] rounded-full mx-auto mt-[12px] shrink-0"></div>
@@ -329,7 +347,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
               <span className="text-[16px] tracking-[0.02em] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase">Джус боллы 2X</span>
               <div className="flex items-center gap-[10px] shrink-0">
                 <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${juiceX2Selected ? 'opacity-100' : 'opacity-0'}`}>+ 80 ₽</span>
-                <div onClick={handleJuiceX2Click} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${juiceX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{juiceX2Selected && <CheckMark />}</div>
+                <div onClick={juice2xInStop ? undefined : handleJuiceX2Click} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${juiceX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>{juiceX2Selected && <CheckMark />}</div>
               </div>
             </div>
           </div>

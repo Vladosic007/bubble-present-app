@@ -169,19 +169,18 @@ export default function InfoPage() {
        }
      }
 
-     // ❗ ПРОВЕРКА И ФОРМАТИРОВАНИЕ АДРЕСА ❗
+     // ❗ ФОРМАТИРОВАНИЕ АДРЕСА (пустой — ок, нужен только для доставки) ❗
      let finalAddress = address.trim();
-     if (finalAddress && !finalAddress.toLowerCase().includes('таганрог')) {
-       return alert("❌ Мы доставляем только по Таганрогу! Пожалуйста, выберите адрес на карте или впишите город.");
-     }
-     
-     // Если человек написал просто "Таганрог, Чехова", жестко добавляем область
-     if (finalAddress && !finalAddress.toLowerCase().includes('ростовская область')) {
+     if (finalAddress) {
+       // Если введён адрес — он должен быть по Таганрогу (доставка только туда)
+       if (!finalAddress.toLowerCase().includes('таганрог')) {
+         return alert("❌ Мы доставляем только по Таганрогу! Если вы оформляете самовывоз — оставьте поле «Адрес» пустым.");
+       }
+       if (!finalAddress.toLowerCase().includes('ростовская область')) {
          finalAddress = `Ростовская область, ${finalAddress}`;
+       }
+       finalAddress = finalAddress.replace(/^Россия,\s*/i, '');
      }
-     
-     // На всякий случай чистим от слова "Россия", если оно пролезло руками
-     finalAddress = finalAddress.replace(/^Россия,\s*/i, '');
 
      // 2. Проверка телефона (чистим от скобок и пробелов)
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, ''); // убирает ( ) - и пробелы

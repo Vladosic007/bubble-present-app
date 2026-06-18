@@ -419,7 +419,8 @@ export default function CartPage() {
     }
 
     const savedPhone = localStorage.getItem('bubble_user_phone');
-    const savedAddress = localStorage.getItem('bubble_user_address');
+    // Адрес используем ТОЛЬКО для доставки. При самовывозе он не нужен и не проверяется.
+    const savedAddress = orderType === 'delivery' ? localStorage.getItem('bubble_user_address') : '';
     const savedName = localStorage.getItem('bubble_user_name') || 'Гость';
     const savedEmail = localStorage.getItem('bubble_user_email');
 

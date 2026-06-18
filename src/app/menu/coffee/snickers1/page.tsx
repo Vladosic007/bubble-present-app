@@ -34,11 +34,34 @@ export default function CoffeeTemplatePage() { // весь блок добавл
 
   const [selectedType, setSelectedType] = useState('Холодный');
   const [cheeseSelected, setCheeseSelected] = useState(false);
+  // Стоп-лист
+  const [cheeseInStop, setCheeseInStop] = useState(false);
+  const [tapiocaInStop, setTapiocaInStop] = useState(false);
+  const [tapioca2xInStop, setTapioca2xInStop] = useState(false);
+  const [juice2xInStop, setJuice2xInStop] = useState(false);
   const [isAddonsOpen, setIsAddonsOpen] = useState(false);
   
   // ❗ 1. Делаем Тапиоку включенной по умолчанию ❗
   const [tapiocaSelected, setTapiocaSelected] = useState(true);
   const [tapiocaX2Selected, setTapiocaX2Selected] = useState(false);
+
+  // Проверка стоп-листа базовых топпингов (сырная шапка / тапиока)
+  useEffect(() => {
+    fetch('/api/toppings').then(r => r.json()).then(json => {
+      const names = (json.toppings || []).map((t: any) => (t.name || '').toLowerCase());
+      const cheeseActive = names.some((n: string) => n.includes('сырн'));
+      const tapiocaActive = names.some((n: string) => n.includes('тапиока') && !n.includes('2x') && !n.includes('2х'));
+      const tapioca2xActive = names.some((n: string) => n.includes('тапиока') && (n.includes('2x') || n.includes('2х')));
+      setCheeseInStop(!cheeseActive);
+      setTapiocaInStop(!tapiocaActive);
+      setTapioca2xInStop(!tapioca2xActive);
+      setJuice2xInStop(true); // на кофе джус-боллов нет
+      if (!cheeseActive) setCheeseSelected(false);
+      if (!tapiocaActive) setTapiocaSelected(false);
+      if (!tapioca2xActive) setTapiocaX2Selected(false);
+    }).catch(() => {});
+  }, []);
+
 
   // === СЧИТАЕМ ИТОГОВУЮ ЦЕНУ И СОБИРАЕМ ДОБАВКИ ===
   let finalPrice = basePrice;
@@ -182,7 +205,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
               <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Сырная шапка</span>
               <div className="flex items-center gap-[10px] shrink-0">
                 <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${cheeseSelected ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>+ 70 ₽</span>
-                <div onClick={() => setCheeseSelected(!cheeseSelected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${cheeseSelected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
+                <div onClick={cheeseInStop ? undefined : () => setCheeseSelected(!cheeseSelected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${cheeseSelected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
                   {cheeseSelected && <CheckMark />}
                 </div>
               </div>
@@ -198,7 +221,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
               <span className="text-[16px] tracking-[0.02em] whitespace-nowrap bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent leading-none block uppercase" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>Тапиока 2X</span>
               <div className="flex items-center gap-[10px] shrink-0">
                  <span className={`text-[12px] text-[#FF008C] whitespace-nowrap transition-all duration-300 ${tapiocaX2Selected ? 'opacity-100' : 'opacity-0'}`} style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800 }}>+ 80 ₽</span>
-                <div onClick={() => setTapiocaX2Selected(!tapiocaX2Selected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${tapiocaX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
+                <div onClick={tapioca2xInStop ? undefined : () => setTapiocaX2Selected(!tapiocaX2Selected)} className={`w-[22px] h-[22px] rounded-[6px] border cursor-pointer flex items-center justify-center transition-all duration-300 shrink-0 ${tapiocaX2Selected ? 'bg-[#FF008C] border-[#FF008C] shadow-[0_0_10px_rgba(255,0,140,0.5)]' : 'border-[#949494] bg-transparent'}`}>
                   {tapiocaX2Selected && <CheckMark />}
                 </div>
               </div>
