@@ -193,6 +193,45 @@ export default function AdminPage() {
     }
   };
 
+  // Удаление промокода
+  const deletePromo = async (id: string, code: string) => {
+    if (!window.confirm(`Удалить промокод "${code}"? Это действие нельзя отменить.`)) return;
+    const res = await fetch('/api/admin/promo-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-boss-key': bossKey },
+      body: JSON.stringify({ id }),
+    }).catch(() => null);
+    if (res && res.ok) {
+      setPromocodes(promocodes.filter(p => p.id !== id));
+    } else {
+      alert('Не удалось удалить. Попробуй ещё раз.');
+    }
+  };
+
+  // Авто-предложение удалить истёкшие промокоды (с памятью "не предлагать")
+  useEffect(() => {
+    if (!isBoss || !bossKey || promocodes.length === 0) return;
+    const skipList = JSON.parse(localStorage.getItem('bubble_skip_promo_prompt') || '[]');
+    const expired = promocodes.find(p => {
+      if (!p.valid_until) return false;
+      if (new Date(p.valid_until) >= new Date()) return false;
+      return !skipList.includes(p.id);
+    });
+    if (!expired) return;
+
+    // Спрашиваем один раз на каждый истёкший
+    const answer = window.confirm(
+      `Промокод "${expired.code}" истёк (${new Date(expired.valid_until).toLocaleDateString('ru-RU')}).\n\nУдалить его?\n\n[ОК] — удалить\n[Отмена] — не предлагать снова`
+    );
+    if (answer) {
+      deletePromo(expired.id, expired.code);
+    } else {
+      const next = [...skipList, expired.id];
+      localStorage.setItem('bubble_skip_promo_prompt', JSON.stringify(next));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBoss, bossKey, promocodes]);
+
   const togglePromo = async (id: string, currentStatus: boolean) => {
     setPromocodes(promocodes.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p));
     const res = await fetch('/api/admin/promo-toggle', {
@@ -424,9 +463,23 @@ export default function AdminPage() {
                             {validUntilLabel}{expired && ' ❌'} · Использовано: {promo.used_count}{promo.usage_limit ? ` / ${promo.usage_limit}` : ''}
                           </span>
                         </div>
-                        <button onClick={() => togglePromo(promo.id, promo.is_active)} className={`w-[50px] h-[30px] rounded-full p-[2px] transition-colors duration-300 ease-in-out flex shrink-0 ${promo.is_active ? 'bg-[#14FF00]' : 'bg-[#FF0040]'}`}>
-                          <motion.div layout className="w-[26px] h-[26px] bg-white rounded-full shadow-md" animate={{ x: promo.is_active ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
-                        </button>
+                        <div className="flex items-center gap-[8px] shrink-0">
+                          <button onClick={() => togglePromo(promo.id, promo.is_active)} className={`w-[50px] h-[30px] rounded-full p-[2px] transition-colors duration-300 ease-in-out flex shrink-0 ${promo.is_active ? 'bg-[#14FF00]' : 'bg-[#FF0040]'}`}>
+                            <motion.div layout className="w-[26px] h-[26px] bg-white rounded-full shadow-md" animate={{ x: promo.is_active ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+                          </button>
+                          <button
+                            onClick={() => deletePromo(promo.id, promo.code)}
+                            className="w-[34px] h-[34px] rounded-full bg-[#FFE5E5] flex items-center justify-center active:scale-90 transition-transform"
+                            title="Удалить промокод"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF0040" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
