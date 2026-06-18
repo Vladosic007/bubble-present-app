@@ -12,6 +12,16 @@ img, svg, picture, [draggable] {
   -webkit-touch-callout: none;
 }
 
+/* === Защита от двойного-тапа зума и pinch-zoom (iOS Safari) === */
+html, body {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+* { touch-action: manipulation; }
+/* Разрешаем только вертикальный скролл — pinch-zoom и горизонтальный жест отключены */
+body { overflow-x: hidden; }
+
 /* === 1. ПОДКЛЮЧАЕМ ШРИФТЫ === */
 
 /* Самый жирный */

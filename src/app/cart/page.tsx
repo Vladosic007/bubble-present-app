@@ -196,6 +196,29 @@ export default function CartPage() {
 
   useEffect(() => {
     setIsMounted(true);
+
+    // Подтягиваем активные заказы клиента по телефону (для случаев когда
+    // после оплаты/перезагрузки/смены устройства локальный стор пуст).
+    const phone = localStorage.getItem('bubble_user_phone');
+    if (!phone) return;
+
+    fetch(`/api/order/active?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(json => {
+        const remote: { id: number; status: string; time: number }[] = json.orders || [];
+        if (!remote.length) return;
+        const currentIds = new Set(activeOrders.map(o => o.id));
+        remote.forEach(o => {
+          if (!currentIds.has(o.id)) {
+            addActiveOrder(o.id, o.status, o.time);
+          } else {
+            // Заказ уже есть — обновим статус на актуальный с сервера
+            updateOrderStatus(o.id, o.status);
+          }
+        });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
