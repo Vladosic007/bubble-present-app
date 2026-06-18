@@ -76,6 +76,20 @@ export default function LimMenu() {
     fetchDrinks();
   }, []);
 
+  // Сохраняем и восстанавливаем позицию скролла
+  useEffect(() => {
+    const onScroll = () => { try { sessionStorage.setItem('menu_lim_scroll', String(window.scrollY)); } catch {} };
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  useEffect(() => {
+    if (isLoading) return;
+    try {
+      const saved = sessionStorage.getItem('menu_lim_scroll');
+      if (saved) requestAnimationFrame(() => window.scrollTo({ top: Number(saved), behavior: 'instant' as ScrollBehavior }));
+    } catch {}
+  }, [isLoading]);
+
   return (
     <div className="p-4 pb-[180px] flex flex-col items-center bg-[#FAFAFA] min-h-screen">
       
@@ -84,7 +98,7 @@ export default function LimMenu() {
         <div className="w-[34px]"></div>
         <Link href="/" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 active:scale-95 transition-transform flex justify-center items-center">
           <Image
-            src="/images/logo.png" 
+            draggable={false} src="/images/logo.png" 
             alt="Логотип кофейни"
             width={160} 
             height={45}
@@ -96,7 +110,7 @@ export default function LimMenu() {
         {/* ❗ ОБНОВЛЕННАЯ АВАТАРКА СПРАВА ❗ */}
         <Link href="/profile" className="w-[34px] h-[34px] rounded-full overflow-hidden shrink-0 shadow-sm active:scale-90 transition-transform bg-[#E5E5EA]">
           <Image 
-            src={avatar} 
+            draggable={false} src={avatar} 
             alt="Профиль" 
             width={34} 
             height={34} 
@@ -157,8 +171,11 @@ export default function LimMenu() {
 
 // === КОМПОНЕНТ КАРТОЧКИ ===
 function DrinkCard({ drink }: { drink: any }) {
-  const { orderType } = useCartStore();
+  const { orderType, items } = useCartStore();
   const currentPrice = orderType === 'delivery' ? drink.deliveryPrice : drink.pickupPrice;
+  const cartCount = items
+    .filter((it: any) => it.cartItemId && it.cartItemId.startsWith(drink.id + '-'))
+    .reduce((s: number, it: any) => s + (it.quantity || 0), 0);
 
   return (
     <Link 
@@ -169,7 +186,7 @@ function DrinkCard({ drink }: { drink: any }) {
       {/* Картинка */}
       <div className="absolute top-0 left-0 w-[170px] h-[162px] rounded-t-[25px] overflow-hidden z-0">
         <Image
-          src={drink.img} 
+          draggable={false} src={drink.img} 
           alt={drink.name}
           fill
           className="object-cover"
@@ -179,12 +196,12 @@ function DrinkCard({ drink }: { drink: any }) {
         <div className="absolute top-[10px] left-[10px] flex flex-col gap-[4px] z-10">
           {(drink.temp_type === 'hot_cold' || drink.temp_type === 'hot_only') && (
             <div className="w-[22px] h-[22px] rounded-full bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/30 flex items-center justify-center shadow-sm">
-              <Image src="/icons/fire.svg" alt="Огонь" width={18} height={18} className="object-contain" />
+              <Image draggable={false} src="/icons/fire.svg" alt="Огонь" width={18} height={18} className="object-contain" />
             </div>
           )}
           {(drink.temp_type === 'hot_cold' || drink.temp_type === 'cold_only') && (
             <div className="w-[22px] h-[22px] rounded-full bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/30 flex items-center justify-center shadow-sm">
-              <Image src="/icons/snow.svg" alt="Снежинка" width={18} height={18} className="object-contain" />
+              <Image draggable={false} src="/icons/snow.svg" alt="Снежинка" width={18} height={18} className="object-contain" />
             </div>
           )}
         </div>
@@ -205,7 +222,7 @@ function DrinkCard({ drink }: { drink: any }) {
       {/* Лента с ценой */}
       <div className="absolute -top-[7px] -right-[4px] w-[73px] h-[64px] z-20 pointer-events-none">
         <Image 
-          src="/icons/ribbon.svg" 
+          draggable={false} src="/icons/ribbon.svg" 
           alt="Лента" 
           fill 
           className="object-contain" 
@@ -218,6 +235,15 @@ function DrinkCard({ drink }: { drink: any }) {
           </div>
         </div>
       </div>
+
+      {/* Бейдж количества в корзине */}
+      {cartCount > 0 && (
+        <div className="absolute top-[8px] right-[8px] min-w-[26px] h-[26px] px-[7px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-full flex items-center justify-center z-30 shadow-[0_2px_8px_rgba(255,0,140,0.5)] border-2 border-white pointer-events-none">
+          <span className="text-white font-['Benzin'] font-extrabold text-[12px] leading-none">
+            {cartCount > 9 ? '9+' : cartCount}
+          </span>
+        </div>
+      )}
     </Link>
   );
 }

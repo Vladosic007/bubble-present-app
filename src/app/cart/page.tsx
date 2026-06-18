@@ -17,7 +17,24 @@ interface SwipeableCartItemProps {
   originalPrice?: number;
 }
 
+// Определяем URL страницы напитка по slug-у в корзине
+const getDrinkUrl = (id: string): string | null => {
+  if (!id) return null;
+  // Кофе
+  const coffee = ['bumble','cheese-raf1','cheesecake1','choco-banana1','dubai1','exploding-caramel1','halva1','pretty-in-pink1','rot-front1','snickers1','straw-basil','toffee-boom1'];
+  if (coffee.includes(id)) return `/menu/coffee/${id}`;
+  // Лимонады
+  const lim = ['banana-lim1','caramel-rasp1','emerald-breeze1','mojito1','raiesan1','sorrel'];
+  if (lim.includes(id)) return `/menu/lim/${id}`;
+  // Матча
+  const matcha = ['matcha-pistachio1','matcha-raspberry1','pink-sakura1'];
+  if (matcha.includes(id)) return `/menu/matcha/${id}`;
+  // По умолчанию — чай
+  return `/menu/tea/${id}`;
+};
+
 const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice, originalPrice }: SwipeableCartItemProps) => {
+  const router = useRouter();
   const [translateX, setTranslateX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -64,9 +81,18 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
         style={{ transform: `translateX(${translateX}px)`, transition: isSwiping ? 'none' : 'transform 0.3s ease-out' }}
         className="relative w-full bg-white rounded-[22px] shadow-[0_4px_20px_rgba(255,0,140,0.18)] border border-[#FFE8F8] flex items-center p-[12px] gap-[12px] z-10"
       >
-        {/* Фото */}
-        <div className="relative w-[95px] h-[95px] rounded-[15px] overflow-hidden shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-          <Image src={item.img} alt={item.name} fill className="object-cover" />
+        {/* Фото — клик ведёт обратно на страницу напитка (можно поправить добавки) */}
+        <div
+          onClick={() => { const url = getDrinkUrl(String(item.id || '')); if (url) router.push(url); }}
+          className="relative w-[95px] h-[95px] rounded-[15px] overflow-hidden shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.1)] cursor-pointer active:scale-95 transition-transform"
+        >
+          <Image draggable={false} src={item.img} alt={item.name} fill className="object-cover" />
+          {/* Подсказка карандашика */}
+          <div className="absolute bottom-[4px] right-[4px] w-[20px] h-[20px] bg-white/90 rounded-full flex items-center justify-center shadow-sm">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FF008C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+            </svg>
+          </div>
         </div>
 
         {/* Контент */}
@@ -104,7 +130,7 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
                 onClick={(e) => { e.stopPropagation(); if (item.quantity > 1) changeQuantity(item.cartItemId, -1); else removeItem(item.cartItemId); }}
                 className="w-[30px] h-[30px] rounded-full bg-[#F2F2F7] flex items-center justify-center active:scale-90 transition-transform"
               >
-                <Image src="/icons/minus.svg" alt="-" width={12} height={12} className="object-contain" />
+                <Image draggable={false} src="/icons/minus.svg" alt="-" width={12} height={12} className="object-contain" />
               </button>
               <span className="font-['Benzin'] font-extrabold text-[17px] text-[#333] w-[18px] text-center leading-none">
                 {item.quantity}
@@ -113,7 +139,7 @@ const SwipeableCartItem = ({ item, changeQuantity, removeItem, currentItemPrice,
                 onClick={(e) => { e.stopPropagation(); if (item.quantity < 9) changeQuantity(item.cartItemId, 1); else alert("У нас можно только максимум 9 одинаковых напитков))) 🧋"); }}
                 className="w-[30px] h-[30px] rounded-full bg-[#F2F2F7] flex items-center justify-center active:scale-90 transition-transform"
               >
-                <Image src="/icons/plus.svg" alt="+" width={12} height={12} className="object-contain" />
+                <Image draggable={false} src="/icons/plus.svg" alt="+" width={12} height={12} className="object-contain" />
               </button>
             </div>
 
@@ -614,7 +640,7 @@ export default function CartPage() {
         <main className="w-full max-w-[370px] relative bg-[#FFFFFF] flex flex-col items-center h-[100dvh]">
           <div className="flex flex-col items-center mt-[150px] w-full opacity-30">
             <div className="relative w-[214px] h-[310px] shrink-0 pointer-events-none">
-              <Image src="/images/bubblik.png" alt="Пустая корзина" fill className="object-contain" priority />
+              <Image draggable={false} src="/images/bubblik.png" alt="Пустая корзина" fill className="object-contain" priority />
             </div>
           </div>
           
@@ -725,7 +751,7 @@ export default function CartPage() {
 
           <div className="flex flex-col items-center mt-[232px] w-full">
             <div className="relative w-[214px] h-[310px] shrink-0 pointer-events-none">
-              <Image src="/images/bubblik.png" alt="Пустая корзина" priority fill className="object-contain" />
+              <Image draggable={false} src="/images/bubblik.png" alt="Пустая корзина" priority fill className="object-contain" />
             </div>
             <p className="mt-[48px] px-[46px] text-center text-[#000000]/40 font-medium text-[12px] tracking-[0.02em]" style={{ fontFamily: "'Benzin-Medium', sans-serif" }}>
               Вы еще ничего не добавили в корзину
@@ -758,7 +784,7 @@ export default function CartPage() {
                 onClick={() => router.push('/')} 
                 className="relative h-[40px] w-[180px] pointer-events-auto cursor-pointer active:scale-95 transition-transform"
               >
-                <Image src="/images/logo.png" alt="Bubble Present" fill className="object-contain" priority />
+                <Image draggable={false} src="/images/logo.png" alt="Bubble Present" fill className="object-contain" priority />
               </div>
           </header>
 

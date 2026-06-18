@@ -37,7 +37,7 @@ export default function Home() {
         {/* Логотип строго по центру */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center items-center pointer-events-none">
           <Image 
-            src="/images/logo.png" 
+            draggable={false} src="/images/logo.png" 
             alt="Bubble Present" 
             width={160} 
             height={45} 
@@ -49,7 +49,7 @@ export default function Home() {
         {/* Аватарка справа */}
         <Link href="/profile" className="w-[34px] h-[34px] rounded-full overflow-hidden shadow-sm active:scale-90 transition-transform duration-300 bg-[#E5E5EA] z-10">
           <Image 
-            src={avatar} 
+            draggable={false} src={avatar} 
             alt="Профиль" 
             width={34} 
             height={34} 
@@ -68,7 +68,7 @@ export default function Home() {
             className="relative w-full max-w-[370px] h-[314px] rounded-[25px] overflow-hidden shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] active:scale-95 transition-all duration-300 ease-out shrink-0"
           >
             <Image
-              src={cat.img}
+              draggable={false} src={cat.img}
               alt={cat.title}
               fill
               className="object-cover"

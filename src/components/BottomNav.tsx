@@ -102,7 +102,7 @@ export default function BottomNav() {
               {/* ИКОНКА УВЕЛИЧЕНА (w-6 h-6) */}
               <div className="relative w-6 h-6 transition-transform duration-300 active:scale-75">
                 <Image
-                  src={isActive ? item.iconThick : item.iconThin}
+                  draggable={false} src={isActive ? item.iconThick : item.iconThin}
                   alt={item.name}
                   fill
                   className={`object-contain ${shouldInvert ? 'brightness-0 invert' : ''}`} 

@@ -124,7 +124,7 @@ export default function BubblikPage() {
     <div className="bg-[#110A1A] min-h-[100dvh] w-full flex justify-center overflow-y-auto overflow-x-hidden font-sans relative">
       
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none w-full h-full">
-        <Image src="/images/bubblik-bg.jpg" alt="Космический фон" fill className="object-cover opacity-60" priority />
+        <Image draggable={false} src="/images/bubblik-bg.jpg" alt="Космический фон" fill className="object-cover opacity-60" priority />
         <div className="animated-cosmic-latte">
           <div className="stars-layer-1" />
           <div className="stars-layer-2" />
@@ -137,7 +137,7 @@ export default function BubblikPage() {
         <div className="absolute top-[117px] right-[24px] w-[24px] h-[24px] cursor-pointer z-50 flex items-center justify-center transition-transform active:scale-90"
           onClick={() => setIsInfoOpen(!isInfoOpen)}
         >
-          <Image src={isInfoOpen ? "/icons/info-gray.svg" : "/icons/info-white.svg"} alt="Инфо" fill className="object-contain transition-all duration-200" />
+          <Image draggable={false} src={isInfoOpen ? "/icons/info-gray.svg" : "/icons/info-white.svg"} alt="Инфо" fill className="object-contain transition-all duration-200" />
         </div>
 
         {isInfoOpen && (
@@ -203,7 +203,7 @@ export default function BubblikPage() {
                   initial={{ opacity: 0, scale: 0.5, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 1.2, filter: "blur(10px)" }} transition={{ type: "spring", stiffness: 200, damping: 20 }}
                   className="absolute inset-0 w-full h-full z-10"
                 >
-                  <Image src={currentLevelData.img} alt="Баблик" fill className="object-contain drop-shadow-[0_0_20px_rgba(255,0,238,0.3)]" priority />
+                  <Image draggable={false} src={currentLevelData.img} alt="Баблик" fill className="object-contain drop-shadow-[0_0_20px_rgba(255,0,238,0.3)]" priority />
                 </motion.div>
               </AnimatePresence>
             </div>

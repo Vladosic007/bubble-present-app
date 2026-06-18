@@ -167,7 +167,7 @@ export default function HistoryPage() {
               }}
               transition={{ duration: Math.random() * 10 + 10, repeat: Infinity, delay: Math.random() * 5, ease: "linear" }}
             >
-              <Image src="/images/small-bubblik.png" alt="Летающий Баблик" fill className="object-contain opacity-30" />
+              <Image draggable={false} src="/images/small-bubblik.png" alt="Летающий Баблик" fill className="object-contain opacity-30" />
             </motion.div>
           );
         })}
@@ -192,7 +192,7 @@ export default function HistoryPage() {
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center flex-1 w-full pb-[150px]">
             <div className="relative w-[214px] h-[310px] shrink-0 pointer-events-none opacity-50">
-              <Image src="/images/bubblik.png" alt="Пустая история" fill className="object-contain" priority />
+              <Image draggable={false} src="/images/bubblik.png" alt="Пустая история" fill className="object-contain" priority />
             </div>
             <p className="mt-[32px] px-[46px] text-center text-[#000000]/40 font-benzin font-medium text-[12px] tracking-[0.02em] uppercase">
               Вы еще не заказывали бабл-ти.<br/>Самое время это исправить!
@@ -209,34 +209,34 @@ export default function HistoryPage() {
                   
                   {order.count === 1 && (
                     <div className="relative w-full h-full">
-                      <Image src={order.images[0]} fill className="object-cover" alt="drink 1"/>
+                      <Image draggable={false} src={order.images[0]} fill className="object-cover" alt="drink 1"/>
                     </div>
                   )}
 
                   {order.count === 2 && (
                     <>
-                      <div className="relative w-1/2 h-full border-r border-white/20"><Image src={order.images[0]} fill className="object-cover" alt="drink 1"/></div>
-                      <div className="relative w-1/2 h-full"><Image src={order.images[1]} fill className="object-cover" alt="drink 2"/></div>
+                      <div className="relative w-1/2 h-full border-r border-white/20"><Image draggable={false} src={order.images[0]} fill className="object-cover" alt="drink 1"/></div>
+                      <div className="relative w-1/2 h-full"><Image draggable={false} src={order.images[1]} fill className="object-cover" alt="drink 2"/></div>
                     </>
                   )}
 
                   {order.count === 3 && (
                     <>
-                      <div className="relative w-1/2 h-full border-r border-white/20"><Image src={order.images[0]} fill className="object-cover" alt="drink 1"/></div>
+                      <div className="relative w-1/2 h-full border-r border-white/20"><Image draggable={false} src={order.images[0]} fill className="object-cover" alt="drink 1"/></div>
                       <div className="relative w-1/2 h-full flex flex-col">
-                        <div className="relative w-full h-1/2 border-b border-white/20"><Image src={order.images[1]} fill className="object-cover" alt="drink 2"/></div>
-                        <div className="relative w-full h-1/2"><Image src={order.images[2]} fill className="object-cover" alt="drink 3"/></div>
+                        <div className="relative w-full h-1/2 border-b border-white/20"><Image draggable={false} src={order.images[1]} fill className="object-cover" alt="drink 2"/></div>
+                        <div className="relative w-full h-1/2"><Image draggable={false} src={order.images[2]} fill className="object-cover" alt="drink 3"/></div>
                       </div>
                     </>
                   )}
 
                   {order.count >= 4 && (
                     <>
-                      <div className="relative w-1/2 h-1/2 border-r border-b border-white/20"><Image src={order.images[0]} fill className="object-cover" alt="drink 1"/></div>
-                      <div className="relative w-1/2 h-1/2 border-b border-white/20"><Image src={order.images[1]} fill className="object-cover" alt="drink 2"/></div>
-                      <div className="relative w-1/2 h-1/2 border-r border-white/20"><Image src={order.images[2]} fill className="object-cover" alt="drink 3"/></div>
+                      <div className="relative w-1/2 h-1/2 border-r border-b border-white/20"><Image draggable={false} src={order.images[0]} fill className="object-cover" alt="drink 1"/></div>
+                      <div className="relative w-1/2 h-1/2 border-b border-white/20"><Image draggable={false} src={order.images[1]} fill className="object-cover" alt="drink 2"/></div>
+                      <div className="relative w-1/2 h-1/2 border-r border-white/20"><Image draggable={false} src={order.images[2]} fill className="object-cover" alt="drink 3"/></div>
                       <div className="relative w-1/2 h-1/2">
-                        <Image src={order.images[3]} fill className="object-cover" alt="drink 4"/>
+                        <Image draggable={false} src={order.images[3]} fill className="object-cover" alt="drink 4"/>
                         {order.count > 4 && (
                           <div className="absolute inset-0 bg-[#000000]/60 flex items-center justify-center z-10 backdrop-blur-sm">
                             <span className="font-['Benzin-ExtraBold'] text-[24px] text-white drop-shadow-md">

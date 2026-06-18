@@ -96,7 +96,7 @@ export default function ProfilePage() {
           onClick={() => alert('Bubble Present v1.0\nТвой любимый Бабл-Ти сервис')}
         >
           <Image 
-            src={isInfoPressed ? "/icons/info-gray.svg" : "/icons/info-white.svg"} 
+            draggable={false} src={isInfoPressed ? "/icons/info-gray.svg" : "/icons/info-white.svg"} 
             alt="Инфо" 
             width={24} height={24} 
             className="object-contain" 
@@ -110,7 +110,7 @@ export default function ProfilePage() {
             className="relative w-full h-full rounded-full overflow-hidden shadow-[0_4px_15px_rgba(0,0,0,0.15)] border-4 border-white bg-[#E5E5EA] cursor-pointer group"
           >
             <Image 
-              src={photoUrl} 
+              draggable={false} src={photoUrl} 
               alt="Аватар" 
               fill 
               className="object-cover transition-opacity duration-300 group-hover:opacity-70" 

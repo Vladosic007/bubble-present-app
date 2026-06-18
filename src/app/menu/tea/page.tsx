@@ -137,7 +137,7 @@ export default function TeaMenu() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 150; 
+      const scrollPosition = window.scrollY + 150;
       for (let i = menuCategories.length - 1; i >= 0; i--) {
         const section = document.getElementById(menuCategories[i].id);
         if (section) {
@@ -148,11 +148,24 @@ export default function TeaMenu() {
           }
         }
       }
+      // Запоминаем позицию (для возврата с карточки напитка)
+      try { sessionStorage.setItem('menu_tea_scroll', String(window.scrollY)); } catch {}
     };
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); 
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Восстанавливаем скролл при возврате на меню чая
+  useEffect(() => {
+    if (isLoading) return;
+    try {
+      const saved = sessionStorage.getItem('menu_tea_scroll');
+      if (saved) {
+        requestAnimationFrame(() => window.scrollTo({ top: Number(saved), behavior: 'instant' as ScrollBehavior }));
+      }
+    } catch {}
+  }, [isLoading]);
 
   useEffect(() => {
     if (menuRef.current) {
@@ -176,7 +189,7 @@ export default function TeaMenu() {
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center items-center pointer-events-auto z-10">
             <Link href="/" className="active:scale-95 transition-transform flex justify-center items-center">
               <Image 
-                src="/images/logo.png" 
+                draggable={false} src="/images/logo.png" 
                 alt="Bubble Present" 
                 width={160} 
                 height={45} 
@@ -188,7 +201,7 @@ export default function TeaMenu() {
 
           <Link href="/profile" className="w-[34px] h-[34px] rounded-full overflow-hidden shadow-sm active:scale-90 transition-transform duration-300 bg-[#E5E5EA] z-20">
             <Image 
-              src={avatar} 
+              draggable={false} src={avatar} 
               alt="Профиль" 
               width={34} 
               height={34} 
@@ -293,25 +306,30 @@ export default function TeaMenu() {
 }
 
 function DrinkCard({ drink }: { drink: any }) {
-  const { orderType } = useCartStore();
+  const { orderType, items } = useCartStore();
   const currentPrice = orderType === 'delivery' ? drink.deliveryPrice : drink.pickupPrice;
 
+  // Считаем сколько штук этого напитка (с разными добавками) в корзине
+  const cartCount = items
+    .filter((it: any) => it.cartItemId && it.cartItemId.startsWith(drink.id + '-'))
+    .reduce((s: number, it: any) => s + (it.quantity || 0), 0);
+
   return (
-    <Link 
+    <Link
       href={drink.href}
       className="relative w-[170px] h-[188px] bg-white rounded-[25px] shadow-[0px_5px_5.7px_4px_rgba(255,0,140,0.25)] shrink-0 block active:scale-95 transition-transform duration-300"
     >
       <div className="absolute top-0 left-0 w-[170px] h-[162px] rounded-t-[25px] overflow-hidden z-0">
-        <Image src={drink.img} alt={drink.name} fill className="object-cover" />
+        <Image draggable={false} src={drink.img} alt={drink.name} fill className="object-cover" />
         <div className="absolute top-[10px] left-[10px] flex flex-col gap-[4px] z-10">
           {(drink.temp_type === 'hot_cold' || drink.temp_type === 'hot_only') && (
             <div className="w-[22px] h-[22px] rounded-full bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/30 flex items-center justify-center shadow-sm">
-              <Image src="/icons/fire.svg" alt="Огонь" width={18} height={18} className="object-contain" />
+              <Image draggable={false} src="/icons/fire.svg" alt="Огонь" width={18} height={18} className="object-contain" />
             </div>
           )}
           {(drink.temp_type === 'hot_cold' || drink.temp_type === 'cold_only') && (
             <div className="w-[22px] h-[22px] rounded-full bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/30 flex items-center justify-center shadow-sm">
-              <Image src="/icons/snow.svg" alt="Снежинка" width={18} height={18} className="object-contain" />
+              <Image draggable={false} src="/icons/snow.svg" alt="Снежинка" width={18} height={18} className="object-contain" />
             </div>
           )}
         </div>
@@ -325,7 +343,7 @@ function DrinkCard({ drink }: { drink: any }) {
       </div>
 
       <div className="absolute -top-[7px] -right-[4px] w-[73px] h-[64px] z-20 pointer-events-none">
-        <Image src="/icons/ribbon.svg" alt="Лента" fill className="object-contain" />
+        <Image draggable={false} src="/icons/ribbon.svg" alt="Лента" fill className="object-contain" />
         <div className="absolute inset-0 flex items-center justify-center pb-[12px] pl-[14px]">
           <div className="w-[62px] h-[11px] transform rotate-[42deg] flex items-center justify-center">
             <span className="text-white text-[8px] leading-none font-extrabold uppercase tracking-wide whitespace-nowrap">
@@ -334,6 +352,15 @@ function DrinkCard({ drink }: { drink: any }) {
           </div>
         </div>
       </div>
+
+      {/* Бейдж количества в корзине */}
+      {cartCount > 0 && (
+        <div className="absolute top-[8px] right-[8px] min-w-[26px] h-[26px] px-[7px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-full flex items-center justify-center z-30 shadow-[0_2px_8px_rgba(255,0,140,0.5)] border-2 border-white pointer-events-none">
+          <span className="text-white font-['Benzin'] font-extrabold text-[12px] leading-none">
+            {cartCount > 9 ? '9+' : cartCount}
+          </span>
+        </div>
+      )}
     </Link>
   );
 }

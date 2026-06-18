@@ -220,7 +220,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
         </button>
         
         <div className="relative w-[370px] h-[360px] shrink-0">
-          <Image src="/images/rasp-cloud1.jpg" alt="Малиновое облако" fill quality={100} className="object-cover" priority />
+          <Image draggable={false} src="/images/rasp-cloud1.jpg" alt="Малиновое облако" fill quality={100} className="object-cover" priority />
           <div className="absolute bottom-0 left-0 w-full h-[120px] bg-gradient-to-t from-[#FDFDFD] via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
         </div>
 
@@ -266,7 +266,7 @@ export default function CoffeeTemplatePage() { // весь блок добавл
     )}
   </div>
             <div className="w-[24px] h-[24px] relative shrink-0">
-              <Image src="/icons/arrow.svg" alt="Стрелка" fill className={`object-contain transition-transform duration-300 ${isAddonsOpen ? 'rotate-90' : 'rotate-0'}`} />
+              <Image draggable={false} src="/icons/arrow.svg" alt="Стрелка" fill className={`object-contain transition-transform duration-300 ${isAddonsOpen ? 'rotate-90' : 'rotate-0'}`} />
             </div>
           </div>
 
@@ -378,13 +378,13 @@ export default function CoffeeTemplatePage() { // весь блок добавл
                     <>
                       <div className="w-full h-[56px] bg-[#FFFFFF]/30 backdrop-blur-xl border border-white/80 rounded-[25px] shadow-[0_4px_12px_rgba(255,0,140,0.15)] flex justify-between items-center px-[24px] box-border">
                         <button onClick={handleMinus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
-                          <Image src="/icons/minus.svg" alt="-" width={20} height={20} className="object-contain" />
+                          <Image draggable={false} src="/icons/minus.svg" alt="-" width={20} height={20} className="object-contain" />
                         </button>
                         <span className="text-[22px] font-black tracking-[0.02em] text-[#FF008C] leading-none" style={{ fontFamily: "'Benzin', sans-serif" }}>
                           {itemInCart.quantity}
                         </span>
                         <button onClick={handlePlus} className="w-[40px] h-[40px] flex items-center justify-center active:scale-95 transition-transform">
-                          <Image src="/icons/plus.svg" alt="+" width={20} height={20} className="object-contain" />
+                          <Image draggable={false} src="/icons/plus.svg" alt="+" width={20} height={20} className="object-contain" />
                         </button>
                       </div>
                       <button onClick={() => router.push('/cart')} className="w-full h-[52px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-[25px] flex items-center justify-center active:scale-95 transition-transform shadow-[0_4px_15px_rgba(255,0,140,0.35)]">

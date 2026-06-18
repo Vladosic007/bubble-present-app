@@ -33,7 +33,7 @@ export default function BubblikBackground() {
               ease: 'linear',
             }}
           >
-            <Image src="/images/small-bubblik.png" alt="" fill className="object-contain opacity-30" />
+            <Image draggable={false} src="/images/small-bubblik.png" alt="" fill className="object-contain opacity-30" />
           </motion.div>
         );
       })}
