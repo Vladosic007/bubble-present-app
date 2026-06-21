@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
 // Скачивание CSV с базой клиентов
 export async function GET(req: Request) {
   try {
@@ -22,26 +24,37 @@ export async function GET(req: Request) {
       .order('created_at', { ascending: false });
     if (sinceDate) query = query.gte('created_at', sinceDate.toISOString());
 
-    const { data: orders } = await query;
+    const [{ data: orders }, { data: hidden }] = await Promise.all([
+      query,
+      supabaseAdmin.from('hidden_clients').select('phone'),
+    ]);
+    const hiddenSet = new Set((hidden || []).map((h: any) => h.phone));
     const clientsMap: Record<string, any> = {};
 
     for (const o of orders || []) {
       if (o.status === 'cancelled') continue;
+      if ((o.customer_name || '').trim().toUpperCase() === 'ТЕСТ') continue;
       const phoneKey = (o.phone || '').replace(/\D/g, '').replace(/^8/, '7');
-      if (!phoneKey) continue;
+      if (!phoneKey || hiddenSet.has(phoneKey)) continue;
 
       if (!clientsMap[phoneKey]) {
         clientsMap[phoneKey] = {
           phone: o.phone, name: o.customer_name || 'Гость', address: '',
-          orders_count: 0, total_spent: 0, last_order: o.created_at,
+          orders_count: 0, total_spent: 0, first_order: o.created_at, last_order: o.created_at,
+          delivery_count: 0, pickup_count: 0,
           drinks_freq: {} as Record<string, number>,
+          weekday_freq: [0, 0, 0, 0, 0, 0, 0],
         };
       }
       const c = clientsMap[phoneKey];
       c.orders_count += 1;
       c.total_spent += Number(o.total) || 0;
       if (!c.address && o.address) c.address = o.address;
+      if (o.order_type === 'delivery') c.delivery_count += 1; else c.pickup_count += 1;
       if (new Date(o.created_at) > new Date(c.last_order)) c.last_order = o.created_at;
+      if (new Date(o.created_at) < new Date(c.first_order)) c.first_order = o.created_at;
+      const mondayIdx = (new Date(o.created_at).getDay() + 6) % 7;
+      c.weekday_freq[mondayIdx] += 1;
       try {
         const items = typeof o.items === 'string' ? JSON.parse(o.items) : o.items;
         if (Array.isArray(items)) {
@@ -55,20 +68,26 @@ export async function GET(req: Request) {
 
     const clients = Object.values(clientsMap).map((c: any) => {
       const favorite = Object.entries(c.drinks_freq).sort((a: any, b: any) => b[1] - a[1])[0];
-      return { ...c, favorite_drink: favorite ? favorite[0] : '' };
+      const maxWd = Math.max(...c.weekday_freq);
+      const favWd = maxWd > 0 ? WEEKDAYS[c.weekday_freq.indexOf(maxWd)] : '';
+      return { ...c, favorite_drink: favorite ? favorite[0] : '', fav_weekday: favWd };
     });
     clients.sort((a: any, b: any) => b.total_spent - a.total_spent);
 
     // Формируем CSV (с BOM для Excel — чтобы кириллица не ломалась)
-    const header = ['Имя', 'Телефон', 'Адрес', 'Заказов', 'Потрачено (₽)', 'Средний чек (₽)', 'Любимый напиток', 'Последний заказ'];
+    const header = ['Имя', 'Телефон', 'Адрес', 'Заказов', 'Доставка', 'Самовывоз', 'Потрачено (₽)', 'Средний чек (₽)', 'Любимый напиток', 'Любимый день', 'Первый заказ', 'Последний заказ'];
     const rows = clients.map((c: any) => [
       c.name,
       c.phone,
       c.address || '',
       c.orders_count,
+      c.delivery_count,
+      c.pickup_count,
       c.total_spent,
       Math.round(c.total_spent / c.orders_count),
       c.favorite_drink,
+      c.fav_weekday,
+      new Date(c.first_order).toLocaleDateString('ru-RU'),
       new Date(c.last_order).toLocaleString('ru-RU'),
     ]);
 

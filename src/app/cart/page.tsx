@@ -567,14 +567,8 @@ export default function CartPage() {
       return;
     }
 
-    // Инкрементируем промокод после успешного создания заказа (через сервер)
-    if (appliedPromo) {
-      fetch('/api/promo-increment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: appliedPromo.code }),
-      }).catch(() => {});
-    }
+    // Промокод инкрементируется на сервере внутри /api/order/create
+    // (только если реально применился к позиции) — здесь больше ничего не делаем
 
     // ТЕСТОВЫЙ РЕЖИМ: сервер уже принял заказ и отправил в ВК
     if (isTestMode) {
