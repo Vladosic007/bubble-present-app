@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { supabase } from '../../lib/supabase';
 
 export default function AdminPage() {
@@ -280,9 +281,20 @@ export default function AdminPage() {
               <span className="text-[#FF008C] font-['Benzin'] font-extrabold text-[12px] uppercase tracking-wider">God Mode</span>
               <span className="text-white font-['Benzin'] font-extrabold text-[18px] uppercase">Управление</span>
             </div>
-            <button onClick={() => { fetchData(); }} className="w-[40px] h-[40px] bg-white/10 rounded-full flex items-center justify-center active:scale-95">
-              <span className="text-[16px]">🔄</span>
-            </button>
+            <div className="flex items-center gap-[8px]">
+              {isBoss && (
+                <Link
+                  href="/admin/clients"
+                  className="h-[40px] px-[14px] bg-gradient-to-r from-[#FF00EE]/30 to-[#FF008C]/30 rounded-full flex items-center justify-center active:scale-95 border border-[#FF008C]/40"
+                  title="База клиентов"
+                >
+                  <span className="text-white font-['Arial'] font-bold text-[10px] uppercase">👥 Клиенты</span>
+                </Link>
+              )}
+              <button onClick={() => { fetchData(); }} className="w-[40px] h-[40px] bg-white/10 rounded-full flex items-center justify-center active:scale-95">
+                <span className="text-[16px]">🔄</span>
+              </button>
+            </div>
           </div>
 
           <div className="w-full h-[44px] bg-white/10 rounded-[15px] p-[4px] flex relative">

@@ -7,9 +7,14 @@ const IS_OPENING_DAY = () => new Date() < OPENING_PROMO_END;
 const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-\.,()]/g, '');
 
 // Пересчёт суммы заказа на сервере (защита от подмены цены)
-async function calcTotal(items: any[], order_type: string, promo_code: string | null): Promise<number> {
+// Возвращает { total, appliedPromo } — appliedPromo нужен для инкремента used_count
+async function calcTotal(
+  items: any[],
+  order_type: string,
+  promo_code: string | null
+): Promise<{ total: number; appliedPromo: { id: string; used_count: number } | null }> {
   const { data: drinks } = await supabaseAdmin.from('drinks').select('name, category, price_pickup, price_delivery');
-  if (!drinks) return 0;
+  if (!drinks) return { total: 0, appliedPromo: null };
 
   const priceMap: Record<string, { pickup: number, delivery: number, category: string }> = {};
   drinks.forEach((d: any) => {
@@ -31,6 +36,7 @@ async function calcTotal(items: any[], order_type: string, promo_code: string | 
   }
 
   let total = 0;
+  let promoWasApplied = false;
   for (const it of items) {
     const cleanName = normalize((it.name || '').replace(/\s*\(.+/, ''));
     let base = priceMap[cleanName];
@@ -52,13 +58,17 @@ async function calcTotal(items: any[], order_type: string, promo_code: string | 
       const apply = !promo.applies_to || promoMatchesItem(promo.applies_to, it.slug || it.id, base.category, cleanName);
       if (apply) {
         itemPrice = Math.round(itemPrice * (1 - promo.discount_percent / 100));
+        promoWasApplied = true;
       }
     }
 
     total += itemPrice * (it.qty || 1);
   }
 
-  return total;
+  return {
+    total,
+    appliedPromo: promo && promoWasApplied ? { id: promo.id, used_count: promo.used_count || 0 } : null,
+  };
 }
 
 function promoMatchesItem(appliesTo: string, slug: string | undefined, category: string | undefined, cleanName: string): boolean {
@@ -86,7 +96,7 @@ export async function POST(req: Request) {
     // ВАЖНО: цену считаем НА СЕРВЕРЕ — нельзя верить клиенту
     let itemsArr: any[] = [];
     try { itemsArr = typeof items === 'string' ? JSON.parse(items) : items; } catch {}
-    const serverTotal = await calcTotal(itemsArr, order_type, promo_code || null);
+    const { total: serverTotal, appliedPromo } = await calcTotal(itemsArr, order_type, promo_code || null);
 
     // В тестовом режиме заказ сразу "принят" (без оплаты)
     const initialStatus = isTest ? 'accepted' : 'pending_payment';
@@ -114,6 +124,18 @@ export async function POST(req: Request) {
     }
 
     const orderId = data[0].id;
+
+    // Инкрементируем счётчик использований промокода (если был применён)
+    if (appliedPromo) {
+      try {
+        await supabaseAdmin
+          .from('promocodes')
+          .update({ used_count: appliedPromo.used_count + 1 })
+          .eq('id', appliedPromo.id);
+      } catch (e) {
+        console.error('Не удалось обновить used_count промокода:', e);
+      }
+    }
 
     // Тестовый заказ — сразу шлём в ВК (без оплаты)
     if (isTest) {
