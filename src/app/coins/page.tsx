@@ -11,6 +11,8 @@ const TYPE_LABEL: Record<string, string> = {
   order_redeem: '💸 Списано',
   welcome: '🎁 Приветственный бонус',
   levelup: '✨ Новый уровень',
+  birthday: '🎂 День рождения',
+  referral: '🤝 Реферальный бонус',
   admin: '⚙️ Начисление',
 };
 
@@ -22,6 +24,8 @@ export default function CoinsPage() {
   const [level, setLevel] = useState(1);
   const [levelDiscount, setLevelDiscount] = useState(0);
   const [history, setHistory] = useState<Tx[]>([]);
+  const [refCode, setRefCode] = useState('');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const phone = localStorage.getItem('bubble_user_phone');
@@ -33,10 +37,27 @@ export default function CoinsPage() {
         setLevel(json.level || 1);
         setLevelDiscount(json.levelDiscount || 0);
         setHistory(json.history || []);
+        setRefCode(json.refCode || '');
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
+
+  const refLink = refCode && typeof window !== 'undefined' ? `${window.location.origin}/?ref=${refCode}` : '';
+
+  const handleShare = async () => {
+    if (!refLink) return;
+    const text = `Привет! Лови баблкоины в Bubble Present 🧋 Закажи по моей ссылке — оба получим бонус: ${refLink}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Bubble Present', text });
+      } else {
+        await navigator.clipboard.writeText(refLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {}
+  };
 
   return (
     <div className="bg-[#110A1A] min-h-[100dvh] w-full flex justify-center overflow-x-hidden font-sans relative">
@@ -89,6 +110,21 @@ export default function CoinsPage() {
             >
               Потратить в заказе →
             </button>
+
+            {/* Пригласи друга */}
+            <div className="w-full mt-[24px] bg-gradient-to-br from-[#FF00EE]/20 to-[#FF008C]/10 border border-[#FF008C]/30 rounded-[18px] p-[16px] flex flex-col gap-[10px]">
+              <span className="text-white font-['Benzin'] font-extrabold text-[12px] uppercase">🤝 Пригласи друга</span>
+              <span className="text-white/70 font-['Arial'] font-bold text-[10px] leading-snug">
+                Друг закажет по твоей ссылке — <span className="text-[#14FF00]">+50 коинов тебе</span> и <span className="text-[#14FF00]">+50 ему</span>!
+              </span>
+              <button
+                onClick={handleShare}
+                disabled={!refLink}
+                className="w-full h-[46px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[12px] uppercase active:scale-95 transition-transform disabled:opacity-40"
+              >
+                {copied ? '✅ Ссылка скопирована!' : '📤 Поделиться ссылкой'}
+              </button>
+            </div>
 
             {/* Как заработать */}
             <div className="w-full mt-[24px] flex flex-col gap-[10px]">

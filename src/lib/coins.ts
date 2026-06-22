@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { coinsForAmount, levelForCups, WELCOME_COINS, BIRTHDAY_COINS, randomLevelupReward } from '@/lib/loyaltyConfig';
+import { coinsForAmount, levelForCups, WELCOME_COINS, BIRTHDAY_COINS, REFERRAL_INVITER_COINS, REFERRAL_FRIEND_COINS, randomLevelupReward } from '@/lib/loyaltyConfig';
 
 // === СЕРВЕРНАЯ ЛОГИКА БАБЛКОИНОВ ===
 // Баланс хранится по нормализованному телефону, все операции пишутся в леджер.
@@ -105,6 +105,58 @@ export async function checkBirthdayBonus(phoneNorm: string): Promise<number> {
   return BIRTHDAY_COINS;
 }
 
+// === РЕФЕРАЛКА ===
+
+// Получить (или сгенерировать) личный реферальный код пользователя
+export async function getOrCreateRefCode(phoneNorm: string): Promise<string> {
+  const row = await getRow(phoneNorm);
+  if (row?.ref_code) return row.ref_code;
+  // генерируем короткий код
+  let code = '';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    code = Math.random().toString(36).slice(2, 8);
+    const { data: taken } = await supabaseAdmin.from('coin_balances').select('phone').eq('ref_code', code).limit(1);
+    if (!taken || taken.length === 0) break;
+  }
+  await supabaseAdmin.from('coin_balances').update({ ref_code: code }).eq('phone', phoneNorm);
+  return code;
+}
+
+// Привязать новичка к пригласившему (только один раз, нельзя пригласить самого себя)
+export async function setReferredBy(phoneNorm: string, code: string): Promise<void> {
+  if (!phoneNorm || !code) return;
+  const row = await getRow(phoneNorm);
+  if (row?.referred_by) return;            // уже привязан
+  if (row?.ref_code === code) return;      // нельзя пригласить себя
+  // код должен принадлежать реальному пользователю
+  const { data: inviter } = await supabaseAdmin.from('coin_balances').select('phone').eq('ref_code', code).limit(1);
+  if (!inviter || inviter.length === 0) return;
+  await supabaseAdmin.from('coin_balances').update({ referred_by: code }).eq('phone', phoneNorm);
+}
+
+// Обработать реферальную награду при ПЕРВОМ завершённом заказе новичка
+async function processReferralOnComplete(phoneNorm: string, phoneRaw: string): Promise<void> {
+  const row = await getRow(phoneNorm);
+  if (!row?.referred_by || row.referral_rewarded) return;
+
+  // Проверяем, что это действительно первый завершённый заказ (защита от абуза)
+  const { data: completed } = await supabaseAdmin
+    .from('orders').select('id').eq('phone', phoneRaw).eq('status', 'completed');
+  if (!completed || completed.length > 1) return; // больше одного — клиент не новый
+
+  // Находим пригласившего по коду
+  const { data: inviterRows } = await supabaseAdmin
+    .from('coin_balances').select('phone').eq('ref_code', row.referred_by).limit(1);
+  if (!inviterRows || inviterRows.length === 0) return;
+  const inviterPhone = inviterRows[0].phone;
+  if (inviterPhone === phoneNorm) return; // сам себя
+
+  // Награждаем обоих + помечаем, что реферал отработан
+  await supabaseAdmin.from('coin_balances').update({ referral_rewarded: true }).eq('phone', phoneNorm);
+  await applyDelta(phoneNorm, REFERRAL_FRIEND_COINS, 'referral', null, 'Бонус за приход по приглашению');
+  await applyDelta(inviterPhone, REFERRAL_INVITER_COINS, 'referral', null, 'Друг пришёл по твоей ссылке 🎉');
+}
+
 // Списать коины при оформлении заказа
 export async function redeemForOrder(phoneNorm: string, coins: number, orderId: number): Promise<void> {
   if (!phoneNorm || coins <= 0) return;
@@ -177,6 +229,9 @@ export async function handleOrderCompleted(orderId: number): Promise<void> {
 
     // левел-ап (cups считаем по уже завершённому заказу)
     await checkLevelup(phoneNorm, order.phone);
+
+    // реферальная награда (если это первый завершённый заказ новичка)
+    await processReferralOnComplete(phoneNorm, order.phone);
   } catch (e) {
     console.error('handleOrderCompleted error', e);
   }

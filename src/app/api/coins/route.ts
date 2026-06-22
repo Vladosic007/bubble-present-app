@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { normalizePhone, ensureWelcomeBonus, getCups, checkBirthdayBonus } from '@/lib/coins';
+import { normalizePhone, ensureWelcomeBonus, getCups, checkBirthdayBonus, getOrCreateRefCode } from '@/lib/coins';
 import { levelForCups, COIN_REDEEM_VALUE } from '@/lib/loyaltyConfig';
 
 // Баланс коинов + ожидающий левел-ап + история. Заодно выдаёт приветственный бонус.
@@ -11,9 +11,10 @@ export async function GET(req: Request) {
     const phoneNorm = normalizePhone(phoneRaw);
     if (!phoneNorm) return NextResponse.json({ balance: 0, history: [], pending: null, level: 1, levelDiscount: 0, cups: 0 });
 
-    // Приветственный бонус (один раз) + проверка подарка на ДР
+    // Приветственный бонус (один раз) + проверка подарка на ДР + личный реф-код
     await ensureWelcomeBonus(phoneNorm);
     await checkBirthdayBonus(phoneNorm);
+    const refCode = await getOrCreateRefCode(phoneNorm);
 
     const [{ data: row }, { data: txs }, cups] = await Promise.all([
       supabaseAdmin.from('coin_balances').select('*').eq('phone', phoneNorm).single(),
@@ -36,6 +37,7 @@ export async function GET(req: Request) {
       cups,
       pending,
       pendingBirthday,
+      refCode,
       history: txs || [],
     });
   } catch (e) {

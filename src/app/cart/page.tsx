@@ -593,6 +593,7 @@ export default function CartPage() {
           promo_code: appliedPromo?.code || null,
           source: (typeof window !== 'undefined' && localStorage.getItem('bubble_source')) || 'direct',
           redeem_coins: coinsToUse,
+          referred_by: (typeof window !== 'undefined' && localStorage.getItem('bubble_referred_by')) || null,
         }),
       });
       const createData = await createRes.json();

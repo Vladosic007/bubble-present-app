@@ -11,10 +11,19 @@ export default function AttributionTracker() {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      const raw = params.get('from') || params.get('utm_source') || params.get('ref');
-      if (!raw) return;
 
-      // Чистим метку: только латиница/цифры/_/-, до 40 символов
+      // Реферальный код (?ref=КОД) — запоминаем кто пригласил (first-touch)
+      const refRaw = params.get('ref');
+      if (refRaw) {
+        const refCode = refRaw.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+        if (refCode && !localStorage.getItem('bubble_referred_by')) {
+          localStorage.setItem('bubble_referred_by', refCode);
+        }
+      }
+
+      // Источник трафика (?from / ?utm_source / ?ref)
+      const raw = params.get('from') || params.get('utm_source') || (refRaw ? 'referral' : null);
+      if (!raw) return;
       const source = raw.toLowerCase().replace(/[^a-z0-9_\-]/g, '').slice(0, 40);
       if (!source) return;
 

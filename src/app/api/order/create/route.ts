@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { isFridayDeliveryPromoActive, FRIDAY_PROMO_MULTIPLIER } from '@/lib/promoConfig';
 import { levelForCups, COIN_MAX_REDEEM_FRACTION, COIN_REDEEM_VALUE, TOTAL_DISCOUNT_CAP_FRACTION } from '@/lib/loyaltyConfig';
-import { getCups, getBalance, normalizePhone, redeemForOrder } from '@/lib/coins';
+import { getCups, getBalance, normalizePhone, redeemForOrder, setReferredBy } from '@/lib/coins';
 
 // Дата окончания акции — должна совпадать с клиентом
 const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00');
@@ -133,7 +133,7 @@ function promoMatchesItem(appliesTo: string, slug: string | undefined, category:
 
 export async function POST(req: Request) {
   try {
-    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source, redeem_coins } = await req.json();
+    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source, redeem_coins, referred_by } = await req.json();
 
     // Минимальная валидация
     if (!phone || !items || !order_type) {
@@ -199,6 +199,15 @@ export async function POST(req: Request) {
         await redeemForOrder(normalizePhone(phone), coinsUsed, orderId);
       } catch (e) {
         console.error('Не удалось списать коины:', e);
+      }
+    }
+
+    // Привязка к пригласившему (если пришёл по реф-ссылке) — награда выдастся при завершении
+    if (referred_by && typeof referred_by === 'string') {
+      try {
+        await setReferredBy(normalizePhone(phone), referred_by.trim());
+      } catch (e) {
+        console.error('Не удалось привязать реферала:', e);
       }
     }
 
