@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // === МАССИВ УРОВНЕЙ С ТОЧНЫМИ МАКСИМУМАМИ ===
@@ -17,14 +18,19 @@ const BUBBLIK_LEVELS = [
 ];
 
 export default function BubblikPage() {
+  const router = useRouter();
   const [bubblikName, setBubblikName] = useState('ИМЯ БАБЛИКА');
   const [isInfoOpen, setIsInfoOpen] = useState(false);
-  
-  const [currentDrinks, setCurrentDrinks] = useState(0); 
+
+  const [currentDrinks, setCurrentDrinks] = useState(0);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
-  
+
   // ❗ НОВЫЙ СТЕЙТ ДЛЯ ЗАГРУЗКИ ❗
   const [isLoading, setIsLoading] = useState(true);
+
+  // Баблкоины
+  const [coinBalance, setCoinBalance] = useState<number | null>(null);
+  const [levelUp, setLevelUp] = useState<{ level: number; coins: number } | null>(null);
 
   const levelsInfo = [
     "1 уровень - 0-10 напитков",
@@ -67,11 +73,33 @@ export default function BubblikPage() {
         try { localStorage.setItem('bubblik_cups_cache', String(totalCups)); } catch {}
       } catch {}
 
+      // Баланс баблкоинов + ожидающий левел-ап (заодно выдаётся приветственный бонус)
+      try {
+        const cRes = await fetch(`/api/coins?phone=${encodeURIComponent(phone)}`);
+        const cJson = await cRes.json();
+        setCoinBalance(cJson.balance ?? 0);
+        if (cJson.pending) setLevelUp(cJson.pending);
+      } catch {}
+
       setIsLoading(false);
     };
 
     fetchDrinksData();
   }, []);
+
+  // Закрыть окно левел-апа и погасить pending на сервере
+  const claimLevelUp = async () => {
+    const phone = localStorage.getItem('bubble_user_phone');
+    if (levelUp) setCoinBalance(prev => (prev || 0)); // баланс уже учтён на сервере
+    setLevelUp(null);
+    if (phone) {
+      fetch('/api/coins/ack-levelup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      }).catch(() => {});
+    }
+  };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
@@ -133,7 +161,26 @@ export default function BubblikPage() {
       </div>
 
       <main className="w-full max-w-[370px] relative z-10 flex flex-col items-center pb-[120px] min-h-[100dvh]">
-        
+
+        {/* 🪙 Плашка баблкоинов (слева вверху, пульсирует, ведёт на страницу коинов) */}
+        {coinBalance !== null && (
+          <motion.button
+            onClick={() => router.push('/coins')}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            whileTap={{ scale: 0.94 }}
+            className="absolute top-[108px] left-[20px] z-50 flex items-center gap-[6px] pl-[6px] pr-[12px] py-[5px] rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_0_18px_rgba(255,0,140,0.35)]"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="relative w-[26px] h-[26px]"
+            >
+              <Image draggable={false} src="/images/bablecoin.png" alt="" fill className="object-contain" />
+            </motion.div>
+            <span className="text-white font-['Benzin'] font-extrabold text-[13px] leading-none">{coinBalance}</span>
+          </motion.button>
+        )}
+
         <div className="absolute top-[117px] right-[24px] w-[24px] h-[24px] cursor-pointer z-50 flex items-center justify-center transition-transform active:scale-90"
           onClick={() => setIsInfoOpen(!isInfoOpen)}
         >
@@ -252,6 +299,41 @@ export default function BubblikPage() {
             </div>
           </>
         )}
+
+        {/* 🎉 ОКНО ЛЕВЕЛ-АПА */}
+        <AnimatePresence>
+          {levelUp && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-[30px]"
+              onClick={claimLevelUp}
+            >
+              <motion.div
+                initial={{ scale: 0.6, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.7, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 240, damping: 18 }}
+                onClick={e => e.stopPropagation()}
+                className="w-full max-w-[300px] bg-gradient-to-b from-[#2A1535] to-[#160A22] border border-[#FF008C]/40 rounded-[28px] p-[26px] flex flex-col items-center text-center shadow-[0_0_50px_rgba(255,0,140,0.5)]"
+              >
+                <span className="text-[#FFD700] font-['Benzin'] font-extrabold text-[12px] uppercase tracking-wider">✨ Новый уровень! ✨</span>
+                <span className="text-white font-['Benzin'] font-extrabold text-[20px] uppercase mt-[6px] leading-tight">Баблик дорос<br/>до Lvl {levelUp.level}</span>
+                <motion.div
+                  animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.1, 1] }} transition={{ duration: 1.2, repeat: Infinity }}
+                  className="relative w-[90px] h-[90px] my-[16px] drop-shadow-[0_0_25px_rgba(255,0,140,0.6)]"
+                >
+                  <Image draggable={false} src="/images/bablecoin.png" alt="" fill className="object-contain" />
+                </motion.div>
+                <span className="text-[#14FF00] font-['Benzin'] font-extrabold text-[26px] leading-none">+{levelUp.coins}</span>
+                <span className="text-white/70 font-['Arial'] font-bold text-[11px] uppercase mt-[2px]">баблкоинов</span>
+                <button
+                  onClick={claimLevelUp}
+                  className="w-full h-[48px] mt-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[13px] uppercase active:scale-95 transition-transform"
+                >
+                  Забрать 🎁
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </main>
     </div>

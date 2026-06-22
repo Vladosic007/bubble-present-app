@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { handleOrderCompleted } from '@/lib/coins';
 
 export async function POST(req: Request) {
   try {
@@ -20,6 +21,11 @@ export async function POST(req: Request) {
 
     if (error) {
       return NextResponse.json({ error: 'db error' }, { status: 500 });
+    }
+
+    // Заказ выдан/доставлен → начисляем баблкоины + проверяем левел-ап
+    if (status === 'completed') {
+      await handleOrderCompleted(orderId);
     }
 
     return NextResponse.json({ success: true });

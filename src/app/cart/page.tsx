@@ -194,6 +194,11 @@ export default function CartPage() {
   const [appliedPromo, setAppliedPromo] = useState<{ code: string, discount: number } | null>(null);
   const [promoError, setPromoError] = useState('');
 
+  // Лояльность: уровневая скидка + баблкоины
+  const [levelDiscount, setLevelDiscount] = useState(0); // % скидки уровня
+  const [coinBalance, setCoinBalance] = useState(0);
+  const [useCoins, setUseCoins] = useState(false);
+
   const [isTimeOrder, setIsTimeOrder] = useState(false);
   const [selectedTime, setSelectedTime] = useState('');
 
@@ -370,7 +375,28 @@ export default function CartPage() {
   };
 
   const rawTotal = items.reduce((sum, item) => sum + (getCorrectItemPrice(item) * item.quantity), 0);
-  const dynamicTotal = appliedPromo ? Math.round(rawTotal * (1 - appliedPromo.discount / 100)) : rawTotal;
+  const afterPromo = appliedPromo ? Math.round(rawTotal * (1 - appliedPromo.discount / 100)) : rawTotal;
+
+  // Большие акции (открытие/пятница) блокируют уровень и коины
+  const bigPromoActive = (IS_OPENING_DAY && orderType === 'pickup') || (IS_FRIDAY_PROMO && orderType === 'delivery');
+  // Уровневая скидка — всегда, кроме больших акций
+  const levelActive = levelDiscount > 0 && !bigPromoActive;
+  const afterLevel = levelActive ? Math.round(afterPromo * (1 - levelDiscount / 100)) : afterPromo;
+  // Коины — только если нет промокода и нет большой акции
+  const coinsAllowed = !appliedPromo && !bigPromoActive && coinBalance > 0;
+  const maxCoins = coinsAllowed ? Math.min(coinBalance, Math.floor(afterLevel * 0.5)) : 0;
+  const coinsToUse = (coinsAllowed && useCoins) ? maxCoins : 0;
+  const dynamicTotal = afterLevel - coinsToUse;
+
+  // Загружаем уровень и баланс коинов
+  useEffect(() => {
+    const phone = localStorage.getItem('bubble_user_phone');
+    if (!phone) return;
+    fetch(`/api/coins?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(j => { setLevelDiscount(j.levelDiscount || 0); setCoinBalance(j.balance || 0); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const blockedByOpening = IS_OPENING_DAY && orderType === 'pickup';
@@ -566,6 +592,7 @@ export default function CartPage() {
           isTest: isTestMode,
           promo_code: appliedPromo?.code || null,
           source: (typeof window !== 'undefined' && localStorage.getItem('bubble_source')) || 'direct',
+          redeem_coins: coinsToUse,
         }),
       });
       const createData = await createRes.json();
@@ -895,6 +922,35 @@ export default function CartPage() {
             </span>
           )}
 
+          {/* Уровневая скидка */}
+          {levelActive && (
+            <div className="flex items-center justify-between bg-[#F0FFE9] border border-[#14a800]/20 rounded-[12px] px-[12px] h-[36px] mb-[6px]">
+              <span className="text-[10px] font-['Arial'] font-bold uppercase text-[#14a800]">⭐ Скидка твоего уровня</span>
+              <span className="text-[11px] font-['Benzin'] font-extrabold text-[#14a800]">−{levelDiscount}%</span>
+            </div>
+          )}
+
+          {/* Списание баблкоинов */}
+          {coinsAllowed && maxCoins > 0 && (
+            <button
+              onClick={() => setUseCoins(v => !v)}
+              className={`w-full flex items-center justify-between rounded-[12px] px-[10px] h-[44px] mb-[6px] border transition-colors ${useCoins ? 'bg-gradient-to-r from-[#FF00EE]/10 to-[#FF008C]/10 border-[#FF008C]/40' : 'bg-[#F7F7F7] border-[#F0E8F8]'}`}
+            >
+              <span className="flex items-center gap-[8px]">
+                <span className="relative w-[24px] h-[24px] shrink-0">
+                  <Image draggable={false} src="/images/bablecoin.png" alt="" fill className="object-contain" />
+                </span>
+                <span className="flex flex-col items-start leading-tight">
+                  <span className="text-[11px] font-['Benzin'] font-extrabold text-[#333] uppercase">Списать коины</span>
+                  <span className="text-[9px] font-['Arial'] font-bold text-[#949494]">−{maxCoins} ₽ (баланс {coinBalance})</span>
+                </span>
+              </span>
+              <span className={`w-[44px] h-[26px] rounded-full p-[2px] flex shrink-0 transition-colors ${useCoins ? 'bg-[#14FF00]' : 'bg-[#D1D1D6]'}`}>
+                <motion.span layout className="w-[22px] h-[22px] bg-white rounded-full shadow" animate={{ x: useCoins ? 18 : 0 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} />
+              </span>
+            </button>
+          )}
+
           {/* 2. Тип заказа */}
           <div className="flex bg-[#F7F7F7] rounded-[16px] p-[3px] mb-[8px] mt-[6px]">
             <button
@@ -955,14 +1011,22 @@ export default function CartPage() {
           <div className="flex items-center justify-between mb-[14px] px-[4px]">
             <div className="flex flex-col">
               <span className="font-['Benzin'] font-extrabold text-[13px] text-[#C8C8C8] uppercase tracking-wider">Итого</span>
-              {appliedPromo && (
+              {dynamicTotal < rawTotal && (
                 <span className="text-[10px] text-[#C8C8C8] line-through font-['Benzin'] leading-none">{rawTotal} руб</span>
+              )}
+              {coinsToUse > 0 && (
+                <span className="text-[9px] text-[#FF008C] font-['Arial'] font-bold leading-none mt-[2px]">🪙 −{coinsToUse} коинов</span>
               )}
             </div>
             <div className="flex items-center gap-[8px]">
               {appliedPromo && (
                 <span className="text-[10px] text-[#FF008C] bg-[#FF008C]/10 px-[8px] py-[3px] rounded-[8px] font-['Benzin'] font-bold">
                   -{appliedPromo.discount}%
+                </span>
+              )}
+              {levelActive && !appliedPromo && (
+                <span className="text-[10px] text-[#14a800] bg-[#14a800]/10 px-[8px] py-[3px] rounded-[8px] font-['Benzin'] font-bold">
+                  -{levelDiscount}%
                 </span>
               )}
               <span className="font-['Benzin'] font-extrabold text-[26px] leading-none bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-transparent bg-clip-text">

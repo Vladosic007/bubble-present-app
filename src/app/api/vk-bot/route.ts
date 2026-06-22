@@ -1,4 +1,5 @@
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
+import { handleOrderCompleted } from '@/lib/coins';
 
 const VK_TOKEN = process.env.VK_TOKEN!;
 
@@ -228,6 +229,8 @@ export async function POST(req: Request) {
       // ========== ЗАВЕРШЕН ==========
       if (action === 'completed') {
         await supabase.from('orders').update({ status: 'completed' }).eq('id', order_id);
+        // Начисляем баблкоины клиенту + проверяем левел-ап
+        await handleOrderCompleted(order_id);
         await answerCallback(event_id, user_id, peer_id, `🎉 Заказ #${order_id} завершён!`);
 
         const isDelivery = order_type === 'delivery';

@@ -1,21 +1,33 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { isFridayDeliveryPromoActive, FRIDAY_PROMO_MULTIPLIER } from '@/lib/promoConfig';
+import { levelForCups, COIN_MAX_REDEEM_FRACTION, COIN_REDEEM_VALUE, TOTAL_DISCOUNT_CAP_FRACTION } from '@/lib/loyaltyConfig';
+import { getCups, getBalance, normalizePhone, redeemForOrder } from '@/lib/coins';
 
 // Дата окончания акции — должна совпадать с клиентом
 const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00');
 const IS_OPENING_DAY = () => new Date() < OPENING_PROMO_END;
 const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-\.,()]/g, '');
 
-// Пересчёт суммы заказа на сервере (защита от подмены цены)
-// Возвращает { total, appliedPromo } — appliedPromo нужен для инкремента used_count
+type CalcResult = {
+  total: number;
+  appliedPromo: { id: string; used_count: number } | null;
+  levelDiscount: number; // %
+  coinsUsed: number;     // сколько коинов реально списано
+};
+
+// Пересчёт суммы заказа на сервере (защита от подмены цены).
+// Учитывает: акции (открытие/пятница), промокод, уровневую скидку, списание коинов.
 async function calcTotal(
   items: any[],
   order_type: string,
-  promo_code: string | null
-): Promise<{ total: number; appliedPromo: { id: string; used_count: number } | null }> {
+  promo_code: string | null,
+  phone: string | null,
+  redeemCoinsRequested: number
+): Promise<CalcResult> {
+  const empty: CalcResult = { total: 0, appliedPromo: null, levelDiscount: 0, coinsUsed: 0 };
   const { data: drinks } = await supabaseAdmin.from('drinks').select('name, category, price_pickup, price_delivery');
-  if (!drinks) return { total: 0, appliedPromo: null };
+  if (!drinks) return empty;
 
   const priceMap: Record<string, { pickup: number, delivery: number, category: string }> = {};
   drinks.forEach((d: any) => {
@@ -25,10 +37,11 @@ async function calcTotal(
   const isOpening = IS_OPENING_DAY() && order_type === 'pickup';
   // Пятничная акция: -25% на доставку (один день). Не суммируется с промокодом.
   const isFridayDelivery = isFridayDeliveryPromoActive() && order_type === 'delivery';
+  const isBigPromo = isOpening || isFridayDelivery;
 
   // Загружаем промокод заранее (если есть). Во время акций промокод не применяется.
   let promo: any = null;
-  if (promo_code && !isOpening && !isFridayDelivery) {
+  if (promo_code && !isBigPromo) {
     const { data } = await supabaseAdmin.from('promocodes').select('*')
       .eq('code', promo_code.toUpperCase()).single();
     if (data && data.is_active
@@ -38,7 +51,8 @@ async function calcTotal(
     }
   }
 
-  let total = 0;
+  let fullTotal = 0;   // без скидок — для потолка 50%
+  let subtotal = 0;    // с акциями и промокодом
   let promoWasApplied = false;
   for (const it of items) {
     const cleanName = normalize((it.name || '').replace(/\s*\(.+/, ''));
@@ -47,17 +61,23 @@ async function calcTotal(
       const foundKey = Object.keys(priceMap).find(k => k.includes(cleanName) || cleanName.includes(k));
       if (foundKey) base = priceMap[foundKey];
     }
-    if (!base) { total += (Number(it.price) || 0) * (it.qty || 1); continue; }
+    if (!base) {
+      const fb = (Number(it.price) || 0) * (it.qty || 1);
+      fullTotal += fb; subtotal += fb; continue;
+    }
 
-    let itemPrice = order_type === 'delivery' ? base.delivery : base.pickup;
+    let itemFull = order_type === 'delivery' ? base.delivery : base.pickup;
     const name = (it.name || '').toLowerCase();
-    if (/\(L\)/i.test(it.name || '')) itemPrice += 60;
-    if (name.includes('сырн')) itemPrice += 70;
-    if (name.includes('2x') || name.includes('2х')) itemPrice += 80;
-    if (isOpening) itemPrice = Math.round(itemPrice / 2);
-    else if (isFridayDelivery) itemPrice = Math.round(itemPrice * FRIDAY_PROMO_MULTIPLIER);
+    if (/\(L\)/i.test(it.name || '')) itemFull += 60;
+    if (name.includes('сырн')) itemFull += 70;
+    if (name.includes('2x') || name.includes('2х')) itemFull += 80;
+    fullTotal += itemFull * (it.qty || 1);
 
-    // Применение промокода к этой позиции (если подходит)
+    let itemPrice = itemFull;
+    if (isOpening) itemPrice = Math.round(itemFull / 2);
+    else if (isFridayDelivery) itemPrice = Math.round(itemFull * FRIDAY_PROMO_MULTIPLIER);
+
+    // Промокод к позиции (если подходит)
     if (promo) {
       const apply = !promo.applies_to || promoMatchesItem(promo.applies_to, it.slug || it.id, base.category, cleanName);
       if (apply) {
@@ -66,13 +86,36 @@ async function calcTotal(
       }
     }
 
-    total += itemPrice * (it.qty || 1);
+    subtotal += itemPrice * (it.qty || 1);
   }
 
-  return {
-    total,
-    appliedPromo: promo && promoWasApplied ? { id: promo.id, used_count: promo.used_count || 0 } : null,
-  };
+  const appliedPromo = promo && promoWasApplied ? { id: promo.id, used_count: promo.used_count || 0 } : null;
+
+  // Во время больших акций — ничего больше не стэкаем
+  if (isBigPromo) {
+    return { total: subtotal, appliedPromo, levelDiscount: 0, coinsUsed: 0 };
+  }
+
+  // Уровневая скидка (всегда, по числу выпитых напитков)
+  let levelDiscount = 0;
+  if (phone) {
+    const cups = await getCups(phone);
+    levelDiscount = levelForCups(cups).discount;
+  }
+  const afterLevel = Math.round(subtotal * (1 - levelDiscount / 100));
+
+  // Коины — только если промокод НЕ применён (правило: промокод ИЛИ коины)
+  let coinsUsed = 0;
+  if (!promoWasApplied && redeemCoinsRequested > 0 && phone) {
+    const balance = await getBalance(normalizePhone(phone));
+    const minAllowed = Math.ceil(fullTotal * (1 - TOTAL_DISCOUNT_CAP_FRACTION)); // нельзя ниже 50% от полной цены
+    const capByGlobal = Math.max(0, afterLevel - minAllowed);
+    const capByOrder = Math.floor((afterLevel * COIN_MAX_REDEEM_FRACTION) / COIN_REDEEM_VALUE); // коины ≤ 50% заказа
+    coinsUsed = Math.max(0, Math.min(balance, Math.floor(redeemCoinsRequested), capByGlobal, capByOrder));
+  }
+
+  const total = afterLevel - coinsUsed * COIN_REDEEM_VALUE;
+  return { total, appliedPromo, levelDiscount, coinsUsed };
 }
 
 function promoMatchesItem(appliesTo: string, slug: string | undefined, category: string | undefined, cleanName: string): boolean {
@@ -90,7 +133,7 @@ function promoMatchesItem(appliesTo: string, slug: string | undefined, category:
 
 export async function POST(req: Request) {
   try {
-    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source } = await req.json();
+    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source, redeem_coins } = await req.json();
 
     // Минимальная валидация
     if (!phone || !items || !order_type) {
@@ -105,7 +148,10 @@ export async function POST(req: Request) {
     // ВАЖНО: цену считаем НА СЕРВЕРЕ — нельзя верить клиенту
     let itemsArr: any[] = [];
     try { itemsArr = typeof items === 'string' ? JSON.parse(items) : items; } catch {}
-    const { total: serverTotal, appliedPromo } = await calcTotal(itemsArr, order_type, promo_code || null);
+    const requestedCoins = Math.max(0, Math.floor(Number(redeem_coins) || 0));
+    const { total: serverTotal, appliedPromo, coinsUsed } = await calcTotal(
+      itemsArr, order_type, promo_code || null, phone, requestedCoins
+    );
 
     // В тестовом режиме заказ сразу "принят" (без оплаты)
     const initialStatus = isTest ? 'accepted' : 'pending_payment';
@@ -147,6 +193,15 @@ export async function POST(req: Request) {
       }
     }
 
+    // Списываем коины (если были применены и реально уменьшили цену)
+    if (coinsUsed > 0) {
+      try {
+        await redeemForOrder(normalizePhone(phone), coinsUsed, orderId);
+      } catch (e) {
+        console.error('Не удалось списать коины:', e);
+      }
+    }
+
     // Тестовый заказ — сразу шлём в ВК (без оплаты)
     if (isTest) {
       const base = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bubblepresent.ru';
@@ -157,7 +212,7 @@ export async function POST(req: Request) {
       }).catch(() => {});
     }
 
-    return NextResponse.json({ id: orderId, created_at: data[0].created_at, total: serverTotal });
+    return NextResponse.json({ id: orderId, created_at: data[0].created_at, total: serverTotal, coinsUsed });
   } catch (e) {
     console.error('Ошибка order/create:', e);
     return NextResponse.json({ error: 'server error' }, { status: 500 });
