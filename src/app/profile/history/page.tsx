@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation'; // ❗ ДОБАВИЛИ РОУТЕР
+import { useCartStore } from '../../../store/cartStore';
 
 // Функция для подбора цвета кнопки статуса
 const getStatusColor = (status: string) => {
@@ -73,8 +74,32 @@ const getImageByName = (name: string) => {
 
 export default function HistoryPage() {
   const router = useRouter(); // ❗ ДОБАВИЛИ ЭТУ СТРОЧКУ
+  const addItem = useCartStore((s) => s.addItem);
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Повторить заказ: восстанавливаем позиции в корзину и идём в корзину
+  const handleRepeat = (rawItems: any[]) => {
+    if (!Array.isArray(rawItems) || rawItems.length === 0) return;
+    rawItems.forEach((it: any, i: number) => {
+      const full: string = it.name || '';
+      const base = full.split(' (')[0].trim();
+      const size = /\(L\)/i.test(full) ? 'L' : 'M';
+      const topMatch = full.match(/\(\+\s*(.+?)\)/);
+      const toppings = topMatch ? topMatch[1].split(',').map((s: string) => s.trim()).filter(Boolean) : [];
+      addItem({
+        cartItemId: `${Date.now()}-${i}-${Math.floor(Math.random() * 100000)}`,
+        id: 0,
+        name: base,
+        price: Number(it.price) || 0,
+        quantity: it.qty || 1,
+        img: getImageByName(base),
+        size,
+        toppings,
+      });
+    });
+    router.push('/cart');
+  };
 
   useEffect(() => {
     // 1. МГНОВЕННО показываем историю из кэша
@@ -135,7 +160,8 @@ export default function HistoryPage() {
             count,
             total: order.total,
             status: uiStatus,
-            images: images.length > 0 ? images : ['/images/bubblik.png']
+            images: images.length > 0 ? images : ['/images/bubblik.png'],
+            rawItems: itemsArr, // нужно для «Повторить заказ»
           };
         });
 
@@ -257,11 +283,20 @@ export default function HistoryPage() {
                   <span className="font-benzin font-medium text-[10px] tracking-[0.02em] text-[#616161] uppercase">Итого: {order.total} руб</span>
                 </div>
 
-                <div className={`absolute left-[187px] bottom-[16px] w-[121px] h-[22px] rounded-[15px] flex items-center justify-center shadow-sm ${getStatusColor(order.status)}`}>
+                <div className={`absolute left-[187px] bottom-[52px] w-[121px] h-[22px] rounded-[15px] flex items-center justify-center shadow-sm ${getStatusColor(order.status)}`}>
                   <span className="font-benzin font-medium text-[10px] tracking-[0.02em] text-[#FFFFFF] uppercase drop-shadow-sm">
                     {order.status}
                   </span>
                 </div>
+
+                {/* ♻️ Повторить заказ */}
+                <button
+                  onClick={() => handleRepeat(order.rawItems)}
+                  className="absolute left-[187px] bottom-[16px] w-[121px] h-[28px] rounded-[15px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] flex items-center justify-center gap-[5px] shadow-[0_2px_8px_rgba(255,0,140,0.35)] active:scale-95 transition-transform"
+                >
+                  <span className="text-[12px]">♻️</span>
+                  <span className="font-benzin font-medium text-[10px] tracking-[0.02em] text-white uppercase">Повторить</span>
+                </button>
 
               </article>
             ))}
