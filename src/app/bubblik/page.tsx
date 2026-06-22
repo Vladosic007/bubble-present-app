@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LEVELS } from '../../lib/loyaltyConfig';
 
 // === МАССИВ УРОВНЕЙ С ТОЧНЫМИ МАКСИМУМАМИ ===
 const BUBBLIK_LEVELS = [
@@ -32,16 +33,13 @@ export default function BubblikPage() {
   const [coinBalance, setCoinBalance] = useState<number | null>(null);
   const [levelUp, setLevelUp] = useState<{ level: number; coins: number } | null>(null);
 
-  const levelsInfo = [
-    "1 уровень - 0-10 напитков",
-    "2 уровень - 11-21 заказов",
-    "3 уровень - 22-32 заказов",
-    "4 уровень - 33-54 заказов",
-    "5 уровень - 55-65 заказов",
-    "6 уровень - 66-76 заказов",
-    "7 уровень - 77-98 заказов",
-    "8 уровень - 99+ заказов"
-  ];
+  // Текст подсказки: уровень · диапазон напитков · скидка (из конфига лояльности)
+  const levelsInfo = LEVELS.map((l, i) => {
+    const max = i < LEVELS.length - 1 ? LEVELS[i + 1].minCups - 1 : null;
+    const range = max === null ? `${l.minCups}+` : `${l.minCups}–${max}`;
+    const disc = l.discount === 0 ? 'без скидки' : `скидка ${l.discount}%`;
+    return `${l.level} ур. · ${range} 🧋 · ${disc}`;
+  });
   
   // ❗ ТЯНЕМ ВЫПИТЫЕ НАПИТКИ ИЗ БАЗЫ ❗
   useEffect(() => {
@@ -119,7 +117,12 @@ export default function BubblikPage() {
   
   const currentLevelData = BUBBLIK_LEVELS[currentLevelIndex];
   const prevMax = currentLevelIndex === 0 ? 0 : BUBBLIK_LEVELS[currentLevelIndex - 1].maxDrinks;
-  
+
+  // Скидка текущего и следующего уровня + сколько напитков до повышения
+  const currentDiscount = LEVELS[currentLevelIndex]?.discount ?? 0;
+  const nextLevelConf = LEVELS[currentLevelIndex + 1];
+  const drinksToNext = currentLevelData.maxDrinks === 999 ? 0 : Math.max(0, currentLevelData.maxDrinks - currentDrinks);
+
   // 2. ИДЕАЛЬНАЯ МАТЕМАТИКА ПОЛОСКИ
   const range = currentLevelData.maxDrinks - prevMax;
   const currentProgressInLevel = currentDrinks - prevMax;
@@ -188,8 +191,9 @@ export default function BubblikPage() {
         </div>
 
         {isInfoOpen && (
-          <div className="absolute top-[150px] right-[24px] w-[220px] h-[160px] bg-[#FFFFFF]/10 backdrop-blur-xl border border-[#FFFFFF]/20 rounded-[15px] z-50 shadow-[0px_4px_15px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
-            <div className="w-full h-full overflow-y-auto no-scrollbar pt-[12px] pb-[16px] px-[12px] flex flex-col gap-[8px]">
+          <div className="absolute top-[150px] right-[24px] w-[235px] max-h-[270px] bg-[#FFFFFF]/10 backdrop-blur-xl border border-[#FFFFFF]/20 rounded-[15px] z-50 shadow-[0px_4px_15px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+            <div className="w-full overflow-y-auto no-scrollbar pt-[12px] pb-[14px] px-[14px] flex flex-col gap-[7px]">
+              <span className="text-[#FF008C] font-['Benzin'] font-extrabold text-[10px] uppercase tracking-wider mb-[2px]">Уровни и скидки</span>
               {levelsInfo.map((text, index) => (
                 <span key={index} className="text-white whitespace-nowrap" style={{ fontFamily: 'Arial, sans-serif', fontWeight: 'bold', fontSize: '10px' }}>
                   {text}
@@ -258,6 +262,20 @@ export default function BubblikPage() {
             <span className="mt-[8px] text-white tracking-[0.02em] leading-none z-10 uppercase" style={{ fontFamily: "'Benzin', sans-serif", fontWeight: 800, fontSize: '12px' }}>
               Level {currentLevelData.level}
             </span>
+
+            {/* Текущая и следующая скидка уровня */}
+            <div className="flex flex-col items-center gap-[5px] mt-[10px] z-10">
+              <span className="px-[16px] py-[5px] rounded-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white font-['Benzin'] font-extrabold text-[11px] uppercase shadow-[0_0_16px_rgba(255,0,140,0.45)]">
+                {currentDiscount > 0 ? `Твоя скидка ${currentDiscount}%` : 'Пока без скидки'}
+              </span>
+              {nextLevelConf ? (
+                <span className="text-white/65 font-['Arial'] font-bold text-[9px] uppercase tracking-wide">
+                  до −{nextLevelConf.discount}% осталось {drinksToNext} 🧋
+                </span>
+              ) : (
+                <span className="text-[#FFD700] font-['Arial'] font-bold text-[9px] uppercase tracking-wide">🔥 Максимальная скидка!</span>
+              )}
+            </div>
 
             <div className="relative w-[172px] h-[20px] mt-[16px] mb-[51px] shrink-0 z-10">
               
