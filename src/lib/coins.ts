@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { coinsForAmount, levelForCups, WELCOME_COINS, BIRTHDAY_COINS, REFERRAL_INVITER_COINS, REFERRAL_FRIEND_COINS, randomLevelupReward } from '@/lib/loyaltyConfig';
+import { getCosmetic, boosterMultById, DEFAULT_EQUIPPED } from '@/lib/cosmetics';
 
 // === СЕРВЕРНАЯ ЛОГИКА БАБЛКОИНОВ ===
 // Баланс хранится по нормализованному телефону, все операции пишутся в леджер.
@@ -157,6 +158,69 @@ async function processReferralOnComplete(phoneNorm: string, phoneRaw: string): P
   await applyDelta(inviterPhone, REFERRAL_INVITER_COINS, 'referral', null, 'Друг пришёл по твоей ссылке 🎉');
 }
 
+// === МАГАЗИН КОСМЕТИКИ ===
+
+// Множитель прогресса по надетому бустеру
+export async function getBoosterMult(phoneNorm: string): Promise<number> {
+  if (!phoneNorm) return 1;
+  const row = await getRow(phoneNorm);
+  return boosterMultById(row?.equipped_booster);
+}
+
+// Что надето + что куплено + баланс
+export async function getShopState(phoneNorm: string) {
+  const [row, ownedRes] = await Promise.all([
+    getRow(phoneNorm),
+    supabaseAdmin.from('owned_cosmetics').select('item_id').eq('phone', phoneNorm),
+  ]);
+  const owned = (ownedRes.data || []).map((o: any) => o.item_id);
+  return {
+    balance: row?.balance || 0,
+    owned,
+    equipped: {
+      aura: row?.equipped_aura || DEFAULT_EQUIPPED.aura,
+      name: row?.equipped_name || DEFAULT_EQUIPPED.name,
+      bg: row?.equipped_bg || DEFAULT_EQUIPPED.bg,
+      booster: row?.equipped_booster || DEFAULT_EQUIPPED.booster,
+    },
+  };
+}
+
+// Купить предмет
+export async function buyCosmetic(phoneNorm: string, itemId: string): Promise<{ ok: boolean; error?: string; balance?: number }> {
+  const item = getCosmetic(itemId);
+  if (!item) return { ok: false, error: 'not_found' };
+  if (item.price <= 0) return { ok: false, error: 'free' }; // бесплатные не покупаются
+  const row = await getRow(phoneNorm);
+  // уже куплено?
+  const { data: existing } = await supabaseAdmin
+    .from('owned_cosmetics').select('item_id').eq('phone', phoneNorm).eq('item_id', itemId).limit(1);
+  if (existing && existing.length) return { ok: false, error: 'already_owned' };
+  if ((row?.balance || 0) < item.price) return { ok: false, error: 'not_enough' };
+
+  const newBalance = await applyDelta(phoneNorm, -item.price, 'shop', null, `Покупка: ${item.title}`);
+  await supabaseAdmin.from('owned_cosmetics').insert({ phone: phoneNorm, item_id: itemId });
+  return { ok: true, balance: newBalance };
+}
+
+// Надеть предмет (бесплатные можно надевать без покупки)
+export async function equipCosmetic(phoneNorm: string, itemId: string): Promise<{ ok: boolean; error?: string }> {
+  const item = getCosmetic(itemId);
+  if (!item) return { ok: false, error: 'not_found' };
+  if (item.price > 0) {
+    const { data: existing } = await supabaseAdmin
+      .from('owned_cosmetics').select('item_id').eq('phone', phoneNorm).eq('item_id', itemId).limit(1);
+    if (!existing || !existing.length) return { ok: false, error: 'not_owned' };
+  }
+  const col =
+    item.category === 'aura' ? 'equipped_aura' :
+    item.category === 'name' ? 'equipped_name' :
+    item.category === 'bg' ? 'equipped_bg' : 'equipped_booster';
+  await getRow(phoneNorm);
+  await supabaseAdmin.from('coin_balances').update({ [col]: itemId }).eq('phone', phoneNorm);
+  return { ok: true };
+}
+
 // Списать коины при оформлении заказа
 export async function redeemForOrder(phoneNorm: string, coins: number, orderId: number): Promise<void> {
   if (!phoneNorm || coins <= 0) return;
@@ -180,9 +244,16 @@ export async function getCups(phoneRaw: string): Promise<number> {
   return cups;
 }
 
+// Напитки с учётом бустера (ускоряет прогресс баблика)
+export async function getEffectiveCups(phoneRaw: string, phoneNorm: string): Promise<number> {
+  const raw = await getCups(phoneRaw);
+  const mult = await getBoosterMult(phoneNorm);
+  return Math.floor(raw * mult);
+}
+
 // Проверка левел-апа: если уровень вырос — начисляем рандом 1..100 и ставим pending для показа окна
 async function checkLevelup(phoneNorm: string, phoneRaw: string): Promise<void> {
-  const cups = await getCups(phoneRaw);
+  const cups = await getEffectiveCups(phoneRaw, phoneNorm);
   const level = levelForCups(cups).level;
   const row = await getRow(phoneNorm);
   const lastRewarded = row?.last_rewarded_level || 1;

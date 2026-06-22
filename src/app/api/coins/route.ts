@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { normalizePhone, ensureWelcomeBonus, getCups, checkBirthdayBonus, getOrCreateRefCode } from '@/lib/coins';
+import { normalizePhone, ensureWelcomeBonus, getEffectiveCups, checkBirthdayBonus, getOrCreateRefCode } from '@/lib/coins';
 import { levelForCups, COIN_REDEEM_VALUE } from '@/lib/loyaltyConfig';
+import { DEFAULT_EQUIPPED } from '@/lib/cosmetics';
 
 // Баланс коинов + ожидающий левел-ап + история. Заодно выдаёт приветственный бонус.
 export async function GET(req: Request) {
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
       supabaseAdmin.from('coin_balances').select('*').eq('phone', phoneNorm).single(),
       supabaseAdmin.from('coin_transactions').select('amount, type, note, order_id, created_at')
         .eq('phone', phoneNorm).order('created_at', { ascending: false }).limit(30),
-      getCups(phoneRaw),
+      getEffectiveCups(phoneRaw, phoneNorm),
     ]);
 
     const lvl = levelForCups(cups);
@@ -38,6 +39,12 @@ export async function GET(req: Request) {
       pending,
       pendingBirthday,
       refCode,
+      equipped: {
+        aura: row?.equipped_aura || DEFAULT_EQUIPPED.aura,
+        name: row?.equipped_name || DEFAULT_EQUIPPED.name,
+        bg: row?.equipped_bg || DEFAULT_EQUIPPED.bg,
+        booster: row?.equipped_booster || DEFAULT_EQUIPPED.booster,
+      },
       history: txs || [],
     });
   } catch (e) {

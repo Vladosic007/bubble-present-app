@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { normalizePhone, getBoosterMult } from '@/lib/coins';
 
 export async function GET(req: Request) {
   try {
@@ -25,7 +26,11 @@ export async function GET(req: Request) {
       } catch {}
     });
 
-    return NextResponse.json({ cups: totalCups });
+    // Бустер ускоряет прогресс баблика
+    const mult = await getBoosterMult(normalizePhone(phone));
+    const effectiveCups = Math.floor(totalCups * mult);
+
+    return NextResponse.json({ cups: effectiveCups, rawCups: totalCups, mult });
   } catch (e) {
     return NextResponse.json({ cups: 0 });
   }

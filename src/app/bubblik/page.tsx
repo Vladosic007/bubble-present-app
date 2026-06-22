@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LEVELS } from '../../lib/loyaltyConfig';
+import { getCosmetic } from '../../lib/cosmetics';
 
 // === МАССИВ УРОВНЕЙ С ТОЧНЫМИ МАКСИМУМАМИ ===
 const BUBBLIK_LEVELS = [
@@ -33,6 +34,7 @@ export default function BubblikPage() {
   const [coinBalance, setCoinBalance] = useState<number | null>(null);
   const [levelUp, setLevelUp] = useState<{ level: number; coins: number } | null>(null);
   const [birthdayBonus, setBirthdayBonus] = useState<number | null>(null);
+  const [equipped, setEquipped] = useState<{ aura: string; name: string; bg: string; booster: string } | null>(null);
 
   // Текст подсказки: уровень · диапазон напитков · скидка (из конфига лояльности)
   const levelsInfo = LEVELS.map((l, i) => {
@@ -79,6 +81,7 @@ export default function BubblikPage() {
         setCoinBalance(cJson.balance ?? 0);
         if (cJson.pending) setLevelUp(cJson.pending);
         if (cJson.pendingBirthday) setBirthdayBonus(cJson.pendingBirthday);
+        if (cJson.equipped) setEquipped(cJson.equipped);
       } catch {}
 
       setIsLoading(false);
@@ -165,11 +168,19 @@ export default function BubblikPage() {
     }
   };
 
+  // Применяемая косметика
+  const bgCosmetic = getCosmetic(equipped?.bg);
+  const customBg = bgCosmetic && bgCosmetic.value !== 'default' ? bgCosmetic.value : null;
+  const auraColor = getCosmetic(equipped?.aura)?.value || '#FF008C';
+  const nameCosmetic = getCosmetic(equipped?.name);
+  const nameColor = nameCosmetic && nameCosmetic.value.startsWith('#') ? nameCosmetic.value : '#FFFFFF';
+  const nameIsRainbow = nameCosmetic?.id === 'name_rainbow';
+
   return (
-    <div className="bg-[#110A1A] min-h-[100dvh] w-full flex justify-center overflow-y-auto overflow-x-hidden font-sans relative">
-      
+    <div className="bg-[#110A1A] min-h-[100dvh] w-full flex justify-center overflow-y-auto overflow-x-hidden font-sans relative" style={customBg ? { background: customBg } : undefined}>
+
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none w-full h-full">
-        <Image draggable={false} src="/images/bubblik-bg.jpg" alt="Космический фон" fill className="object-cover opacity-60" priority />
+        <Image draggable={false} src="/images/bubblik-bg.jpg" alt="Космический фон" fill className={`object-cover transition-opacity duration-500 ${customBg ? 'opacity-0' : 'opacity-60'}`} priority />
         <div className="animated-cosmic-latte">
           <div className="stars-layer-1" />
           <div className="stars-layer-2" />
@@ -235,8 +246,13 @@ export default function BubblikPage() {
                   value={bubblikName}
                   onChange={handleNameChange}
                   onFocus={(e) => e.target.select()}
-                  className="w-full bg-transparent text-center text-white outline-none placeholder:text-white/50 uppercase cursor-text z-10"
-                  style={{ fontFamily: "'Benzin', sans-serif", fontSize: '12px', letterSpacing: '0.02em', fontWeight: 800 }}
+                  className="w-full bg-transparent text-center outline-none placeholder:text-white/50 uppercase cursor-text z-10"
+                  style={{
+                    fontFamily: "'Benzin', sans-serif", fontSize: '12px', letterSpacing: '0.02em', fontWeight: 800,
+                    ...(nameIsRainbow
+                      ? { background: nameCosmetic!.value, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' as any }
+                      : { color: nameColor }),
+                  }}
                   placeholder="ВВЕДИ ИМЯ"
                 />
                 {/* ❗ Иконка карандашика ❗ */}
@@ -254,6 +270,8 @@ export default function BubblikPage() {
             </div>
 
             <div className="relative z-10 w-[251px] h-[287px] shrink-0 pointer-events-none flex items-center justify-center">
+              {/* Аура (косметика) */}
+              <div className="absolute inset-[15%] rounded-full z-0" style={{ background: `radial-gradient(circle, ${auraColor}55 0%, transparent 70%)`, filter: 'blur(25px)' }} />
               <AnimatePresence>
                 {isLevelingUp && (
                   <motion.div 

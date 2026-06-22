@@ -3,8 +3,17 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { COSMETICS, CosmeticCategory } from '../../lib/cosmetics';
 
 type Tx = { amount: number; type: string; note: string; order_id: number | null; created_at: string };
+type Equipped = { aura: string; name: string; bg: string; booster: string };
+
+const CATEGORY_TITLE: Record<CosmeticCategory, string> = {
+  aura: '✨ Ауры',
+  name: '🎨 Цвет имени',
+  bg: '🌌 Фоны',
+  booster: '🚀 Бустеры (ускоряют рост баблика)',
+};
 
 const TYPE_LABEL: Record<string, string> = {
   order_earn: '🛍 За заказ',
@@ -27,6 +36,18 @@ export default function CoinsPage() {
   const [refCode, setRefCode] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Магазин
+  const [owned, setOwned] = useState<string[]>([]);
+  const [equipped, setEquipped] = useState<Equipped | null>(null);
+  const [shopBusy, setShopBusy] = useState<string | null>(null);
+
+  const loadShop = (phone: string) => {
+    fetch(`/api/shop?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(s => { setOwned(s.owned || []); if (s.equipped) setEquipped(s.equipped); if (typeof s.balance === 'number') setBalance(s.balance); })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     const phone = localStorage.getItem('bubble_user_phone');
     if (!phone) { setHasPhone(false); setLoading(false); return; }
@@ -41,7 +62,37 @@ export default function CoinsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+    loadShop(phone);
   }, []);
+
+  const buyItem = async (itemId: string) => {
+    const phone = localStorage.getItem('bubble_user_phone');
+    if (!phone) return;
+    setShopBusy(itemId);
+    const res = await fetch('/api/shop/buy', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, itemId }),
+    }).then(r => r.json()).catch(() => null);
+    if (res?.ok) {
+      if (typeof res.balance === 'number') setBalance(res.balance);
+      setOwned(prev => [...prev, itemId]);
+    } else if (res?.error === 'not_enough') {
+      alert('Не хватает коинов 🥲');
+    }
+    setShopBusy(null);
+  };
+
+  const equipItem = async (itemId: string, category: CosmeticCategory) => {
+    const phone = localStorage.getItem('bubble_user_phone');
+    if (!phone) return;
+    setShopBusy(itemId);
+    const res = await fetch('/api/shop/equip', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, itemId }),
+    }).then(r => r.json()).catch(() => null);
+    if (res?.ok) setEquipped(prev => prev ? { ...prev, [category]: itemId } : prev);
+    setShopBusy(null);
+  };
 
   const refLink = refCode && typeof window !== 'undefined' ? `${window.location.origin}/?ref=${refCode}` : '';
 
@@ -148,8 +199,51 @@ export default function CoinsPage() {
               <span className="text-white/70 font-['Arial'] font-bold text-[11px]">1 коин = 1 ₽ скидки в корзине. Коинами можно оплатить до 50% заказа.</span>
             </div>
 
+            {/* МАГАЗИН КОСМЕТИКИ */}
+            <div className="w-full mt-[24px] flex flex-col gap-[14px]">
+              <span className="text-white/80 font-['Benzin'] font-extrabold text-[12px] uppercase tracking-wider px-[4px]">🏪 Магазин баблика</span>
+              {(['booster', 'bg', 'aura', 'name'] as CosmeticCategory[]).map(cat => (
+                <div key={cat} className="flex flex-col gap-[8px]">
+                  <span className="text-white/50 font-['Arial'] font-bold text-[10px] uppercase px-[4px]">{CATEGORY_TITLE[cat]}</span>
+                  <div className="grid grid-cols-2 gap-[8px]">
+                    {COSMETICS.filter(c => c.category === cat).map(item => {
+                      const isOwned = item.price === 0 || owned.includes(item.id);
+                      const isEquipped = equipped?.[cat] === item.id;
+                      return (
+                        <div key={item.id} className={`rounded-[14px] p-[10px] border flex flex-col gap-[8px] ${isEquipped ? 'bg-[#FF008C]/15 border-[#FF008C]/50' : 'bg-white/8 border-white/12'}`}>
+                          <div className="flex items-center gap-[8px]">
+                            {/* превью */}
+                            {cat === 'bg' ? (
+                              <span className="w-[26px] h-[26px] rounded-full border border-white/30 shrink-0" style={{ background: item.value === 'default' ? 'radial-gradient(circle,#3A0CA3,#110A1A)' : item.value }} />
+                            ) : cat === 'aura' ? (
+                              <span className="w-[26px] h-[26px] rounded-full shrink-0" style={{ background: item.value, boxShadow: `0 0 10px ${item.value}` }} />
+                            ) : (
+                              <span className="text-[18px] shrink-0">{item.emoji}</span>
+                            )}
+                            <div className="flex flex-col leading-tight min-w-0">
+                              <span className="text-white font-['Benzin'] font-extrabold text-[10px] uppercase truncate">{item.title}</span>
+                              <span className="text-white/50 font-['Arial'] font-bold text-[9px]">{item.price === 0 ? 'бесплатно' : `${item.price} 🪙`}</span>
+                            </div>
+                          </div>
+                          {isEquipped ? (
+                            <span className="h-[30px] rounded-[10px] bg-[#14FF00]/20 text-[#14FF00] font-['Benzin'] font-extrabold text-[9px] uppercase flex items-center justify-center">✓ Надето</span>
+                          ) : isOwned ? (
+                            <button onClick={() => equipItem(item.id, cat)} disabled={shopBusy === item.id} className="h-[30px] rounded-[10px] bg-white/15 text-white font-['Benzin'] font-extrabold text-[9px] uppercase active:scale-95 disabled:opacity-50">Надеть</button>
+                          ) : (
+                            <button onClick={() => buyItem(item.id)} disabled={shopBusy === item.id || balance < item.price} className="h-[30px] rounded-[10px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white font-['Benzin'] font-extrabold text-[9px] uppercase active:scale-95 disabled:opacity-40">
+                              {balance < item.price ? 'Мало 🪙' : 'Купить'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* История */}
-            <div className="w-full mt-[20px] flex flex-col gap-[8px]">
+            <div className="w-full mt-[24px] flex flex-col gap-[8px]">
               <span className="text-white/80 font-['Benzin'] font-extrabold text-[11px] uppercase tracking-wider px-[4px]">📜 История</span>
               {history.length === 0 ? (
                 <span className="text-white/40 font-['Arial'] font-bold text-[11px] px-[4px]">Пока пусто — сделай первый заказ 🧋</span>

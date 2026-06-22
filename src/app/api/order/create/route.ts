@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { isFridayDeliveryPromoActive, FRIDAY_PROMO_MULTIPLIER } from '@/lib/promoConfig';
 import { levelForCups, COIN_MAX_REDEEM_FRACTION, COIN_REDEEM_VALUE, TOTAL_DISCOUNT_CAP_FRACTION } from '@/lib/loyaltyConfig';
-import { getCups, getBalance, normalizePhone, redeemForOrder, setReferredBy } from '@/lib/coins';
+import { getEffectiveCups, getBalance, normalizePhone, redeemForOrder, setReferredBy } from '@/lib/coins';
 
 // Дата окончания акции — должна совпадать с клиентом
 const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00');
@@ -96,10 +96,10 @@ async function calcTotal(
     return { total: subtotal, appliedPromo, levelDiscount: 0, coinsUsed: 0 };
   }
 
-  // Уровневая скидка (всегда, по числу выпитых напитков)
+  // Уровневая скидка (всегда, по числу выпитых напитков с учётом бустера)
   let levelDiscount = 0;
   if (phone) {
-    const cups = await getCups(phone);
+    const cups = await getEffectiveCups(phone, normalizePhone(phone));
     levelDiscount = levelForCups(cups).discount;
   }
   const afterLevel = Math.round(subtotal * (1 - levelDiscount / 100));
