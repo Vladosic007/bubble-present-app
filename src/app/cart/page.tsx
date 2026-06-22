@@ -5,9 +5,12 @@ import { useCartStore, CartItem } from '../../store/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
+import { isFridayDeliveryPromoActive, FRIDAY_PROMO_MULTIPLIER, FRIDAY_PROMO_DISCOUNT } from '../../lib/promoConfig';
 
 const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00'); // Дата окончания акции (МСК) — поменяй если нужно
 const IS_OPENING_DAY = new Date() < OPENING_PROMO_END;
+// Пятничная акция: -25% на доставку (один день). Даты — в src/lib/promoConfig.ts
+const IS_FRIDAY_PROMO = isFridayDeliveryPromoActive();
 
 interface SwipeableCartItemProps {
   item: CartItem;
@@ -285,7 +288,7 @@ export default function CartPage() {
       return;
     }
     
-    if (IS_OPENING_DAY && orderType === 'pickup') {
+    if ((IS_OPENING_DAY && orderType === 'pickup') || (IS_FRIDAY_PROMO && orderType === 'delivery')) {
       setPromoError('Скидки не суммируются!');
       return;
     }
@@ -335,6 +338,9 @@ export default function CartPage() {
       if (applyOpeningPromo && IS_OPENING_DAY && orderType === 'pickup') {
         return Math.round(fallbackPrice / 2);
       }
+      if (applyOpeningPromo && IS_FRIDAY_PROMO && orderType === 'delivery') {
+        return Math.round(fallbackPrice * FRIDAY_PROMO_MULTIPLIER);
+      }
       return fallbackPrice;
     }
 
@@ -352,11 +358,14 @@ export default function CartPage() {
     }
 
     const fullPrice = basePrice + toppingsPrice;
-    
+
     if (applyOpeningPromo && IS_OPENING_DAY && orderType === 'pickup') {
       return Math.round(fullPrice / 2);
     }
-    
+    if (applyOpeningPromo && IS_FRIDAY_PROMO && orderType === 'delivery') {
+      return Math.round(fullPrice * FRIDAY_PROMO_MULTIPLIER);
+    }
+
     return fullPrice;
   };
 
@@ -364,7 +373,9 @@ export default function CartPage() {
   const dynamicTotal = appliedPromo ? Math.round(rawTotal * (1 - appliedPromo.discount / 100)) : rawTotal;
 
   useEffect(() => {
-    if (IS_OPENING_DAY && orderType === 'pickup' && appliedPromo) {
+    const blockedByOpening = IS_OPENING_DAY && orderType === 'pickup';
+    const blockedByFriday = IS_FRIDAY_PROMO && orderType === 'delivery';
+    if ((blockedByOpening || blockedByFriday) && appliedPromo) {
       setAppliedPromo(null);
       setPromoCodeInput('');
       setPromoError('Промокод сброшен (Акция)');
@@ -802,6 +813,13 @@ export default function CartPage() {
                 </span>
               </motion.div>
             )}
+            {IS_FRIDAY_PROMO && !IS_OPENING_DAY && (
+              <motion.div initial={{ y: -50 }} animate={{ y: 0 }} className="w-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] p-[10px] text-center z-50 shrink-0 shadow-md">
+                <span className="text-white font-['Benzin'] font-extrabold text-[10px] uppercase tracking-wider">
+                  🛵 АКЦИЯ НЕДЕЛИ! -{FRIDAY_PROMO_DISCOUNT}% НА ДОСТАВКУ 🛵
+                </span>
+              </motion.div>
+            )}
           </AnimatePresence>
           
           <header className="relative w-full flex items-center justify-center pt-[32px] mb-[24px] shrink-0 pointer-events-none">
@@ -850,13 +868,13 @@ export default function CartPage() {
               value={promoCodeInput}
               onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
               placeholder="🎁 Промокод"
-              disabled={!!appliedPromo || (IS_OPENING_DAY && orderType === 'pickup')}
+              disabled={!!appliedPromo || (IS_OPENING_DAY && orderType === 'pickup') || (IS_FRIDAY_PROMO && orderType === 'delivery')}
               className="flex-1 h-[42px] bg-[#F7F7F7] rounded-[14px] px-[14px] text-[12px] font-bold outline-none placeholder:text-[#C8C8C8] disabled:opacity-50 border border-[#F0E8F8]"
             />
             {!appliedPromo ? (
               <button
                 onClick={handleApplyPromo}
-                disabled={IS_OPENING_DAY && orderType === 'pickup'}
+                disabled={(IS_OPENING_DAY && orderType === 'pickup') || (IS_FRIDAY_PROMO && orderType === 'delivery')}
                 className="h-[42px] px-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] text-[11px] font-['Benzin'] font-extrabold uppercase shadow-[0_4px_12px_rgba(255,0,140,0.3)] active:scale-95 transition-transform disabled:opacity-40"
               >
                 ОК
@@ -923,6 +941,12 @@ export default function CartPage() {
           {IS_OPENING_DAY && orderType === 'pickup' && (
             <div className="w-full bg-gradient-to-r from-[#FF00EE]/8 to-[#FF008C]/8 rounded-[12px] py-[6px] px-[12px] mb-[10px] text-center border border-[#FF008C]/10">
               <span className="text-[10px] font-['Benzin'] font-bold text-[#FF0040] uppercase">🎉 Акция: -50% на самовывоз! 🎉</span>
+            </div>
+          )}
+
+          {IS_FRIDAY_PROMO && orderType === 'delivery' && (
+            <div className="w-full bg-gradient-to-r from-[#FF00EE]/8 to-[#FF008C]/8 rounded-[12px] py-[6px] px-[12px] mb-[10px] text-center border border-[#FF008C]/10">
+              <span className="text-[10px] font-['Benzin'] font-bold text-[#FF0040] uppercase">🛵 Акция: -{FRIDAY_PROMO_DISCOUNT}% на доставку! 🛵</span>
             </div>
           )}
 

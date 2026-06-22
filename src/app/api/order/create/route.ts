@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { isFridayDeliveryPromoActive, FRIDAY_PROMO_MULTIPLIER } from '@/lib/promoConfig';
 
 // Дата окончания акции — должна совпадать с клиентом
 const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00');
@@ -22,10 +23,12 @@ async function calcTotal(
   });
 
   const isOpening = IS_OPENING_DAY() && order_type === 'pickup';
+  // Пятничная акция: -25% на доставку (один день). Не суммируется с промокодом.
+  const isFridayDelivery = isFridayDeliveryPromoActive() && order_type === 'delivery';
 
-  // Загружаем промокод заранее (если есть)
+  // Загружаем промокод заранее (если есть). Во время акций промокод не применяется.
   let promo: any = null;
-  if (promo_code && !isOpening) {
+  if (promo_code && !isOpening && !isFridayDelivery) {
     const { data } = await supabaseAdmin.from('promocodes').select('*')
       .eq('code', promo_code.toUpperCase()).single();
     if (data && data.is_active
@@ -52,6 +55,7 @@ async function calcTotal(
     if (name.includes('сырн')) itemPrice += 70;
     if (name.includes('2x') || name.includes('2х')) itemPrice += 80;
     if (isOpening) itemPrice = Math.round(itemPrice / 2);
+    else if (isFridayDelivery) itemPrice = Math.round(itemPrice * FRIDAY_PROMO_MULTIPLIER);
 
     // Применение промокода к этой позиции (если подходит)
     if (promo) {
