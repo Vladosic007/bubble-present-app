@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { coinsForAmount, levelForCups, WELCOME_COINS, BIRTHDAY_COINS, REFERRAL_INVITER_COINS, REFERRAL_FRIEND_COINS, randomLevelupReward } from '@/lib/loyaltyConfig';
 import { getCosmetic, boosterMultById, DEFAULT_EQUIPPED } from '@/lib/cosmetics';
+import { sendToPhone } from '@/lib/push';
 
 // === СЕРВЕРНАЯ ЛОГИКА БАБЛКОИНОВ ===
 // Баланс хранится по нормализованному телефону, все операции пишутся в леджер.
@@ -103,6 +104,7 @@ export async function checkBirthdayBonus(phoneNorm: string): Promise<number> {
   await supabaseAdmin
     .from('coin_transactions')
     .insert({ phone: phoneNorm, amount: BIRTHDAY_COINS, type: 'birthday', order_id: null, note: 'Подарок на день рождения 🎂' });
+  sendToPhone(phoneNorm, { title: '🎂 С Днём Рождения!', body: `Лови подарок — ${BIRTHDAY_COINS} баблкоинов 🪙`, url: '/coins' }).catch(() => {});
   return BIRTHDAY_COINS;
 }
 
@@ -156,6 +158,7 @@ async function processReferralOnComplete(phoneNorm: string, phoneRaw: string): P
   await supabaseAdmin.from('coin_balances').update({ referral_rewarded: true }).eq('phone', phoneNorm);
   await applyDelta(phoneNorm, REFERRAL_FRIEND_COINS, 'referral', null, 'Бонус за приход по приглашению');
   await applyDelta(inviterPhone, REFERRAL_INVITER_COINS, 'referral', null, 'Друг пришёл по твоей ссылке 🎉');
+  sendToPhone(inviterPhone, { title: '🤝 +50 коинов!', body: 'Друг пришёл по твоей ссылке и сделал заказ. Спасибо! 🪙', url: '/coins' }).catch(() => {});
 }
 
 // === МАГАЗИН КОСМЕТИКИ ===
@@ -274,6 +277,7 @@ async function checkLevelup(phoneNorm: string, phoneRaw: string): Promise<void> 
   await supabaseAdmin
     .from('coin_transactions')
     .insert({ phone: phoneNorm, amount: reward, type: 'levelup', order_id: null, note: `Левел-ап до уровня ${level}` });
+  sendToPhone(phoneRaw, { title: '✨ Новый уровень!', body: `Баблик дорос до уровня ${level}! Тебе +${reward} коинов 🪙`, url: '/coins' }).catch(() => {});
 }
 
 // Главный хук: вызывается когда заказ становится "completed"

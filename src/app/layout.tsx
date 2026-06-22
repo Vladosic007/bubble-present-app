@@ -3,6 +3,7 @@ import BottomNav from "../components/BottomNav";
 import BubblikBackground from "../components/BubblikBackground";
 import ZoomBlocker from "../components/ZoomBlocker";
 import AttributionTracker from "../components/AttributionTracker";
+import PushOptIn from "../components/PushOptIn";
 import type { Metadata } from 'next';
 
 // ❗ ЗАПРЕЩАЕМ ЗУМ (ЧТОБЫ ВЫГЛЯДЕЛО КАК НАСТОЯЩЕЕ ПРИЛОЖЕНИЕ) ❗
@@ -64,6 +65,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Запоминаем источник трафика (откуда пришёл клиент) */}
         <AttributionTracker />
+
+        {/* Регистрация SW + предложение включить push */}
+        <PushOptIn />
 
         {/* Летающий баблик на фоне (виден на ПК по бокам) */}
         <BubblikBackground />

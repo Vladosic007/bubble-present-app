@@ -1,5 +1,6 @@
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { handleOrderCompleted } from '@/lib/coins';
+import { notifyOrderStatus } from '@/lib/push';
 
 const VK_TOKEN = process.env.VK_TOKEN!;
 
@@ -239,6 +240,12 @@ export async function POST(req: Request) {
           : `🎉 Заказ #${order_id} выдан клиенту! Отличная работа.`;
 
         await sendVK(peer_id, doneMsg);
+      }
+
+      // Push клиенту о текущем статусе заказа (один раз, после обработки кнопки)
+      if (order_id) {
+        const { data: ord } = await supabase.from('orders').select('status').eq('id', order_id).single();
+        if (ord?.status) await notifyOrderStatus(order_id, ord.status);
       }
     }
 

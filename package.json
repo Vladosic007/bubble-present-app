@@ -12,10 +12,12 @@
     "@ducanh2912/next-pwa": "^10.2.9",
     "@pbe/react-yandex-maps": "^1.2.5",
     "@supabase/supabase-js": "^2.103.0",
+    "@types/web-push": "^3.6.4",
     "framer-motion": "^12.34.3",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "web-push": "^3.6.7",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

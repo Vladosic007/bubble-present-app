@@ -53,6 +53,29 @@ export default function ClientsPage() {
   const [showHidden, setShowHidden] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
+  // Push-рассылки
+  const [showBroadcast, setShowBroadcast] = useState(false);
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushBody, setPushBody] = useState('');
+  const [pushSending, setPushSending] = useState(false);
+  const [pushMsg, setPushMsg] = useState('');
+
+  const sendPush = async (mode: 'all' | 'inactive') => {
+    if (!bossKey) return;
+    if (!pushTitle.trim() || !pushBody.trim()) { setPushMsg('Заполни заголовок и текст'); return; }
+    setPushSending(true);
+    setPushMsg('');
+    const url = mode === 'all' ? '/api/admin/push/broadcast' : '/api/admin/push/inactive';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-boss-key': bossKey },
+      body: JSON.stringify({ title: pushTitle, body: pushBody, days: 14 }),
+    }).then(r => r.json()).catch(() => null);
+    if (res?.ok) setPushMsg(`✅ Отправлено: ${res.sent}`);
+    else setPushMsg('❌ Ошибка отправки');
+    setPushSending(false);
+  };
+
   useEffect(() => {
     const saved = localStorage.getItem('bubble_boss_pin');
     if (!saved) {
@@ -195,6 +218,48 @@ export default function ClientsPage() {
 
         {/* Контент */}
         <div className="flex-1 w-full overflow-y-auto no-scrollbar p-[20px]">
+
+          {/* 📣 Рассылка push */}
+          <div className="mb-[16px]">
+            <button
+              onClick={() => setShowBroadcast(s => !s)}
+              className="w-full h-[42px] rounded-[14px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white font-['Benzin'] font-extrabold text-[11px] uppercase active:scale-95 transition-transform"
+            >
+              📣 Push-рассылка {showBroadcast ? '▲' : '▼'}
+            </button>
+            <AnimatePresence>
+              {showBroadcast && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-[10px] bg-white rounded-[16px] border border-[#E5E5EA] p-[14px] flex flex-col gap-[10px]">
+                    <input
+                      value={pushTitle}
+                      onChange={e => setPushTitle(e.target.value)}
+                      placeholder="Заголовок (напр. 🔥 Только сегодня!)"
+                      maxLength={80}
+                      className="w-full h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none"
+                    />
+                    <textarea
+                      value={pushBody}
+                      onChange={e => setPushBody(e.target.value)}
+                      placeholder="Текст уведомления (напр. -25% на доставку до конца дня)"
+                      maxLength={160}
+                      rows={2}
+                      className="w-full bg-[#F2F2F7] rounded-[10px] px-3 py-2 font-bold text-[12px] outline-none resize-none"
+                    />
+                    <div className="flex gap-[8px]">
+                      <button onClick={() => sendPush('all')} disabled={pushSending} className="flex-1 h-[40px] bg-[#333] text-white rounded-[10px] font-bold text-[10px] uppercase active:scale-95 disabled:opacity-50">Всем</button>
+                      <button onClick={() => sendPush('inactive')} disabled={pushSending} className="flex-1 h-[40px] bg-[#FFB800] text-white rounded-[10px] font-bold text-[10px] uppercase active:scale-95 disabled:opacity-50">Неактивным (14д)</button>
+                    </div>
+                    {pushMsg && <span className="text-[10px] font-bold text-[#666] text-center">{pushMsg}</span>}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           {loading ? (
             <div className="flex w-full h-full items-center justify-center pt-[40px]">
               <span className="text-[#FF008C] font-['Benzin'] animate-pulse">Загрузка...</span>

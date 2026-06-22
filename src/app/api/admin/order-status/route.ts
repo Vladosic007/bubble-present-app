@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { handleOrderCompleted } from '@/lib/coins';
+import { notifyOrderStatus } from '@/lib/push';
 
 export async function POST(req: Request) {
   try {
@@ -27,6 +28,9 @@ export async function POST(req: Request) {
     if (status === 'completed') {
       await handleOrderCompleted(orderId);
     }
+
+    // Push клиенту о смене статуса
+    await notifyOrderStatus(orderId, status);
 
     return NextResponse.json({ success: true });
   } catch (e) {
