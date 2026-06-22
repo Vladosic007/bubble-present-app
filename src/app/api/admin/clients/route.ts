@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 
     let query = supabaseAdmin
       .from('orders')
-      .select('id, customer_name, phone, address, items, total, order_type, order_time, created_at, status')
+      .select('id, customer_name, phone, address, items, total, order_type, order_time, created_at, status, source')
       .order('created_at', { ascending: false });
 
     if (sinceDate) {
@@ -73,11 +73,14 @@ export async function GET(req: Request) {
           hour_freq: {} as Record<string, number>,
           order_dates: [] as string[], // ISO даты для расчёта частоты
           history: [] as any[], // подробная история
+          source_freq: {} as Record<string, number>, // откуда пришёл
         };
       }
       const c = clientsMap[phoneKey];
       c.orders_count += 1;
       c.total_spent += Number(o.total) || 0;
+      const src = (o.source && String(o.source)) || 'direct';
+      c.source_freq[src] = (c.source_freq[src] || 0) + 1;
       if (!c.name || c.name === 'Гость') c.name = o.customer_name || c.name;
       if (o.address && !c.address) c.address = o.address;
       if (o.order_type === 'delivery') c.delivery_count += 1;
@@ -142,6 +145,8 @@ export async function GET(req: Request) {
         for (let i = 1; i < sorted.length; i++) totalGap += sorted[i] - sorted[i - 1];
         avgDaysBetween = Math.round(totalGap / (sorted.length - 1) / (1000 * 60 * 60 * 24));
       }
+      // Источник клиента — самый частый
+      const favSource = Object.entries(c.source_freq).sort((a: any, b: any) => b[1] - a[1])[0];
 
       return {
         phone: c.phone,
@@ -161,6 +166,7 @@ export async function GET(req: Request) {
         fav_weekday: favWeekday,
         fav_hour: favHour ? Number(favHour[0]) : -1,
         avg_days_between: avgDaysBetween,
+        source: favSource ? favSource[0] : 'direct',
         history: c.history.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()),
       };
     });
@@ -168,8 +174,20 @@ export async function GET(req: Request) {
     // Сортируем по сумме потраченного — топовые сверху
     clients.sort((a: any, b: any) => b.total_spent - a.total_spent);
 
+    // Сводка по источникам трафика (уникальные клиенты, заказы, выручка на каждый источник)
+    const srcMap: Record<string, { source: string; clients: number; orders: number; revenue: number }> = {};
+    for (const c of clients as any[]) {
+      const s = c.source || 'direct';
+      if (!srcMap[s]) srcMap[s] = { source: s, clients: 0, orders: 0, revenue: 0 };
+      srcMap[s].clients += 1;
+      srcMap[s].orders += c.orders_count;
+      srcMap[s].revenue += c.total_spent;
+    }
+    const sources = Object.values(srcMap).sort((a, b) => b.revenue - a.revenue);
+
     return NextResponse.json({
       clients,
+      sources,
       stats: {
         total_clients: clients.length,
         total_revenue: clients.reduce((s: number, c: any) => s + c.total_spent, 0),

@@ -565,6 +565,7 @@ export default function CartPage() {
           order_time: isTimeOrder && selectedTime ? selectedTime : null,
           isTest: isTestMode,
           promo_code: appliedPromo?.code || null,
+          source: (typeof window !== 'undefined' && localStorage.getItem('bubble_source')) || 'direct',
         }),
       });
       const createData = await createRes.json();

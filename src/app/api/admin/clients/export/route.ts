@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
     let query = supabaseAdmin
       .from('orders')
-      .select('customer_name, phone, address, items, total, order_type, created_at, status')
+      .select('customer_name, phone, address, items, total, order_type, created_at, status, source')
       .order('created_at', { ascending: false });
     if (sinceDate) query = query.gte('created_at', sinceDate.toISOString());
 
@@ -44,11 +44,14 @@ export async function GET(req: Request) {
           delivery_count: 0, pickup_count: 0,
           drinks_freq: {} as Record<string, number>,
           weekday_freq: [0, 0, 0, 0, 0, 0, 0],
+          source_freq: {} as Record<string, number>,
         };
       }
       const c = clientsMap[phoneKey];
       c.orders_count += 1;
       c.total_spent += Number(o.total) || 0;
+      const src = (o.source && String(o.source)) || 'direct';
+      c.source_freq[src] = (c.source_freq[src] || 0) + 1;
       if (!c.address && o.address) c.address = o.address;
       if (o.order_type === 'delivery') c.delivery_count += 1; else c.pickup_count += 1;
       if (new Date(o.created_at) > new Date(c.last_order)) c.last_order = o.created_at;
@@ -70,16 +73,18 @@ export async function GET(req: Request) {
       const favorite = Object.entries(c.drinks_freq).sort((a: any, b: any) => b[1] - a[1])[0];
       const maxWd = Math.max(...c.weekday_freq);
       const favWd = maxWd > 0 ? WEEKDAYS[c.weekday_freq.indexOf(maxWd)] : '';
-      return { ...c, favorite_drink: favorite ? favorite[0] : '', fav_weekday: favWd };
+      const favSource = Object.entries(c.source_freq).sort((a: any, b: any) => b[1] - a[1])[0];
+      return { ...c, favorite_drink: favorite ? favorite[0] : '', fav_weekday: favWd, source: favSource ? favSource[0] : 'direct' };
     });
     clients.sort((a: any, b: any) => b.total_spent - a.total_spent);
 
     // Формируем CSV (с BOM для Excel — чтобы кириллица не ломалась)
-    const header = ['Имя', 'Телефон', 'Адрес', 'Заказов', 'Доставка', 'Самовывоз', 'Потрачено (₽)', 'Средний чек (₽)', 'Любимый напиток', 'Любимый день', 'Первый заказ', 'Последний заказ'];
+    const header = ['Имя', 'Телефон', 'Адрес', 'Источник', 'Заказов', 'Доставка', 'Самовывоз', 'Потрачено (₽)', 'Средний чек (₽)', 'Любимый напиток', 'Любимый день', 'Первый заказ', 'Последний заказ'];
     const rows = clients.map((c: any) => [
       c.name,
       c.phone,
       c.address || '',
+      c.source || 'direct',
       c.orders_count,
       c.delivery_count,
       c.pickup_count,

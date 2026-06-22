@@ -2,6 +2,7 @@ import '@/app/globals.css';
 import BottomNav from "../components/BottomNav";
 import BubblikBackground from "../components/BubblikBackground";
 import ZoomBlocker from "../components/ZoomBlocker";
+import AttributionTracker from "../components/AttributionTracker";
 import type { Metadata } from 'next';
 
 // ❗ ЗАПРЕЩАЕМ ЗУМ (ЧТОБЫ ВЫГЛЯДЕЛО КАК НАСТОЯЩЕЕ ПРИЛОЖЕНИЕ) ❗
@@ -60,6 +61,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Глобальная блокировка pinch-zoom и двойного-тапа */}
         <ZoomBlocker />
+
+        {/* Запоминаем источник трафика (откуда пришёл клиент) */}
+        <AttributionTracker />
 
         {/* Летающий баблик на фоне (виден на ПК по бокам) */}
         <BubblikBackground />

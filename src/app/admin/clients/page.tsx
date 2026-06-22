@@ -22,8 +22,10 @@ type Client = {
   fav_weekday: number;
   fav_hour: number;
   avg_days_between: number;
+  source: string;
   history: OrderHist[];
 };
+type SourceStat = { source: string; clients: number; orders: number; revenue: number };
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const WEEKDAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
@@ -40,8 +42,10 @@ function timeOfDay(hour: number): string {
 export default function ClientsPage() {
   const [bossKey, setBossKey] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
+  const [sources, setSources] = useState<SourceStat[]>([]);
   const [stats, setStats] = useState<{ total_clients: number; total_revenue: number; total_orders: number } | null>(null);
   const [period, setPeriod] = useState<'all' | 'month' | 'week'>('all');
+  const [view, setView] = useState<'clients' | 'sources'>('clients');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -66,6 +70,7 @@ export default function ClientsPage() {
         if (!r.ok) { setError('Не удалось загрузить (PIN босса неверный?)'); setLoading(false); return; }
         const json = await r.json();
         setClients(json.clients || []);
+        setSources(json.sources || []);
         setStats(json.stats || null);
         setLoading(false);
       })
@@ -158,22 +163,34 @@ export default function ClientsPage() {
             </div>
           )}
 
-          {/* Поиск + переключатель скрытых */}
-          <div className="flex gap-[8px]">
-            <input
-              type="text"
-              placeholder="🔍 Поиск по имени или телефону..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="flex-1 h-[40px] bg-white/10 text-white placeholder-white/40 rounded-[12px] px-[14px] font-['Arial'] font-bold text-[12px] outline-none"
+          {/* Переключатель вида: Клиенты / Источники */}
+          <div className="w-full h-[40px] bg-white/10 rounded-[12px] p-[3px] flex relative">
+            <div
+              className="absolute top-[3px] bottom-[3px] w-[calc(50%-2px)] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-[10px] transition-all duration-300 ease-out"
+              style={{ left: view === 'clients' ? '3px' : 'calc(50% - 1px)' }}
             />
-            <button
-              onClick={() => { setShowHidden(s => !s); setExpanded(null); }}
-              className={`h-[40px] px-[12px] rounded-[12px] font-['Arial'] font-bold text-[10px] uppercase active:scale-95 shrink-0 ${showHidden ? 'bg-[#FF008C] text-white' : 'bg-white/10 text-white/60'}`}
-            >
-              {showHidden ? '👁 Скрытые' : '🙈'}
-            </button>
+            <button onClick={() => setView('clients')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[10px] uppercase ${view === 'clients' ? 'text-white' : 'text-white/50'}`}>👥 Клиенты</button>
+            <button onClick={() => setView('sources')} className={`flex-1 relative z-10 font-['Arial'] font-bold text-[10px] uppercase ${view === 'sources' ? 'text-white' : 'text-white/50'}`}>📊 Источники</button>
           </div>
+
+          {/* Поиск + переключатель скрытых (только в виде «Клиенты») */}
+          {view === 'clients' && (
+            <div className="flex gap-[8px]">
+              <input
+                type="text"
+                placeholder="🔍 Поиск по имени или телефону..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="flex-1 h-[40px] bg-white/10 text-white placeholder-white/40 rounded-[12px] px-[14px] font-['Arial'] font-bold text-[12px] outline-none"
+              />
+              <button
+                onClick={() => { setShowHidden(s => !s); setExpanded(null); }}
+                className={`h-[40px] px-[12px] rounded-[12px] font-['Arial'] font-bold text-[10px] uppercase active:scale-95 shrink-0 ${showHidden ? 'bg-[#FF008C] text-white' : 'bg-white/10 text-white/60'}`}
+              >
+                {showHidden ? '👁 Скрытые' : '🙈'}
+              </button>
+            </div>
+          )}
         </header>
 
         {/* Контент */}
@@ -186,6 +203,47 @@ export default function ClientsPage() {
             <div className="bg-[#FFE5E5] border border-[#FF0040] rounded-[16px] p-[20px] text-center">
               <span className="font-['Arial'] font-bold text-[12px] text-[#FF0040] uppercase">{error}</span>
             </div>
+          ) : view === 'sources' ? (
+            sources.length === 0 ? (
+              <div className="text-center pt-[40px]">
+                <span className="font-['Arial'] font-bold text-[12px] text-[#949494] uppercase">Пока нет данных по источникам</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-[12px]">
+                <div className="bg-white rounded-[14px] p-[12px] border border-[#E5E5EA]">
+                  <span className="font-['Arial'] font-bold text-[10px] text-[#949494] leading-snug">
+                    📊 Откуда приходят клиенты. Метка <b>direct</b> — зашли напрямую (без ссылки с меткой).
+                  </span>
+                </div>
+                {(() => {
+                  const maxRev = Math.max(...sources.map(s => s.revenue), 1);
+                  return sources.map((s, idx) => (
+                    <motion.div
+                      key={s.source}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.03 }}
+                      className="w-full bg-white rounded-[16px] p-[14px] shadow-[0_2px_10px_rgba(0,0,0,0.05)] border border-[#E5E5EA]"
+                    >
+                      <div className="flex items-center justify-between mb-[8px]">
+                        <span className="font-['Benzin'] font-extrabold text-[13px] text-[#333] uppercase">
+                          {s.source === 'direct' ? '🔗 Напрямую' : `🏷 ${s.source}`}
+                        </span>
+                        <span className="font-['Benzin'] font-extrabold text-[14px] text-[#14FF00]">{s.revenue.toLocaleString('ru-RU')}₽</span>
+                      </div>
+                      <div className="w-full h-[6px] bg-[#F2F2F7] rounded-full overflow-hidden mb-[8px]">
+                        <div className="h-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] rounded-full" style={{ width: `${(s.revenue / maxRev) * 100}%` }} />
+                      </div>
+                      <div className="flex gap-[8px]">
+                        <span className="bg-[#F2F2F7] px-[8px] py-[4px] rounded-[8px] font-['Arial'] font-bold text-[9px] text-[#333] uppercase">👤 {s.clients} клиент.</span>
+                        <span className="bg-[#F2F2F7] px-[8px] py-[4px] rounded-[8px] font-['Arial'] font-bold text-[9px] text-[#333] uppercase">📦 {s.orders} зак.</span>
+                        <span className="bg-[#F2F2F7] px-[8px] py-[4px] rounded-[8px] font-['Arial'] font-bold text-[9px] text-[#333] uppercase">~{Math.round(s.revenue / s.orders)}₽ чек</span>
+                      </div>
+                    </motion.div>
+                  ));
+                })()}
+              </div>
+            )
           ) : filtered.length === 0 ? (
             <div className="text-center pt-[40px]">
               <span className="font-['Arial'] font-bold text-[12px] text-[#949494] uppercase">
@@ -228,6 +286,7 @@ export default function ClientsPage() {
                         {c.delivery_count > 0 && <span className="bg-[#E5F4FF] px-[8px] py-[4px] rounded-[8px] font-['Arial'] font-bold text-[9px] text-[#0088CC] uppercase">🛵 {c.delivery_count}</span>}
                         {c.pickup_count > 0 && <span className="bg-[#FFF4E5] px-[8px] py-[4px] rounded-[8px] font-['Arial'] font-bold text-[9px] text-[#FFB800] uppercase">🛍 {c.pickup_count}</span>}
                         {c.avg_days_between > 0 && <span className="bg-[#F0E5FF] px-[8px] py-[4px] rounded-[8px] font-['Arial'] font-bold text-[9px] text-[#9C27B0] uppercase">🔁 ~{c.avg_days_between} дн.</span>}
+                        {c.source && c.source !== 'direct' && <span className="bg-[#E5FFE9] px-[8px] py-[4px] rounded-[8px] font-['Arial'] font-bold text-[9px] text-[#14a800] uppercase">🏷 {c.source}</span>}
                       </div>
 
                       <div className="flex items-center justify-between pt-[8px] border-t border-[#F2F2F7]">

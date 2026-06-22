@@ -90,12 +90,17 @@ function promoMatchesItem(appliesTo: string, slug: string | undefined, category:
 
 export async function POST(req: Request) {
   try {
-    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code } = await req.json();
+    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source } = await req.json();
 
     // Минимальная валидация
     if (!phone || !items || !order_type) {
       return NextResponse.json({ error: 'missing fields' }, { status: 400 });
     }
+
+    // Источник трафика (откуда пришёл клиент). Чистим и ограничиваем длину.
+    const cleanSource = (source && typeof source === 'string')
+      ? source.toLowerCase().replace(/[^a-z0-9_\-]/g, '').slice(0, 40) || 'direct'
+      : 'direct';
 
     // ВАЖНО: цену считаем НА СЕРВЕРЕ — нельзя верить клиенту
     let itemsArr: any[] = [];
@@ -118,6 +123,7 @@ export async function POST(req: Request) {
           order_time: order_time || null,
           status: initialStatus,
           vk_notified: isTest ? true : false,
+          source: cleanSource,
         },
       ])
       .select();
