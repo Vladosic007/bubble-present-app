@@ -37,6 +37,7 @@ export const COIN_EARN_RUBLES_PER_COIN = 10; // 10₽ в оплаченном з
 export const COIN_REDEEM_VALUE = 1;          // 1 коин = 1₽ скидки
 export const COIN_MAX_REDEEM_FRACTION = 0.5; // коинами можно покрыть не больше 50% заказа
 export const WELCOME_COINS = 50;             // приветственные коины новичку
+export const BIRTHDAY_COINS = 100;           // подарок в день рождения
 export const LEVELUP_COINS_MIN = 1;          // награда за уровень: рандом от...
 export const LEVELUP_COINS_MAX = 100;        // ...до
 export const TOTAL_DISCOUNT_CAP_FRACTION = 0.5; // общий потолок суммарной скидки (50%)

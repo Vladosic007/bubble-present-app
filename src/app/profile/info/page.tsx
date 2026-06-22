@@ -60,7 +60,8 @@ export default function InfoPage() {
     lastName: '',
     phone: '',
     email: '',
-    address: ''
+    address: '',
+    birthday: ''
   });
   
   const [isMapOpen, setIsMapOpen] = useState(false);
@@ -77,13 +78,15 @@ export default function InfoPage() {
     const savedPhone = localStorage.getItem('bubble_user_phone');
     const savedEmail = localStorage.getItem('bubble_user_email');
     const savedAddress = localStorage.getItem('bubble_user_address');
-    
+    const savedBirthday = localStorage.getItem('bubble_user_birthday');
+
     setFormData({
       firstName: savedFirstName || '',
       lastName: savedLastName || '',
       phone: savedPhone ? formatPhoneDigits(extractPhoneDigits(savedPhone)) : '+7',
       email: savedEmail || '',
-      address: savedAddress || ''
+      address: savedAddress || '',
+      birthday: savedBirthday || ''
     });
   }, []);
 
@@ -201,7 +204,17 @@ export default function InfoPage() {
     localStorage.setItem('bubble_user_phone', cleanPhone); // Сохраняем чистый номер
     localStorage.setItem('bubble_user_email', email);
     localStorage.setItem('bubble_user_address', finalAddress);
-    
+
+    // Дата рождения (необязательно) — сохраняем локально и на сервер для подарка
+    if (formData.birthday) {
+      localStorage.setItem('bubble_user_birthday', formData.birthday);
+      fetch('/api/profile/birthday', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone, birthday: formData.birthday }),
+      }).catch(() => {});
+    }
+
     alert("✅ Данные успешно сохранены! Форма идеальна.");
   };
 
@@ -244,8 +257,10 @@ export default function InfoPage() {
           <GlassInput label="Фамилия" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Твоя фамилия" />
           <GlassInput label="Телефон" name="phone" value={formData.phone} onChange={handlePhoneChange} type="tel" placeholder="+7 (999) 000-00-00" required />
           <GlassInput label="Email" name="email" value={formData.email} onChange={handleChange} type="email" placeholder="example@mail.ru" required />
-          
-          <GlassInput 
+
+          <GlassInput label="День рождения 🎂 (подарим коины!)" name="birthday" value={formData.birthday} onChange={handleChange} type="date" placeholder="" />
+
+          <GlassInput
             label="Адрес доставки" 
             name="address" 
             value={formData.address} 

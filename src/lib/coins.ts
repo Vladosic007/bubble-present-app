@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { coinsForAmount, levelForCups, WELCOME_COINS, randomLevelupReward } from '@/lib/loyaltyConfig';
+import { coinsForAmount, levelForCups, WELCOME_COINS, BIRTHDAY_COINS, randomLevelupReward } from '@/lib/loyaltyConfig';
 
 // === СЕРВЕРНАЯ ЛОГИКА БАБЛКОИНОВ ===
 // Баланс хранится по нормализованному телефону, все операции пишутся в леджер.
@@ -62,6 +62,47 @@ export async function ensureWelcomeBonus(phoneNorm: string): Promise<void> {
     .limit(1);
   if (data && data.length) return; // уже выдавали
   await applyDelta(phoneNorm, WELCOME_COINS, 'welcome', null, 'Приветственный бонус');
+}
+
+// Сохранить дату рождения клиента (формат YYYY-MM-DD)
+export async function setBirthday(phoneNorm: string, birthday: string): Promise<void> {
+  if (!phoneNorm) return;
+  await getRow(phoneNorm); // гарантируем, что строка есть
+  await supabaseAdmin
+    .from('coin_balances')
+    .update({ birthday })
+    .eq('phone', phoneNorm);
+}
+
+// Текущая дата по МСК
+function mskTodayParts(): { mmdd: string; year: number } {
+  const now = new Date();
+  const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: 'numeric' }).formatToParts(now);
+  const day = p.find(x => x.type === 'day')?.value || '01';
+  const month = p.find(x => x.type === 'month')?.value || '01';
+  const year = Number(p.find(x => x.type === 'year')?.value || '2026');
+  return { mmdd: `${month}-${day}`, year };
+}
+
+// Проверить и начислить подарок на день рождения (один раз в год). Возвращает сумму или 0.
+export async function checkBirthdayBonus(phoneNorm: string): Promise<number> {
+  if (!phoneNorm) return 0;
+  const row = await getRow(phoneNorm);
+  if (!row?.birthday || row.birthday.length < 10) return 0;
+  const bdayMMDD = row.birthday.slice(5); // "YYYY-MM-DD" → "MM-DD"
+  const { mmdd, year } = mskTodayParts();
+  if (bdayMMDD !== mmdd) return 0;
+  if (row.last_birthday_year === year) return 0; // в этом году уже дарили
+
+  const newBalance = Math.max(0, (row.balance || 0) + BIRTHDAY_COINS);
+  await supabaseAdmin
+    .from('coin_balances')
+    .update({ balance: newBalance, last_birthday_year: year, pending_birthday_coins: BIRTHDAY_COINS, updated_at: new Date().toISOString() })
+    .eq('phone', phoneNorm);
+  await supabaseAdmin
+    .from('coin_transactions')
+    .insert({ phone: phoneNorm, amount: BIRTHDAY_COINS, type: 'birthday', order_id: null, note: 'Подарок на день рождения 🎂' });
+  return BIRTHDAY_COINS;
 }
 
 // Списать коины при оформлении заказа

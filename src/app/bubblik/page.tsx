@@ -32,6 +32,7 @@ export default function BubblikPage() {
   // Баблкоины
   const [coinBalance, setCoinBalance] = useState<number | null>(null);
   const [levelUp, setLevelUp] = useState<{ level: number; coins: number } | null>(null);
+  const [birthdayBonus, setBirthdayBonus] = useState<number | null>(null);
 
   // Текст подсказки: уровень · диапазон напитков · скидка (из конфига лояльности)
   const levelsInfo = LEVELS.map((l, i) => {
@@ -77,6 +78,7 @@ export default function BubblikPage() {
         const cJson = await cRes.json();
         setCoinBalance(cJson.balance ?? 0);
         if (cJson.pending) setLevelUp(cJson.pending);
+        if (cJson.pendingBirthday) setBirthdayBonus(cJson.pendingBirthday);
       } catch {}
 
       setIsLoading(false);
@@ -88,10 +90,22 @@ export default function BubblikPage() {
   // Закрыть окно левел-апа и погасить pending на сервере
   const claimLevelUp = async () => {
     const phone = localStorage.getItem('bubble_user_phone');
-    if (levelUp) setCoinBalance(prev => (prev || 0)); // баланс уже учтён на сервере
     setLevelUp(null);
     if (phone) {
       fetch('/api/coins/ack-levelup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      }).catch(() => {});
+    }
+  };
+
+  // Закрыть поздравление с ДР
+  const claimBirthday = async () => {
+    const phone = localStorage.getItem('bubble_user_phone');
+    setBirthdayBonus(null);
+    if (phone) {
+      fetch('/api/coins/ack-birthday', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -347,6 +361,42 @@ export default function BubblikPage() {
                   className="w-full h-[48px] mt-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[13px] uppercase active:scale-95 transition-transform"
                 >
                   Забрать 🎁
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 🎂 ОКНО ДНЯ РОЖДЕНИЯ */}
+        <AnimatePresence>
+          {birthdayBonus && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-[30px]"
+              onClick={claimBirthday}
+            >
+              <motion.div
+                initial={{ scale: 0.6, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.7, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 240, damping: 18 }}
+                onClick={e => e.stopPropagation()}
+                className="w-full max-w-[300px] bg-gradient-to-b from-[#2A1535] to-[#160A22] border border-[#FF008C]/40 rounded-[28px] p-[26px] flex flex-col items-center text-center shadow-[0_0_50px_rgba(255,0,140,0.5)]"
+              >
+                <span className="text-[38px]">🎂</span>
+                <span className="text-white font-['Benzin'] font-extrabold text-[18px] uppercase mt-[8px] leading-tight">С Днём Рождения!</span>
+                <span className="text-white/70 font-['Arial'] font-bold text-[11px] mt-[6px]">Лови подарок от Bubble Present 🎉</span>
+                <motion.div
+                  animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.1, 1] }} transition={{ duration: 1.2, repeat: Infinity }}
+                  className="relative w-[90px] h-[90px] my-[16px] drop-shadow-[0_0_25px_rgba(255,0,140,0.6)]"
+                >
+                  <Image draggable={false} src="/images/bablecoin.png" alt="" fill className="object-contain" />
+                </motion.div>
+                <span className="text-[#14FF00] font-['Benzin'] font-extrabold text-[26px] leading-none">+{birthdayBonus}</span>
+                <span className="text-white/70 font-['Arial'] font-bold text-[11px] uppercase mt-[2px]">баблкоинов</span>
+                <button
+                  onClick={claimBirthday}
+                  className="w-full h-[48px] mt-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[13px] uppercase active:scale-95 transition-transform"
+                >
+                  Ура, спасибо! 🥳
                 </button>
               </motion.div>
             </motion.div>
