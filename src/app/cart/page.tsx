@@ -597,7 +597,20 @@ export default function CartPage() {
         }),
       });
       const createData = await createRes.json();
-      if (!createRes.ok || !createData.id) throw new Error('create failed');
+      if (!createRes.ok || !createData.id) {
+        setIsPaying(false);
+        // Если сервер прислал понятное сообщение об ошибке (валидация имени/телефона) — показываем его
+        const msg = createData?.message;
+        if (msg) {
+          alert(`❌ ${msg}`);
+          if (createData.error === 'bad_name' || createData.error === 'bad_phone') {
+            router.push('/profile/info');
+          }
+        } else {
+          alert("Ошибка при создании заказа! Попробуй еще раз.");
+        }
+        return;
+      }
       orderId = createData.id;
       dbTime = new Date(createData.created_at).getTime();
       if (typeof createData.total === 'number') serverTotal = createData.total;

@@ -351,6 +351,17 @@ export default function AdminPage() {
                             </span>
                           ))}
                         </div>
+                        {/* Применённые скидки (чтобы было понятно, почему сумма меньше) */}
+                        {!isCancelled && ((order.coins_used && order.coins_used > 0) || (order.level_discount && order.level_discount > 0)) && (
+                          <div className="flex flex-wrap gap-[6px]">
+                            {order.coins_used > 0 && (
+                              <span className="bg-[#FFE5F5] text-[#FF008C] px-[8px] py-[3px] rounded-[8px] font-['Arial'] font-bold text-[9px] uppercase">🪙 −{order.coins_used} коинов</span>
+                            )}
+                            {order.level_discount > 0 && (
+                              <span className="bg-[#E5FFE9] text-[#14a800] px-[8px] py-[3px] rounded-[8px] font-['Arial'] font-bold text-[9px] uppercase">⭐ Уровень −{order.level_discount}%</span>
+                            )}
+                          </div>
+                        )}
                         {!isCancelled && (
                           <div className="flex flex-wrap gap-[8px] mt-[4px]">
                             <button onClick={() => changeOrderStatus(order.id, 'accepted')} className={`flex-1 min-w-[30%] h-[36px] rounded-[10px] font-['Arial'] font-bold text-[9px] uppercase transition-colors ${order.status === 'accepted' ? 'bg-[#333] text-white' : 'bg-[#F2F2F7] text-[#949494]'}`}>Принят 🆕</button>
@@ -505,13 +516,13 @@ export default function AdminPage() {
       {/* Модальное окно PIN-кода Босса */}
         <AnimatePresence>
           {showBossPrompt && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-[#110A1A]/90 backdrop-blur-md flex items-center justify-center p-[24px]">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9999] bg-[#110A1A]/90 backdrop-blur-md flex items-center justify-center p-[24px]">
               <div className="w-full max-w-[320px] bg-white p-[24px] rounded-[30px] shadow-2xl flex flex-col items-center">
                 <span className="text-[40px] mb-[12px]">👑</span>
                 <h2 className="font-['Benzin'] font-extrabold text-[14px] uppercase text-center mb-[8px]">Доступ руководства</h2>
                 <p className="text-[10px] text-center text-[#949494] font-bold uppercase mb-[24px]">Введите PIN-код владельца</p>
                 <form onSubmit={handleBossAuth} className="w-full flex flex-col gap-[12px]">
-                  <input type="password" value={bossPin} onChange={e => setBossPin(e.target.value)} placeholder="PIN" maxLength={4} className="w-full h-[50px] bg-[#F2F2F7] rounded-[15px] text-center font-['Benzin'] tracking-[0.2em] outline-none" />
+                  <input autoFocus inputMode="numeric" type="password" value={bossPin} onChange={e => setBossPin(e.target.value)} placeholder="PIN" maxLength={4} className="w-full h-[50px] bg-[#F2F2F7] rounded-[15px] text-center font-['Benzin'] tracking-[0.2em] outline-none" />
                   <div className="flex gap-[8px]">
                     <button type="button" onClick={() => setShowBossPrompt(false)} className="flex-1 h-[40px] bg-[#F2F2F7] text-[#949494] rounded-[10px] font-bold text-[10px] uppercase">Отмена</button>
                     <button type="submit" className="flex-1 h-[40px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[10px] font-bold text-[10px] uppercase shadow-md">Войти</button>

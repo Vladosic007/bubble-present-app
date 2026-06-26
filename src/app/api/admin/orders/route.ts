@@ -8,10 +8,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 
+    // Скрываем "брошенные" неоплаченные заказы (pending_payment),
+    // чтобы баристы не видели мусор. Показываем только реальные.
     const { data, error } = await supabaseAdmin
       .from('orders')
       .select('*')
-      .order('created_at', { ascending: false });
+      .neq('status', 'pending_payment')
+      .order('created_at', { ascending: false })
+      .limit(150);
 
     if (error) {
       return NextResponse.json({ error: 'db error' }, { status: 500 });

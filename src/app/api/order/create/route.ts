@@ -140,6 +140,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'missing fields' }, { status: 400 });
     }
 
+    // === ЖЁСТКАЯ ВАЛИДАЦИЯ ИМЕНИ И ТЕЛЕФОНА (сервер, не подделать) ===
+    const nameRaw = (customer_name || '').trim();
+    const nameUpper = nameRaw.toUpperCase();
+    // Разрешаем "ТЕСТ" (это режим), иначе — минимум 2 буквы кириллицей и без мусора
+    if (nameUpper !== 'ТЕСТ' && !isTest) {
+      const cyrOnly = /^[А-Яа-яЁё\s\-]{2,30}$/;
+      const gibberish = /[бвгджзклмнпрстфхцчшщ]{4,}/i;
+      const mat = /(х[уy](й|и|я|е|ё)|пизд|еб[аоуеы]|бля|шлюх|хуел|залуп|дроч|гондон|пидр|еблан)/i;
+      // Нужно минимум 2 разных буквы (отсеивает "аа", "ыы", "фф")
+      const uniqueLetters = new Set(nameRaw.toLowerCase().replace(/[^а-яё]/g, '').split(''));
+      if (!cyrOnly.test(nameRaw)) {
+        return NextResponse.json({ error: 'bad_name', message: 'Введи нормальное имя кириллицей (минимум 2 буквы)' }, { status: 400 });
+      }
+      if (uniqueLetters.size < 2) {
+        return NextResponse.json({ error: 'bad_name', message: 'Имя слишком короткое или однотипное' }, { status: 400 });
+      }
+      if (gibberish.test(nameRaw) || mat.test(nameRaw)) {
+        return NextResponse.json({ error: 'bad_name', message: 'Имя содержит мат или бессмыслицу' }, { status: 400 });
+      }
+    }
+    // Телефон: 10 цифр после +7/8, и не должен быть "99999..." и подобной дичью
+    const cleanPhone = String(phone).replace(/\D/g, '').replace(/^8/, '7');
+    if (!/^7\d{10}$/.test(cleanPhone)) {
+      return NextResponse.json({ error: 'bad_phone', message: 'Введи корректный российский номер' }, { status: 400 });
+    }
+    // Все одинаковые цифры (99999999998 и т.п.) — фейк
+    const last10 = cleanPhone.slice(1);
+    const uniqueDigits = new Set(last10.split(''));
+    if (uniqueDigits.size <= 2) {
+      return NextResponse.json({ error: 'bad_phone', message: 'Введи реальный номер телефона' }, { status: 400 });
+    }
+
     // Источник трафика (откуда пришёл клиент). Чистим и ограничиваем длину.
     const cleanSource = (source && typeof source === 'string')
       ? source.toLowerCase().replace(/[^a-z0-9_\-]/g, '').slice(0, 40) || 'direct'
@@ -149,7 +181,7 @@ export async function POST(req: Request) {
     let itemsArr: any[] = [];
     try { itemsArr = typeof items === 'string' ? JSON.parse(items) : items; } catch {}
     const requestedCoins = Math.max(0, Math.floor(Number(redeem_coins) || 0));
-    const { total: serverTotal, appliedPromo, coinsUsed } = await calcTotal(
+    const { total: serverTotal, appliedPromo, coinsUsed, levelDiscount } = await calcTotal(
       itemsArr, order_type, promo_code || null, phone, requestedCoins
     );
 
@@ -170,6 +202,8 @@ export async function POST(req: Request) {
           status: initialStatus,
           vk_notified: isTest ? true : false,
           source: cleanSource,
+          coins_used: coinsUsed,
+          level_discount: levelDiscount,
         },
       ])
       .select();
