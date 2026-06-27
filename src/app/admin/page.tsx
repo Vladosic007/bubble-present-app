@@ -70,15 +70,25 @@ export default function AdminPage() {
     } catch {}
   };
 
-  // Напитки/топпинги/промокоды — пока напрямую (там нет персональных данных)
+  // Напитки/топпинги — публичные (меню). Промокоды — только через защищённый boss-роут.
   const fetchSideData = async () => {
     const { data: drinksData } = await supabase.from('drinks').select('*').order('id', { ascending: true });
     const { data: toppingsData } = await supabase.from('toppings').select('*').order('id', { ascending: true });
-    const { data: promosData } = await supabase.from('promocodes').select('*').order('created_at', { ascending: false });
 
     if (drinksData) setDrinks(drinksData);
     if (toppingsData) setToppings(toppingsData);
-    if (promosData) setPromocodes(promosData);
+
+    // Промокоды видит только босс (с PIN босса)
+    const savedBossPin = bossKey || localStorage.getItem('bubble_boss_pin') || '';
+    if (savedBossPin) {
+      try {
+        const res = await fetch('/api/admin/promos', { headers: { 'x-boss-key': savedBossPin } });
+        if (res.ok) {
+          const json = await res.json();
+          setPromocodes(json.promocodes || []);
+        }
+      } catch {}
+    }
   };
 
   const fetchData = async () => {
@@ -258,8 +268,8 @@ export default function AdminPage() {
             <input 
               type="password" placeholder="Введите PIN" value={pin} onChange={(e) => setPin(e.target.value)}
               className="w-full h-[50px] bg-black/30 border border-white/20 rounded-[15px] text-center text-white font-['Benzin'] text-[16px] outline-none focus:border-[#FF008C] transition-colors tracking-[0.2em]"
-              // ❗ МЕСТО №2: МЕНЯЕМ ЛИМИТ ЦИФР ТУТ (ставим 6) ❗
-              maxLength={6} 
+              // Длинный пароль допустим (можно буквы+цифры)
+              maxLength={64}
             />
             <button type="submit" className="w-full h-[50px] rounded-[15px] bg-white text-black font-['Arial'] font-bold uppercase text-[12px] active:scale-95 transition-transform">
               Войти
@@ -522,7 +532,7 @@ export default function AdminPage() {
                 <h2 className="font-['Benzin'] font-extrabold text-[14px] uppercase text-center mb-[8px]">Доступ руководства</h2>
                 <p className="text-[10px] text-center text-[#949494] font-bold uppercase mb-[24px]">Введите PIN-код владельца</p>
                 <form onSubmit={handleBossAuth} className="w-full flex flex-col gap-[12px]">
-                  <input autoFocus inputMode="numeric" type="password" value={bossPin} onChange={e => setBossPin(e.target.value)} placeholder="PIN" maxLength={4} className="w-full h-[50px] bg-[#F2F2F7] rounded-[15px] text-center font-['Benzin'] tracking-[0.2em] outline-none" />
+                  <input autoFocus type="password" value={bossPin} onChange={e => setBossPin(e.target.value)} placeholder="Пароль" maxLength={64} className="w-full h-[50px] bg-[#F2F2F7] rounded-[15px] text-center font-['Benzin'] tracking-[0.2em] outline-none" />
                   <div className="flex gap-[8px]">
                     <button type="button" onClick={() => setShowBossPrompt(false)} className="flex-1 h-[40px] bg-[#F2F2F7] text-[#949494] rounded-[10px] font-bold text-[10px] uppercase">Отмена</button>
                     <button type="submit" className="flex-1 h-[40px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[10px] font-bold text-[10px] uppercase shadow-md">Войти</button>

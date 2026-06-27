@@ -484,7 +484,7 @@ export default function CartPage() {
       const res = await fetch('/api/order/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: activeOrderId, auto: isAutoCancel }),
+        body: JSON.stringify({ orderId: activeOrderId, auto: isAutoCancel, phone: localStorage.getItem('bubble_user_phone') || '' }),
       });
 
       const result = await res.json().catch(() => ({}));
@@ -572,12 +572,15 @@ export default function CartPage() {
       };
     });
 
-    const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ';
+    // Тестовый режим доступен ТОЛЬКО владельцу (у кого в браузере сохранён boss-PIN).
+    const bossPin = (typeof window !== 'undefined' && localStorage.getItem('bubble_boss_pin')) || '';
+    const isTestMode = savedName.trim().toUpperCase() === 'ТЕСТ' && !!bossPin;
 
     // Создаём заказ через сервер (база защищена секретным ключом, цена считается на сервере)
     let orderId: number;
     let dbTime: number;
     let serverTotal: number = dynamicTotal;
+    let serverConfirmedTest = false;
     try {
       const createRes = await fetch('/api/order/create', {
         method: 'POST',
@@ -594,6 +597,7 @@ export default function CartPage() {
           source: (typeof window !== 'undefined' && localStorage.getItem('bubble_source')) || 'direct',
           redeem_coins: coinsToUse,
           referred_by: (typeof window !== 'undefined' && localStorage.getItem('bubble_referred_by')) || null,
+          boss_key: isTestMode ? bossPin : undefined,
         }),
       });
       const createData = await createRes.json();
@@ -614,6 +618,8 @@ export default function CartPage() {
       orderId = createData.id;
       dbTime = new Date(createData.created_at).getTime();
       if (typeof createData.total === 'number') serverTotal = createData.total;
+      // Доверяем СЕРВЕРУ: тест засчитан, только если он подтвердил boss-ключ
+      serverConfirmedTest = createData.isTest === true;
     } catch {
       setIsPaying(false);
       alert("Ошибка при создании заказа! Попробуй еще раз.");
@@ -623,8 +629,8 @@ export default function CartPage() {
     // Промокод инкрементируется на сервере внутри /api/order/create
     // (только если реально применился к позиции) — здесь больше ничего не делаем
 
-    // ТЕСТОВЫЙ РЕЖИМ: сервер уже принял заказ и отправил в ВК
-    if (isTestMode) {
+    // ТЕСТОВЫЙ РЕЖИМ: сервер уже принял заказ и отправил в ВК (подтверждён сервером)
+    if (serverConfirmedTest) {
       addActiveOrder(orderId, 'accepted', dbTime);
       setIsHiddenStatus(false);
       clearCart();

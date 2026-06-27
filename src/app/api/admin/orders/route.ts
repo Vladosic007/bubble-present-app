@@ -1,12 +1,19 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { clientIp, isBlocked, recordFailure, clearFailures } from '@/lib/rateLimit';
 
 export async function GET(req: Request) {
   try {
+    const ip = 'admin:' + clientIp(req);
+    if (isBlocked(ip)) {
+      return NextResponse.json({ error: 'too_many' }, { status: 429 });
+    }
     const key = req.headers.get('x-admin-key');
     if (!process.env.ADMIN_PASSWORD || key !== process.env.ADMIN_PASSWORD) {
+      recordFailure(ip);
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
+    clearFailures(ip);
 
     // Скрываем "брошенные" неоплаченные заказы (pending_payment),
     // чтобы баристы не видели мусор. Показываем только реальные.

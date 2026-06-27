@@ -3,18 +3,25 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: Request) {
   try {
-    const { orderId, auto } = await req.json();
+    const { orderId, auto, phone } = await req.json();
     if (!orderId) return NextResponse.json({ error: 'no orderId' }, { status: 400 });
 
     // Читаем текущий статус
     const { data: order, error: readErr } = await supabaseAdmin
       .from('orders')
-      .select('status')
+      .select('status, phone')
       .eq('id', orderId)
       .single();
 
     if (readErr || !order) {
       return NextResponse.json({ error: 'not found' }, { status: 404 });
+    }
+
+    // ЗАЩИТА: ручную отмену может делать только владелец заказа (совпадение телефона).
+    // Иначе любой мог бы отменять чужие заказы, перебирая id.
+    const norm = (p: string) => (p || '').replace(/\D/g, '').replace(/^8/, '7');
+    if (!auto && norm(phone) !== norm(order.phone)) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 
     // Нельзя отменить уже завершённый/отменённый

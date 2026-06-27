@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# загруженные библиотеки скиллов (локальные, не часть приложения)
+.agents/
+skills-lock.json
+.claude/

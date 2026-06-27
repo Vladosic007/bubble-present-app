@@ -133,12 +133,16 @@ function promoMatchesItem(appliesTo: string, slug: string | undefined, category:
 
 export async function POST(req: Request) {
   try {
-    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source, redeem_coins, referred_by } = await req.json();
+    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source, redeem_coins, referred_by, boss_key } = await req.json();
 
     // Минимальная валидация
     if (!phone || !items || !order_type) {
       return NextResponse.json({ error: 'missing fields' }, { status: 400 });
     }
+
+    // 🔒 ТЕСТОВЫЙ РЕЖИМ (заказ без оплаты) — ТОЛЬКО для владельца с верным boss-ключом.
+    // Раньше любой клиент с именем "ТЕСТ" мог сделать бесплатный заказ — это закрыто.
+    const reallyTest = !!isTest && !!boss_key && boss_key === process.env.BOSS_PASSWORD;
 
     // === ЖЁСТКАЯ ВАЛИДАЦИЯ ИМЕНИ И ТЕЛЕФОНА (сервер, не подделать) ===
     const nameRaw = (customer_name || '').trim();
@@ -185,8 +189,8 @@ export async function POST(req: Request) {
       itemsArr, order_type, promo_code || null, phone, requestedCoins
     );
 
-    // В тестовом режиме заказ сразу "принят" (без оплаты)
-    const initialStatus = isTest ? 'accepted' : 'pending_payment';
+    // В тестовом режиме заказ сразу "принят" (без оплаты) — только для владельца
+    const initialStatus = reallyTest ? 'accepted' : 'pending_payment';
 
     const { data, error } = await supabaseAdmin
       .from('orders')
@@ -200,7 +204,7 @@ export async function POST(req: Request) {
           order_type,
           order_time: order_time || null,
           status: initialStatus,
-          vk_notified: isTest ? true : false,
+          vk_notified: reallyTest ? true : false,
           source: cleanSource,
           coins_used: coinsUsed,
           level_discount: levelDiscount,
@@ -245,8 +249,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // Тестовый заказ — сразу шлём в ВК (без оплаты)
-    if (isTest) {
+    // Тестовый заказ — сразу шлём в ВК (без оплаты). Только для владельца.
+    if (reallyTest) {
       const base = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bubblepresent.ru';
       await fetch(`${base}/api/vk-notify`, {
         method: 'POST',
@@ -255,7 +259,7 @@ export async function POST(req: Request) {
       }).catch(() => {});
     }
 
-    return NextResponse.json({ id: orderId, created_at: data[0].created_at, total: serverTotal, coinsUsed });
+    return NextResponse.json({ id: orderId, created_at: data[0].created_at, total: serverTotal, coinsUsed, isTest: reallyTest });
   } catch (e) {
     console.error('Ошибка order/create:', e);
     return NextResponse.json({ error: 'server error' }, { status: 500 });
