@@ -12,6 +12,27 @@ const IS_OPENING_DAY = new Date() < OPENING_PROMO_END;
 // Пятничная акция: -25% на доставку (один день). Даты — в src/lib/promoConfig.ts
 const IS_FRIDAY_PROMO = isFridayDeliveryPromoActive();
 
+// 🛡 Токен идемпотентности заказа: не даёт создать дубль при обновлении страницы или двойном тапе.
+// Живёт в sessionStorage (переживает reload вкладки), сбрасывается при успехе/отмене.
+const ORDER_TOKEN_KEY = 'bubble_order_token';
+function getOrderToken(): string {
+  if (typeof window === 'undefined') return '';
+  let t = sessionStorage.getItem(ORDER_TOKEN_KEY);
+  if (!t) {
+    // Простой uuid v4 (без внешних зависимостей)
+    t = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+    sessionStorage.setItem(ORDER_TOKEN_KEY, t);
+  }
+  return t;
+}
+function resetOrderToken() {
+  if (typeof window !== 'undefined') sessionStorage.removeItem(ORDER_TOKEN_KEY);
+}
+
 interface SwipeableCartItemProps {
   item: CartItem;
   changeQuantity: (cartItemId: string, delta: number) => void;
@@ -491,6 +512,7 @@ export default function CartPage() {
 
       if (res.ok && !result.skipped) {
         updateOrderStatus(activeOrderId, 'cancelled');
+        resetOrderToken(); // отменённый заказ больше не переиспользуем
       } else if (!isAutoCancel && !res.ok) {
         alert("Не удалось отменить заказ. Возможно, его уже начали готовить!");
       }
@@ -598,6 +620,7 @@ export default function CartPage() {
           redeem_coins: coinsToUse,
           referred_by: (typeof window !== 'undefined' && localStorage.getItem('bubble_referred_by')) || null,
           boss_key: isTestMode ? bossPin : undefined,
+          client_token: getOrderToken(),
         }),
       });
       const createData = await createRes.json();
@@ -634,6 +657,7 @@ export default function CartPage() {
       addActiveOrder(orderId, 'accepted', dbTime);
       setIsHiddenStatus(false);
       clearCart();
+      resetOrderToken(); // следующий заказ — новый токен
       setIsPaying(false);
       alert("🛠 ТЕСТОВЫЙ РЕЖИМ: Заказ улетел в ВК без оплаты!");
       return;
@@ -656,11 +680,12 @@ export default function CartPage() {
       const paymentData = await response.json();
 
       if (paymentData.confirmation_url) {
-        localStorage.setItem('last_payment_url', paymentData.confirmation_url); 
+        localStorage.setItem('last_payment_url', paymentData.confirmation_url);
         addActiveOrder(orderId, 'pending_payment', dbTime);
         setIsHiddenStatus(false);
-        clearCart(); 
-        setIsPaying(false); 
+        clearCart();
+        resetOrderToken(); // следующий заказ — новый токен
+        setIsPaying(false);
 
         const link = document.createElement('a');
         link.href = paymentData.confirmation_url;

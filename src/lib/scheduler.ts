@@ -11,6 +11,8 @@ export function startScheduler() {
   console.log('⏰ Планировщик заказов "ко времени" запущен');
   // Проверяем каждую минуту
   setInterval(checkScheduledOrders, 60 * 1000);
+  // Раз в 10 минут чистим "брошенные" неоплаченные заказы (старше 30 мин)
+  setInterval(cleanupAbandonedPending, 10 * 60 * 1000);
 }
 
 // Текущее московское время в минутах от полуночи
@@ -27,6 +29,27 @@ async function sendVkNotify(orderId: number) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderId }),
   }).catch((e) => console.error('Планировщик: ошибка отправки в ВК', e));
+}
+
+// 🧹 Автоуборка призрачных заказов: клиент открыл оплату и ушёл,
+// заказ висит в pending_payment. Через 30 минут помечаем как cancelled,
+// чтобы не засорять базу и не мешать идемпотентности.
+async function cleanupAbandonedPending() {
+  try {
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .update({ status: 'cancelled' })
+      .eq('status', 'pending_payment')
+      .lt('created_at', cutoff)
+      .select('id');
+    if (error) return;
+    if (data && data.length) {
+      console.log(`🧹 Автоочистка: отменено брошенных pending заказов: ${data.length}`);
+    }
+  } catch (e) {
+    console.error('Автоочистка pending: ошибка', e);
+  }
 }
 
 async function checkScheduledOrders() {

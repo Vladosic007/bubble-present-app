@@ -133,11 +133,34 @@ function promoMatchesItem(appliesTo: string, slug: string | undefined, category:
 
 export async function POST(req: Request) {
   try {
-    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source, redeem_coins, referred_by, boss_key } = await req.json();
+    const { customer_name, phone, address, items, order_type, order_time, isTest, promo_code, source, redeem_coins, referred_by, boss_key, client_token } = await req.json();
 
     // Минимальная валидация
     if (!phone || !items || !order_type) {
       return NextResponse.json({ error: 'missing fields' }, { status: 400 });
+    }
+
+    // 🛡 ЗАЩИТА ОТ ДУБЛЕЙ: если пришёл client_token и заказ с ним уже есть — вернём его.
+    // Это нужно, чтобы обновление страницы или повторный тап "Оплатить" не плодили призраков.
+    const cleanToken = (typeof client_token === 'string' && /^[a-z0-9\-]{8,64}$/i.test(client_token))
+      ? client_token
+      : null;
+    if (cleanToken) {
+      const { data: existing } = await supabaseAdmin
+        .from('orders')
+        .select('id, created_at, total, status')
+        .eq('client_token', cleanToken)
+        .limit(1);
+      if (existing && existing[0]) {
+        const e = existing[0];
+        // Если старый заказ уже отменён — не переиспользуем (клиент отменил, нужен новый)
+        if (e.status !== 'cancelled') {
+          return NextResponse.json({
+            id: e.id, created_at: e.created_at, total: e.total,
+            coinsUsed: 0, isTest: false, reused: true,
+          });
+        }
+      }
     }
 
     // 🔒 ТЕСТОВЫЙ РЕЖИМ (заказ без оплаты) — ТОЛЬКО для владельца с верным boss-ключом.
@@ -208,6 +231,7 @@ export async function POST(req: Request) {
           source: cleanSource,
           coins_used: coinsUsed,
           level_discount: levelDiscount,
+          client_token: cleanToken,
         },
       ])
       .select();
