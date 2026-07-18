@@ -4,8 +4,9 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 // Проверка промокода (без раскрытия других кодов)
 export async function POST(req: Request) {
   try {
-    const { code, items } = await req.json();
+    const { code, items, phone } = await req.json();
     if (!code) return NextResponse.json({ error: 'no code' }, { status: 400 });
+    const norm = (p: string) => (p || '').replace(/\D/g, '').replace(/^8/, '7');
 
     const { data, error } = await supabaseAdmin
       .from('promocodes').select('*')
@@ -19,6 +20,10 @@ export async function POST(req: Request) {
     // Срок действия
     if (data.valid_until && new Date(data.valid_until) < new Date()) {
       return NextResponse.json({ error: 'expired' }, { status: 400 });
+    }
+    // Персональный промокод (из рулетки) — только владельцу
+    if (data.owner_phone && norm(phone) !== data.owner_phone) {
+      return NextResponse.json({ error: 'not_yours' }, { status: 403 });
     }
 
     // Проверка что в корзине есть напитки, подходящие под applies_to

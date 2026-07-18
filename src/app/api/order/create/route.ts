@@ -44,9 +44,12 @@ async function calcTotal(
   if (promo_code && !isBigPromo) {
     const { data } = await supabaseAdmin.from('promocodes').select('*')
       .eq('code', promo_code.toUpperCase()).single();
+    // Персональные коды (owner_phone) — только владельцу
+    const phoneNorm = phone ? normalizePhone(phone) : '';
     if (data && data.is_active
         && (!data.usage_limit || data.used_count < data.usage_limit)
-        && (!data.valid_until || new Date(data.valid_until) >= new Date())) {
+        && (!data.valid_until || new Date(data.valid_until) >= new Date())
+        && (!data.owner_phone || data.owner_phone === phoneNorm)) {
       promo = data;
     }
   }

@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { coinsForAmount, levelForCups, WELCOME_COINS, BIRTHDAY_COINS, REFERRAL_INVITER_COINS, REFERRAL_FRIEND_COINS, randomLevelupReward } from '@/lib/loyaltyConfig';
 import { getCosmetic, boosterMultById, DEFAULT_EQUIPPED } from '@/lib/cosmetics';
 import { sendToPhone } from '@/lib/push';
+import { SPINS_ON_ORDER_COMPLETED, SPINS_ON_BIRTHDAY } from '@/lib/wheelConfig';
 
 // === СЕРВЕРНАЯ ЛОГИКА БАБЛКОИНОВ ===
 // Баланс хранится по нормализованному телефону, все операции пишутся в леджер.
@@ -97,9 +98,10 @@ export async function checkBirthdayBonus(phoneNorm: string): Promise<number> {
   if (row.last_birthday_year === year) return 0; // в этом году уже дарили
 
   const newBalance = Math.max(0, (row.balance || 0) + BIRTHDAY_COINS);
+  const newSpins = (row.spins || 0) + SPINS_ON_BIRTHDAY; // + пакет прокруток на ДР
   await supabaseAdmin
     .from('coin_balances')
-    .update({ balance: newBalance, last_birthday_year: year, pending_birthday_coins: BIRTHDAY_COINS, updated_at: new Date().toISOString() })
+    .update({ balance: newBalance, spins: newSpins, last_birthday_year: year, pending_birthday_coins: BIRTHDAY_COINS, updated_at: new Date().toISOString() })
     .eq('phone', phoneNorm);
   await supabaseAdmin
     .from('coin_transactions')
@@ -300,6 +302,13 @@ export async function handleOrderCompleted(orderId: number): Promise<void> {
     if (!(await hasTxForOrder(phoneNorm, orderId, 'order_earn'))) {
       const earn = coinsForAmount(Number(order.total) || 0);
       if (earn > 0) await applyDelta(phoneNorm, earn, 'order_earn', orderId, `Заказ #${orderId}`);
+      // + прокрутка рулетки за каждый завершённый заказ
+      if (SPINS_ON_ORDER_COMPLETED > 0) {
+        const { data: r } = await supabaseAdmin.from('coin_balances').select('spins').eq('phone', phoneNorm).single();
+        await supabaseAdmin.from('coin_balances')
+          .update({ spins: (r?.spins || 0) + SPINS_ON_ORDER_COMPLETED })
+          .eq('phone', phoneNorm);
+      }
     }
 
     // левел-ап (cups считаем по уже завершённому заказу)

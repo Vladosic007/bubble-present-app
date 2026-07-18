@@ -209,6 +209,20 @@ export default function BubblikPage() {
           </motion.button>
         )}
 
+        {/* 🎡 Кнопка рулетки (под плашкой коинов) */}
+        {coinBalance !== null && (
+          <motion.button
+            onClick={() => router.push('/wheel')}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            whileTap={{ scale: 0.94 }}
+            className="absolute top-[150px] left-[20px] z-50 flex items-center gap-[6px] px-[10px] py-[5px] rounded-full bg-gradient-to-r from-[#FF00EE]/40 to-[#FF008C]/40 backdrop-blur-xl border border-[#FF008C]/50 shadow-[0_0_18px_rgba(255,0,140,0.5)]"
+          >
+            <motion.span animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} className="text-[18px]">🎡</motion.span>
+            <span className="text-white font-['Benzin'] font-extrabold text-[11px] uppercase leading-none">Рулетка</span>
+          </motion.button>
+        )}
+
         <div className="absolute top-[117px] right-[24px] w-[24px] h-[24px] cursor-pointer z-50 flex items-center justify-center transition-transform active:scale-90"
           onClick={() => setIsInfoOpen(!isInfoOpen)}
         >

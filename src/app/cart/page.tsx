@@ -219,6 +219,9 @@ export default function CartPage() {
   const [levelDiscount, setLevelDiscount] = useState(0); // % скидки уровня
   const [coinBalance, setCoinBalance] = useState(0);
   const [useCoins, setUseCoins] = useState(false);
+  // Персональные промокоды из рулетки
+  const [myPromos, setMyPromos] = useState<any[]>([]);
+  const [showMyPromos, setShowMyPromos] = useState(false);
 
   const [isTimeOrder, setIsTimeOrder] = useState(false);
   const [selectedTime, setSelectedTime] = useState('');
@@ -331,7 +334,7 @@ export default function CartPage() {
       const res = await fetch('/api/promo-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCodeInput, items: cartItems }),
+        body: JSON.stringify({ code: promoCodeInput, items: cartItems, phone: localStorage.getItem('bubble_user_phone') || '' }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -340,6 +343,7 @@ export default function CartPage() {
         else if (data.error === 'limit') setPromoError('Лимит исчерпан');
         else if (data.error === 'expired') setPromoError('Срок действия истёк');
         else if (data.error === 'not_applicable') setPromoError('Не для этих напитков');
+        else if (data.error === 'not_yours') setPromoError('Промокод не твой');
         else setPromoError('Ошибка');
         return;
       }
@@ -416,6 +420,11 @@ export default function CartPage() {
     fetch(`/api/coins?phone=${encodeURIComponent(phone)}`)
       .then(r => r.json())
       .then(j => { setLevelDiscount(j.levelDiscount || 0); setCoinBalance(j.balance || 0); })
+      .catch(() => {});
+    // Мои персональные промокоды (из рулетки)
+    fetch(`/api/wheel?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(j => setMyPromos(j.myPromos || []))
       .catch(() => {});
   }, []);
 
@@ -933,6 +942,43 @@ export default function CartPage() {
 
           {/* Ручка */}
           <div className="w-[36px] h-[4px] bg-[#F0E0F0] rounded-full mx-auto mb-[14px]" />
+
+          {/* 🎁 Мои промокоды (из рулетки) */}
+          {myPromos.length > 0 && !appliedPromo && (
+            <div className="mb-[10px]">
+              <button
+                onClick={() => setShowMyPromos(s => !s)}
+                className="w-full h-[38px] bg-gradient-to-r from-[#FF00EE]/15 to-[#FF008C]/15 border border-[#FF008C]/40 rounded-[12px] px-[14px] flex items-center justify-between active:scale-98"
+              >
+                <span className="text-[11px] font-['Benzin'] font-extrabold uppercase text-[#FF008C]">🎁 Мои промокоды ({myPromos.length})</span>
+                <span className="text-[10px] text-[#FF008C]">{showMyPromos ? '▲' : '▼'}</span>
+              </button>
+              {showMyPromos && (
+                <div className="mt-[6px] flex flex-col gap-[6px] max-h-[160px] overflow-y-auto">
+                  {myPromos.map((p: any) => {
+                    const cat = (p.applies_to || '').replace('category:', '');
+                    const ms = p.valid_until ? new Date(p.valid_until).getTime() - Date.now() : 0;
+                    const h = Math.max(0, Math.floor(ms / 3600000));
+                    const d = Math.floor(h / 24);
+                    const left = ms <= 0 ? 'истёк' : d > 0 ? `${d}д ${h % 24}ч` : `${h}ч`;
+                    return (
+                      <button
+                        key={p.code}
+                        onClick={() => { setPromoCodeInput(p.code); setShowMyPromos(false); setTimeout(() => handleApplyPromo(), 0); }}
+                        className="w-full bg-white border border-[#E5E5EA] rounded-[10px] px-[10px] py-[8px] flex items-center justify-between active:scale-98"
+                      >
+                        <div className="flex flex-col items-start leading-tight">
+                          <span className="font-['Benzin'] font-extrabold text-[11px] text-[#333]">{p.code}</span>
+                          <span className="font-['Arial'] font-bold text-[9px] text-[#666]">−{p.discount_percent}% на {cat} · ⏳ {left}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-[#FF008C]">Применить</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 1. Промокод */}
           <div className="flex gap-[8px] mb-[4px]">
