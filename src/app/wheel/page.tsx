@@ -77,9 +77,16 @@ export default function WheelPage() {
       const secCount = WHEEL_SECTORS.length;
       const secAngle = 360 / secCount;
       const target = j.sectorIndex * secAngle + secAngle / 2;
-      const spins5 = 360 * 5; // пять полных оборотов
-      const final = spins5 + (360 - target); // указатель сверху
-      setRotation(prev => prev + final);
+      // 🎯 Считаем точно: текущий угол по модулю 360 → сколько нужно докрутить,
+      // чтобы стрелка встала ровно на середину нужного сектора.
+      // Без этого при повторных спинах угол накапливался и колесо промахивалось.
+      setRotation(prev => {
+        const currentMod = ((prev % 360) + 360) % 360;
+        const needAngle = (360 - target) % 360;
+        const diff = ((needAngle - currentMod) + 360) % 360;
+        // Плюс 5 полных оборотов для красивой анимации
+        return prev + 360 * 5 + diff;
+      });
 
       setTimeout(() => {
         setPrize(j.sector);
