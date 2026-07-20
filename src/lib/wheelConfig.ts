@@ -15,9 +15,9 @@ export const WHEEL_SECTORS: WheelPrize[] = [
   { type: 'promo', label: '−30% Матча',      discount: 30, category: 'Бабл матча',   emoji: '⚡', color: '#00D9FF', weight: 5 },
   { type: 'promo', label: '−30% Лимонады',   discount: 30, category: 'Бабл лим',     emoji: '⚡', color: '#A24BFF', weight: 5 },
 
-  // 🎁 Средние −15%
-  { type: 'promo', label: '−15% Бабл-ти',    discount: 15, category: 'Бабл милк ти', emoji: '🎁', color: '#FF66CC', weight: 12 },
-  { type: 'promo', label: '−15% Кофе',       discount: 15, category: 'Бабл кофе',    emoji: '🎁', color: '#D946EF', weight: 12 },
+  // 🎁 Средние −20% на бабл-ти и кофе (по просьбе заказчика), остальные −15%
+  { type: 'promo', label: '−20% Бабл-ти',    discount: 20, category: 'Бабл милк ти', emoji: '🎁', color: '#FF66CC', weight: 12 },
+  { type: 'promo', label: '−20% Кофе',       discount: 20, category: 'Бабл кофе',    emoji: '🎁', color: '#D946EF', weight: 12 },
   { type: 'promo', label: '−15% Матча',      discount: 15, category: 'Бабл матча',   emoji: '🎁', color: '#22D3EE', weight: 12 },
   { type: 'promo', label: '−15% Лимонады',   discount: 15, category: 'Бабл лим',     emoji: '🎁', color: '#C084FC', weight: 11 },
 
@@ -30,7 +30,7 @@ export const WHEEL_SECTORS: WheelPrize[] = [
 export const PROMO_LIFETIME_DAYS = 3;
 export const SPINS_ON_ORDER_COMPLETED = 1;
 export const SPINS_ON_BIRTHDAY = 3;
-export const SPIN_COST_COINS = 50;
+export const SPIN_COST_COINS = 100;
 
 // 🎂 ДЕНЬ РОЖДЕНИЯ БАБЛИКА — период когда баннер в корзине активен (МСК).
 // Меняешь тут — обновляется везде (баннер, будущие акции).
