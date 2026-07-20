@@ -6,11 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { isFridayDeliveryPromoActive, FRIDAY_PROMO_MULTIPLIER, FRIDAY_PROMO_DISCOUNT } from '../../lib/promoConfig';
+import { isBubblikBirthday } from '../../lib/wheelConfig';
 
 const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00'); // Дата окончания акции (МСК) — поменяй если нужно
 const IS_OPENING_DAY = new Date() < OPENING_PROMO_END;
 // Пятничная акция: -25% на доставку (один день). Даты — в src/lib/promoConfig.ts
 const IS_FRIDAY_PROMO = isFridayDeliveryPromoActive();
+const IS_BUBBLIK_BIRTHDAY = isBubblikBirthday();
 
 // 🛡 Токен идемпотентности заказа: не даёт создать дубль при обновлении страницы или двойном тапе.
 // Живёт в sessionStorage (переживает reload вкладки), сбрасывается при успехе/отмене.
@@ -901,6 +903,19 @@ export default function CartPage() {
                   🛵 АКЦИЯ НЕДЕЛИ! -{FRIDAY_PROMO_DISCOUNT}% НА ДОСТАВКУ 🛵
                 </span>
               </motion.div>
+            )}
+            {IS_BUBBLIK_BIRTHDAY && (
+              <motion.button
+                onClick={() => router.push('/wheel')}
+                initial={{ y: -50 }} animate={{ y: 0 }}
+                className="w-full bg-gradient-to-r from-[#FFD700] via-[#FF008C] to-[#FF00EE] p-[10px] text-center z-50 shrink-0 shadow-md flex items-center justify-center gap-[8px] active:scale-98"
+              >
+                <motion.span animate={{ rotate: [0, 360] }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} className="text-[14px]">🎂</motion.span>
+                <span className="text-white font-['Benzin'] font-extrabold text-[10px] uppercase tracking-wider drop-shadow-md">
+                  ДЕНЬ РОЖДЕНИЯ БАБЛИКА! КРУТИ КОЛЕСО — ПОЛУЧИ ПРИЗ 🎁
+                </span>
+                <motion.span animate={{ rotate: [0, -360] }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} className="text-[14px]">🎡</motion.span>
+              </motion.button>
             )}
           </AnimatePresence>
           

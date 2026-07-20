@@ -32,6 +32,14 @@ export const SPINS_ON_ORDER_COMPLETED = 1;
 export const SPINS_ON_BIRTHDAY = 3;
 export const SPIN_COST_COINS = 50;
 
+// 🎂 ДЕНЬ РОЖДЕНИЯ БАБЛИКА — период когда баннер в корзине активен (МСК).
+// Меняешь тут — обновляется везде (баннер, будущие акции).
+export const BUBBLIK_BIRTHDAY_START = new Date('2026-07-20T00:00:00+03:00');
+export const BUBBLIK_BIRTHDAY_END   = new Date('2026-07-21T00:00:00+03:00'); // до конца дня
+export function isBubblikBirthday(now: Date = new Date()): boolean {
+  return now >= BUBBLIK_BIRTHDAY_START && now < BUBBLIK_BIRTHDAY_END;
+}
+
 // Розыгрыш с учётом весов. Возвращает индекс сектора.
 export function pickSector(): number {
   const total = WHEEL_SECTORS.reduce((s, x) => s + x.weight, 0);

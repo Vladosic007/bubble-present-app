@@ -27,6 +27,32 @@ export default function AdminPage() {
   const [newPromoAppliesTo, setNewPromoAppliesTo] = useState(''); // '' = на всё, 'category:X', 'drink:Y'
   const [newPromoValidUntil, setNewPromoValidUntil] = useState(''); // YYYY-MM-DD или ''
 
+  // 🎡 Выдача спинов
+  const [grantPhone, setGrantPhone] = useState('');
+  const [grantCount, setGrantCount] = useState(3);
+  const [grantMsg, setGrantMsg] = useState('');
+  const [grantBusy, setGrantBusy] = useState(false);
+
+  const grantSpins = async (mode: 'one' | 'all') => {
+    if (!bossKey) return;
+    if (mode === 'all') {
+      if (!window.confirm(`Выдать ВСЕМ клиентам по ${grantCount} спинов?`)) return;
+    }
+    setGrantBusy(true); setGrantMsg('');
+    const res = await fetch('/api/admin/wheel/grant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-boss-key': bossKey },
+      body: JSON.stringify(mode === 'all' ? { all: true, count: grantCount } : { phone: grantPhone, count: grantCount }),
+    }).then(r => r.json()).catch(() => null);
+    if (res?.ok) {
+      setGrantMsg(mode === 'all' ? `✅ Выдано ${grantCount} спинов ${res.granted} клиентам` : `✅ Выдано ${res.spins} спинов`);
+      if (mode === 'one') setGrantPhone('');
+    } else {
+      setGrantMsg('❌ Ошибка: ' + (res?.error || 'server'));
+    }
+    setGrantBusy(false);
+  };
+
   useEffect(() => {
     // Авто-вход в режим босса ТОЛЬКО если есть сохранённый PIN — иначе все запросы будут падать с 403
     const savedBossPin = localStorage.getItem('bubble_boss_pin');
@@ -474,6 +500,44 @@ export default function AdminPage() {
 
                     <button type="submit" className="w-full h-[40px] bg-[#333] text-white rounded-[10px] font-bold text-[10px] uppercase active:scale-95 transition-transform">Создать</button>
                   </form>
+
+                  {/* 🎡 Выдача спинов рулетки */}
+                  <div className="w-full bg-white p-[16px] rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.05)] border border-[#E5E5EA] flex flex-col gap-[10px]">
+                    <h2 className="font-['Benzin'] font-extrabold text-[12px] uppercase text-[#FF008C]">🎡 Выдать спины рулетки</h2>
+                    <div className="flex gap-[8px]">
+                      <input
+                        type="tel"
+                        placeholder="Телефон (+7...)"
+                        value={grantPhone}
+                        onChange={e => setGrantPhone(e.target.value)}
+                        className="flex-1 h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none"
+                      />
+                      <input
+                        type="number"
+                        min="1" max="50"
+                        value={grantCount}
+                        onChange={e => setGrantCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+                        className="w-[70px] h-[40px] bg-[#F2F2F7] rounded-[10px] px-3 font-bold text-[12px] outline-none text-center"
+                      />
+                    </div>
+                    <div className="flex gap-[8px]">
+                      <button
+                        onClick={() => grantSpins('one')}
+                        disabled={grantBusy || !grantPhone}
+                        className="flex-1 h-[40px] bg-[#333] text-white rounded-[10px] font-bold text-[10px] uppercase active:scale-95 disabled:opacity-40"
+                      >
+                        Одному клиенту
+                      </button>
+                      <button
+                        onClick={() => grantSpins('all')}
+                        disabled={grantBusy}
+                        className="flex-1 h-[40px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[10px] font-bold text-[10px] uppercase active:scale-95 disabled:opacity-40"
+                      >
+                        🎂 Всем клиентам
+                      </button>
+                    </div>
+                    {grantMsg && <span className="text-[10px] font-bold text-center text-[#666]">{grantMsg}</span>}
+                  </div>
 
                   {/* Список */}
                   {promocodes.map(promo => {
