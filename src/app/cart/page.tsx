@@ -345,7 +345,7 @@ export default function CartPage() {
         else if (data.error === 'limit') setPromoError('Лимит исчерпан');
         else if (data.error === 'expired') setPromoError('Срок действия истёк');
         else if (data.error === 'not_applicable') setPromoError('Не для этих напитков');
-        else if (data.error === 'not_yours') setPromoError('Промокод не твой');
+        else if (data.error === 'not_yours') setPromoError('Этот промокод для другого аккаунта 🙅');
         else setPromoError('Ошибка');
         return;
       }

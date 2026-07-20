@@ -30,6 +30,7 @@ export const WHEEL_SECTORS: WheelPrize[] = [
 export const PROMO_LIFETIME_DAYS = 3;
 export const SPINS_ON_ORDER_COMPLETED = 1;
 export const SPINS_ON_BIRTHDAY = 3;
+export const WELCOME_SPINS = 3;   // прокрутки новичку при регистрации (один раз)
 export const SPIN_COST_COINS = 100;
 
 // 🎂 ДЕНЬ РОЖДЕНИЯ БАБЛИКА — период когда баннер в корзине активен (МСК).

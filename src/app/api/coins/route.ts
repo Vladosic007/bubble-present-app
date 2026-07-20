@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { normalizePhone, ensureWelcomeBonus, getEffectiveCups, checkBirthdayBonus, getOrCreateRefCode } from '@/lib/coins';
+import { normalizePhone, ensureWelcomeBonus, ensureWelcomeSpins, getEffectiveCups, checkBirthdayBonus, getOrCreateRefCode } from '@/lib/coins';
 import { levelForCups, COIN_REDEEM_VALUE } from '@/lib/loyaltyConfig';
 import { DEFAULT_EQUIPPED } from '@/lib/cosmetics';
 
@@ -12,15 +12,16 @@ export async function GET(req: Request) {
     const phoneNorm = normalizePhone(phoneRaw);
     if (!phoneNorm) return NextResponse.json({ balance: 0, history: [], pending: null, level: 1, levelDiscount: 0, cups: 0 });
 
-    // Приветственный бонус (один раз) + проверка подарка на ДР + личный реф-код
+    // Приветственный бонус (один раз) + приветственные спины + подарок на ДР + реф-код
     await ensureWelcomeBonus(phoneNorm);
+    await ensureWelcomeSpins(phoneNorm);
     await checkBirthdayBonus(phoneNorm);
     const refCode = await getOrCreateRefCode(phoneNorm);
 
     const [{ data: row }, { data: txs }, cups] = await Promise.all([
       supabaseAdmin.from('coin_balances').select('*').eq('phone', phoneNorm).single(),
       supabaseAdmin.from('coin_transactions').select('amount, type, note, order_id, created_at')
-        .eq('phone', phoneNorm).order('created_at', { ascending: false }).limit(30),
+        .eq('phone', phoneNorm).neq('type', 'welcome_spins').order('created_at', { ascending: false }).limit(30),
       getEffectiveCups(phoneRaw, phoneNorm),
     ]);
 

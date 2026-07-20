@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { normalizePhone } from '@/lib/coins';
+import { normalizePhone, ensureWelcomeSpins } from '@/lib/coins';
 import { SPIN_COST_COINS } from '@/lib/wheelConfig';
 
 // Состояние рулетки для клиента: баланс спинов + баланс коинов + мои промокоды
@@ -10,6 +10,8 @@ export async function GET(req: Request) {
     const phoneRaw = searchParams.get('phone') || '';
     const phoneNorm = normalizePhone(phoneRaw);
     if (!phoneNorm) return NextResponse.json({ spins: 0, balance: 0, myPromos: [] });
+
+    await ensureWelcomeSpins(phoneNorm); // приветственные 3 спина (один раз)
 
     const [{ data: bal }, { data: promos }] = await Promise.all([
       supabaseAdmin.from('coin_balances').select('spins, balance').eq('phone', phoneNorm).single(),

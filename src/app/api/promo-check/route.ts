@@ -26,9 +26,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'not_yours' }, { status: 403 });
     }
 
-    // Проверка что в корзине есть напитки, подходящие под applies_to
+    // Проверка что в корзине есть напитки, подходящие под applies_to.
+    // Для категорий резолвим категорию из базы по названию (корзина её не присылает).
     if (data.applies_to && Array.isArray(items) && items.length > 0) {
-      const eligible = items.some((it: any) => isItemEligible(it, data.applies_to));
+      let eligible = false;
+      if (data.applies_to.startsWith('category:')) {
+        const wantCat = data.applies_to.slice(9).toLowerCase().trim();
+        const norm = (s: string) => (s || '').toLowerCase().replace(/[\s\-\.,()]/g, '');
+        const { data: drinks } = await supabaseAdmin.from('drinks').select('name, category');
+        const catMap: Record<string, string> = {};
+        (drinks || []).forEach((d: any) => { catMap[norm(d.name)] = (d.category || '').toLowerCase().trim(); });
+        eligible = items.some((it: any) => {
+          const cn = norm((it.name || '').replace(/\s*\(.+/, ''));
+          let cat = catMap[cn];
+          if (!cat) { const k = Object.keys(catMap).find(k => k.includes(cn) || cn.includes(k)); if (k) cat = catMap[k]; }
+          return cat === wantCat;
+        });
+      } else {
+        eligible = items.some((it: any) => isItemEligible(it, data.applies_to));
+      }
       if (!eligible) {
         return NextResponse.json({ error: 'not_applicable' }, { status: 400 });
       }

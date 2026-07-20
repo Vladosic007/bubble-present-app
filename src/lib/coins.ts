@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { coinsForAmount, levelForCups, WELCOME_COINS, BIRTHDAY_COINS, REFERRAL_INVITER_COINS, REFERRAL_FRIEND_COINS, randomLevelupReward } from '@/lib/loyaltyConfig';
 import { getCosmetic, boosterMultById, DEFAULT_EQUIPPED } from '@/lib/cosmetics';
 import { sendToPhone } from '@/lib/push';
-import { SPINS_ON_ORDER_COMPLETED, SPINS_ON_BIRTHDAY } from '@/lib/wheelConfig';
+import { SPINS_ON_ORDER_COMPLETED, SPINS_ON_BIRTHDAY, WELCOME_SPINS } from '@/lib/wheelConfig';
 
 // === СЕРВЕРНАЯ ЛОГИКА БАБЛКОИНОВ ===
 // Баланс хранится по нормализованному телефону, все операции пишутся в леджер.
@@ -65,6 +65,18 @@ export async function ensureWelcomeBonus(phoneNorm: string): Promise<void> {
     .limit(1);
   if (data && data.length) return; // уже выдавали
   await applyDelta(phoneNorm, WELCOME_COINS, 'welcome', null, 'Приветственный бонус');
+}
+
+// Приветственные ПРОКРУТКИ рулетки — один раз на телефон (независимо от коинов).
+// Покрывает и новых, и тех кто зарегался недавно (получат при след. открытии).
+export async function ensureWelcomeSpins(phoneNorm: string): Promise<void> {
+  if (!phoneNorm) return;
+  const { data } = await supabaseAdmin
+    .from('coin_transactions').select('id').eq('phone', phoneNorm).eq('type', 'welcome_spins').limit(1);
+  if (data && data.length) return; // уже выдавали
+  const row = await getRow(phoneNorm);
+  await supabaseAdmin.from('coin_balances').update({ spins: (row?.spins || 0) + WELCOME_SPINS }).eq('phone', phoneNorm);
+  await supabaseAdmin.from('coin_transactions').insert({ phone: phoneNorm, amount: 0, type: 'welcome_spins', order_id: null, note: 'Приветственные прокрутки' });
 }
 
 // Сохранить дату рождения клиента (формат YYYY-MM-DD)
