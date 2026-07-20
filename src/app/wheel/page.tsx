@@ -1,12 +1,12 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WHEEL_SECTORS } from '../../lib/wheelConfig';
 
 type Prize = {
-  type: 'promo' | 'coins' | 'respin';
+  type: 'promo' | 'coins';
   label: string; emoji: string;
   code?: string; validUntil?: string; discount?: number; category?: string;
   amount?: number;
@@ -34,10 +34,23 @@ export default function WheelPage() {
   const [spinning, setSpinning] = useState(false);
   const [prize, setPrize] = useState<Prize | null>(null);
   const [busy, setBusy] = useState(false);
+  const [noProfile, setNoProfile] = useState(false);
+
+  // Свайп вправо → назад к баблику
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null; touchStartY.current = null;
+    if (dx > 70 && Math.abs(dx) > Math.abs(dy) && !spinning) router.push('/bubblik');
+  };
 
   const load = () => {
     const phone = localStorage.getItem('bubble_user_phone');
-    if (!phone) { setLoading(false); return; }
+    if (!phone) { setNoProfile(true); setLoading(false); return; }
     fetch(`/api/wheel?phone=${encodeURIComponent(phone)}`)
       .then(r => r.json())
       .then(j => {
@@ -101,7 +114,7 @@ export default function WheelPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#110A1A]/40 via-[#110A1A]/70 to-[#110A1A]" />
       </div>
 
-      <main className="w-full max-w-[400px] relative z-10 flex flex-col items-center px-[20px] pb-[120px]">
+      <main onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="w-full max-w-[400px] relative z-10 flex flex-col items-center px-[20px] pb-[120px] touch-pan-y">
         {/* Шапка */}
         <div className="w-full flex items-center justify-between pt-[40px] mb-[20px]">
           <button onClick={() => router.back()} className="w-[40px] h-[40px] bg-white/10 rounded-full flex items-center justify-center active:scale-95">
@@ -126,6 +139,20 @@ export default function WheelPage() {
 
         {loading ? (
           <span className="text-[#FF008C] font-['Benzin'] animate-pulse uppercase text-[13px] mt-[40px]">Загрузка...</span>
+        ) : noProfile ? (
+          <div className="mt-[40px] w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[24px] p-[24px] text-center flex flex-col gap-[14px]">
+            <span className="text-[46px]">🎡</span>
+            <span className="text-white font-['Benzin'] font-extrabold text-[14px] uppercase">Сначала войди</span>
+            <span className="text-white/70 font-['Arial'] font-bold text-[11px] leading-snug">
+              Заполни имя и телефон в профиле — и получишь свою первую прокрутку рулетки 🎁
+            </span>
+            <button
+              onClick={() => router.push('/profile/info')}
+              className="h-[48px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[12px] uppercase active:scale-95"
+            >
+              Заполнить профиль
+            </button>
+          </div>
         ) : (
           <>
             {/* Барабан */}
@@ -169,14 +196,21 @@ export default function WheelPage() {
               </div>
             </div>
 
-            {/* Кнопки */}
-            <button
+            {/* Главная кнопка "Крутить" */}
+            <motion.button
               onClick={doSpin}
               disabled={spinning || spins < 1}
-              className="w-full h-[54px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[16px] font-['Benzin'] font-extrabold text-[14px] uppercase active:scale-95 shadow-[0_6px_20px_rgba(255,0,140,0.4)] disabled:opacity-40"
+              whileTap={{ scale: 0.96 }}
+              animate={spins > 0 && !spinning ? { boxShadow: ['0 6px 24px rgba(255,0,140,0.4)', '0 6px 40px rgba(255,0,140,0.8)', '0 6px 24px rgba(255,0,140,0.4)'] } : {}}
+              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+              className="w-full h-[62px] bg-gradient-to-r from-[#FF00EE] via-[#FF008C] to-[#FFD700] text-white rounded-[20px] font-['Benzin'] font-extrabold text-[16px] uppercase tracking-wider disabled:opacity-40 disabled:from-gray-600 disabled:to-gray-700 flex items-center justify-center gap-[10px] border-2 border-white/30"
             >
-              {spinning ? 'Крутим...' : spins < 1 ? 'Нет прокруток' : '🎡 Крутить!'}
-            </button>
+              {spinning ? (
+                <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="text-[22px]">🎡</motion.span> Крутим...</>
+              ) : spins < 1 ? 'Нет прокруток 🥲' : (
+                <><span className="text-[22px]">🎡</span> Крутить!</>
+              )}
+            </motion.button>
 
             {spins < 1 && (
               <button
@@ -190,10 +224,11 @@ export default function WheelPage() {
 
             <div className="w-full mt-[24px] bg-white/8 border border-white/12 rounded-[14px] p-[12px] text-center">
               <span className="text-white/70 font-['Arial'] font-bold text-[10px] leading-snug">
-                Крути и получай промокоды, коины и бесплатные прокрутки!<br/>
+                Промокоды на категории · Коины · Джекпот — напиток в подарок!<br/>
                 +1 спин за каждый заказ · 3 спина в ДР баблика
               </span>
             </div>
+
           </>
         )}
 
@@ -233,12 +268,9 @@ export default function WheelPage() {
                 {prize.type === 'coins' && (
                   <span className="text-[#14FF00] font-['Benzin'] font-extrabold text-[26px] mt-[10px]">+{prize.amount} 🪙</span>
                 )}
-                {prize.type === 'respin' && (
-                  <span className="text-[#14FF00] font-['Arial'] font-bold text-[11px] mt-[10px]">Бесплатная прокрутка!</span>
-                )}
 
                 <button onClick={() => setPrize(null)} className="w-full h-[46px] mt-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[12px] uppercase active:scale-95">
-                  {prize.type === 'respin' ? 'Крутить снова 🔄' : 'Забрать 🎁'}
+                  Забрать 🎁
                 </button>
               </motion.div>
             </motion.div>

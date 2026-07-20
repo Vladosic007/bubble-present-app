@@ -51,13 +51,16 @@ export default function BottomNav() {
   // ВНИМАНИЕ: Проверь, чтобы названия файлов тут тооооочно совпадали с файлами в папке icons!
   const navItems = [
     // ДОМ: если работает наоборот, просто поменяй местами thin и thick тут
-    { name: 'Дом', href: '/', iconThin: '/icons/home-thick.svg', iconThick: '/icons/home-thin.svg' },
-    
+    { name: 'Дом', href: '/', iconThin: '/icons/home-thick.svg', iconThick: '/icons/home-thin.svg', emoji: null as string | null },
+
     // БАБЛИК: мы его ВООБЩЕ не трогаем, поэтому пишем одну и ту же иконку в оба места
-    { name: 'Баблик', href: '/bubblik', iconThin: '/icons/bablik.svg', iconThick: '/icons/bablik.svg' },
-    
-    // КОРЗИНА: проверь, точно ли файлы называются cart-thin.svg и cart-thick.svg (из-за этого у тебя разорванная иконка на скрине)
-    { name: 'Корзина', href: '/cart', iconThin: '/icons/Bag-thick.svg', iconThick: '/icons/Bag-thin.svg' },
+    { name: 'Баблик', href: '/bubblik', iconThin: '/icons/bablik.svg', iconThick: '/icons/bablik.svg', emoji: null },
+
+    // РУЛЕТКА: эмодзи вместо SVG (пока нет иконки). Крутится когда активна.
+    { name: 'Рулетка', href: '/wheel', iconThin: '', iconThick: '', emoji: '🎡' },
+
+    // КОРЗИНА
+    { name: 'Корзина', href: '/cart', iconThin: '/icons/Bag-thick.svg', iconThick: '/icons/Bag-thin.svg', emoji: null },
   ];
 
   // Определяем активный индекс (0 - Дом, 1 - Баблик, 2 - Корзина)
@@ -80,12 +83,12 @@ export default function BottomNav() {
       )}
 
       {/* Главный контейнер меню (добавили pointer-events-auto, чтобы кнопки нажимались) */}
-      <nav className="relative w-[250px] h-[50px] bg-[#6C6C6C]/20 backdrop-blur-xl rounded-full border border-[#FFFFFF]/40 shadow-[0px_4px_6px_2px_rgba(45,45,45,0.15)] flex items-center px-[4px] overflow-hidden pointer-events-auto">
-        
-        {/* === АНИМИРОВАННЫЙ "ЖИДКИЙ" ПРЯМОУГОЛЬНИК (УВЕЛИЧЕН) === */}
-        <div 
-          className="absolute h-[42px] w-[76px] bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/40 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-0"
-          style={{ left: `${4 + (activeIndex * 80)}px` }}
+      <nav className="relative w-[300px] h-[50px] bg-[#6C6C6C]/20 backdrop-blur-xl rounded-full border border-[#FFFFFF]/40 shadow-[0px_4px_6px_2px_rgba(45,45,45,0.15)] flex items-center px-[4px] overflow-hidden pointer-events-auto">
+
+        {/* === АНИМИРОВАННЫЙ "ЖИДКИЙ" ПРЯМОУГОЛЬНИК === */}
+        <div
+          className="absolute h-[42px] w-[68px] bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/40 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-0"
+          style={{ left: `${4 + (activeIndex * 73)}px` }}
         />
 
         {/* === САМИ КНОПКИ === */}
@@ -94,20 +97,33 @@ export default function BottomNav() {
           const shouldInvert = isBubblikPage && item.name !== 'Баблик';
 
           return (
-            <Link 
-              key={item.name} 
-              href={item.href} 
-              className="relative w-[80px] h-full flex justify-center items-center z-10"
+            <Link
+              key={item.name}
+              href={item.href}
+              className="relative w-[73px] h-full flex justify-center items-center z-10"
             >
-              {/* ИКОНКА УВЕЛИЧЕНА (w-6 h-6) */}
-              <div className="relative w-6 h-6 transition-transform duration-300 active:scale-75">
-                <Image
-                  draggable={false} src={isActive ? item.iconThick : item.iconThin}
-                  alt={item.name}
-                  fill
-                  className={`object-contain ${shouldInvert ? 'brightness-0 invert' : ''}`} 
-                />
-                
+              <div className="relative w-6 h-6 transition-transform duration-300 active:scale-75 flex items-center justify-center">
+                {item.emoji ? (
+                  // Рулетка — эмодзи, крутится когда неактивна (привлекает внимание)
+                  <span
+                    className={`text-[22px] leading-none ${shouldInvert ? '' : ''}`}
+                    style={{
+                      display: 'inline-block',
+                      animation: isActive ? 'none' : 'wheelSpin 6s linear infinite',
+                      filter: shouldInvert ? 'drop-shadow(0 0 3px rgba(255,255,255,0.3))' : 'none',
+                    }}
+                  >
+                    {item.emoji}
+                  </span>
+                ) : (
+                  <Image
+                    draggable={false} src={isActive ? item.iconThick : item.iconThin}
+                    alt={item.name}
+                    fill
+                    className={`object-contain ${shouldInvert ? 'brightness-0 invert' : ''}`}
+                  />
+                )}
+
                 {/* ❗ КРАСНЫЙ СЧЕТЧИК КОРЗИНЫ (УВЕЛИЧЕННЫЙ + 9+) ❗ */}
                 {item.name === 'Корзина' && totalItems > 0 && (
                   <div className="absolute -top-2 -right-3 bg-[#FF0040] text-white text-[10px] font-bold min-w-[18px] h-[18px] px-[4px] flex items-center justify-center rounded-full shadow-md leading-none">
@@ -119,6 +135,14 @@ export default function BottomNav() {
           );
         })}
       </nav>
+
+      {/* Анимация вращения для эмодзи рулетки */}
+      <style jsx global>{`
+        @keyframes wheelSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -32,7 +32,6 @@ export async function POST(req: Request) {
 
     // Обработка приза
     let addedCoins = 0;
-    let refundSpin = false;
     let promoCode: string | null = null;
     let validUntilISO: string | null = null;
 
@@ -43,10 +42,6 @@ export async function POST(req: Request) {
       await supabaseAdmin.from('coin_transactions').insert({
         phone: phoneNorm, amount: addedCoins, type: 'wheel', order_id: null, note: `Рулетка: +${addedCoins} коинов`,
       });
-    } else if (sector.type === 'respin') {
-      // Возвращаем спин обратно (бесплатный повторный)
-      refundSpin = true;
-      await supabaseAdmin.from('coin_balances').update({ spins: newSpins + 1 }).eq('phone', phoneNorm);
     } else if (sector.type === 'promo') {
       // Генерим уникальный персональный код
       const rand = Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -74,9 +69,8 @@ export async function POST(req: Request) {
         emoji: sector.emoji,
         ...(sector.type === 'promo' ? { code: promoCode, validUntil: validUntilISO, discount: sector.discount, category: sector.category } : {}),
         ...(sector.type === 'coins' ? { amount: addedCoins } : {}),
-        ...(sector.type === 'respin' ? { refunded: refundSpin } : {}),
       },
-      spinsLeft: refundSpin ? newSpins + 1 : newSpins,
+      spinsLeft: newSpins,
     });
   } catch (e) {
     console.error('wheel spin error', e);

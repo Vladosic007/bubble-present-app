@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,6 +35,35 @@ export default function BubblikPage() {
   const [levelUp, setLevelUp] = useState<{ level: number; coins: number } | null>(null);
   const [birthdayBonus, setBirthdayBonus] = useState<number | null>(null);
   const [equipped, setEquipped] = useState<{ aura: string; name: string; bg: string; booster: string } | null>(null);
+
+  // 👉 Свайп влево → страница рулетки
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const [swipeHint, setSwipeHint] = useState(0); // 0..1 — насколько тянут влево
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    // Только горизонтальный свайп
+    if (Math.abs(dx) > Math.abs(dy) && dx < 0) {
+      setSwipeHint(Math.min(1, Math.abs(dx) / 120));
+    }
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null; touchStartY.current = null;
+    setSwipeHint(0);
+    // свайп влево > 70px и в основном горизонтальный
+    if (dx < -70 && Math.abs(dx) > Math.abs(dy)) {
+      router.push('/wheel');
+    }
+  };
 
   // Текст подсказки: уровень · диапазон напитков · скидка (из конфига лояльности)
   const levelsInfo = LEVELS.map((l, i) => {
@@ -188,7 +217,13 @@ export default function BubblikPage() {
         </div>
       </div>
 
-      <main className="w-full max-w-[370px] relative z-10 flex flex-col items-center pb-[120px] min-h-[100dvh]">
+      <main
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{ transform: swipeHint > 0 ? `translateX(${-swipeHint * 40}px)` : undefined, transition: swipeHint === 0 ? 'transform 0.25s ease-out' : 'none' }}
+        className="w-full max-w-[370px] relative z-10 flex flex-col items-center pb-[120px] min-h-[100dvh] touch-pan-y"
+      >
 
         {/* 🪙 Плашка баблкоинов (слева вверху, пульсирует, ведёт на страницу коинов) */}
         {coinBalance !== null && (
@@ -209,19 +244,6 @@ export default function BubblikPage() {
           </motion.button>
         )}
 
-        {/* 🎡 Кнопка рулетки (под плашкой коинов) */}
-        {coinBalance !== null && (
-          <motion.button
-            onClick={() => router.push('/wheel')}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            whileTap={{ scale: 0.94 }}
-            className="absolute top-[150px] left-[20px] z-50 flex items-center gap-[6px] px-[10px] py-[5px] rounded-full bg-gradient-to-r from-[#FF00EE]/40 to-[#FF008C]/40 backdrop-blur-xl border border-[#FF008C]/50 shadow-[0_0_18px_rgba(255,0,140,0.5)]"
-          >
-            <motion.span animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} className="text-[18px]">🎡</motion.span>
-            <span className="text-white font-['Benzin'] font-extrabold text-[11px] uppercase leading-none">Рулетка</span>
-          </motion.button>
-        )}
 
         <div className="absolute top-[117px] right-[24px] w-[24px] h-[24px] cursor-pointer z-50 flex items-center justify-center transition-transform active:scale-90"
           onClick={() => setIsInfoOpen(!isInfoOpen)}
@@ -361,6 +383,7 @@ export default function BubblikPage() {
                 ))}
               </p>
             </div>
+
           </>
         )}
 
