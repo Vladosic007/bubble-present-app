@@ -218,7 +218,14 @@ export default function InfoPage() {
     alert("✅ Данные успешно сохранены! Форма идеальна.");
   };
 
+  // Проверка что адрес в Таганроге (для блокировки кнопки Подтвердить)
+  const isTaganrog = currentAddress.toLowerCase().includes('таганрог');
+
   const handleConfirmMap = () => {
+    if (!isTaganrog) {
+      alert('❌ Мы доставляем только по Таганрогу. Передвинь метку на нужный адрес в Таганроге.');
+      return;
+    }
     setFormData({ ...formData, address: currentAddress });
     setIsMapOpen(false);
   };
@@ -304,14 +311,9 @@ export default function InfoPage() {
                     fetchAddress(newCoords, ymapsInstance);
                   }, 500);
                  }}
-               /* ❗ ЖЕСТКИЕ ГРАНИЦЫ ТАГАНРОГА ❗ */
-               options={{ 
-                 suppressMapOpenBlock: true,
-                 restrictMapArea: [
-                   [47.16, 38.78],
-                   [47.30, 39.05]
-                   ]
-                 }}
+               /* Границы убраны — карта не лагает.
+                  Проверка "только Таганрог" делается при подтверждении адреса. */
+               options={{ suppressMapOpenBlock: true }}
                >
                <GeolocationControl options={{ float: 'right' } as any} />
                 <ZoomControl options={{ float: 'right' } as any} />
@@ -331,19 +333,26 @@ export default function InfoPage() {
             <h3 className="text-[14px] font-['Arial'] font-bold text-[#333] text-center mb-[4px] leading-tight min-h-[36px] flex items-center justify-center w-full">
               {currentAddress}
             </h3>
-            <p className="text-[10px] text-[#949494] text-center uppercase font-['Arial'] font-bold mb-[20px]">
-              Передвиньте карту, чтобы уточнить адрес
-            </p>
+            {isTaganrog ? (
+              <p className="text-[10px] text-[#949494] text-center uppercase font-['Arial'] font-bold mb-[20px]">
+                Передвиньте карту, чтобы уточнить адрес
+              </p>
+            ) : (
+              <p className="text-[10px] text-[#FF0040] text-center uppercase font-['Arial'] font-bold mb-[20px]">
+                ❌ Мы доставляем только по Таганрогу
+              </p>
+            )}
             <div className="flex gap-[12px] w-full max-w-[342px] mt-auto">
-              <button 
+              <button
                 onClick={() => setIsMapOpen(false)}
                 className="h-[52px] flex-1 rounded-[20px] bg-[#F2F2F7] text-[#949494] font-['Arial'] font-bold uppercase text-[12px] active:scale-95 transition-transform"
               >
                 Отмена
               </button>
-              <button 
+              <button
                 onClick={handleConfirmMap}
-                className="h-[52px] flex-[1.5] rounded-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white font-['Arial'] font-bold uppercase text-[12px] shadow-[0_4px_10px_rgba(255,0,140,0.3)] active:scale-95 transition-transform"
+                disabled={!isTaganrog}
+                className="h-[52px] flex-[1.5] rounded-[20px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white font-['Arial'] font-bold uppercase text-[12px] shadow-[0_4px_10px_rgba(255,0,140,0.3)] active:scale-95 transition-transform disabled:opacity-40 disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none"
               >
                 Подтвердить
               </button>

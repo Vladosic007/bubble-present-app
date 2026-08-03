@@ -43,33 +43,23 @@ export async function POST(req: Request) {
     // Отменяем
     const { error: updErr } = await supabaseAdmin
       .from('orders')
-      .update({ status: 'cancelled' })
+      .update({ status: 'cancelled', status_updated_at: new Date().toISOString() })
       .eq('id', orderId);
 
     if (updErr) {
       return NextResponse.json({ error: 'db error' }, { status: 500 });
     }
 
-    // Если заказ был оплачен (не висел в ожидании оплаты) — шлём отмену в ВК
+    // Если заказ был оплачен — редактируем ранее отправленные сообщения баристам/курьеру
+    // на текст "ОТМЕНЁН КЛИЕНТОМ" (без кнопок). Никаких новых уведомлений.
     if (previousStatus !== 'pending_payment') {
-      const VK_TOKEN = process.env.VK_TOKEN!;
-      const peerIds = (process.env.VK_PEER_ID || '').split(',').map(s => s.trim()).filter(Boolean);
-      const msg = `❌ ЗАКАЗ #${orderId} ОТМЕНЕН КЛИЕНТОМ ❌\n\nКлиент передумал и отменил заказ. Не готовьте его!`;
-
-      for (const peerId of peerIds) {
-        const params = new URLSearchParams({
-          peer_id: peerId,
-          message: msg,
-          random_id: (Date.now() + Math.floor(Math.random() * 100000)).toString(),
-          access_token: VK_TOKEN,
-          v: '5.131',
-        });
-        await fetch('https://api.vk.com/method/messages.send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: params.toString(),
-        }).catch(() => {});
-      }
+      try {
+        const { editForAll } = await import('@/lib/vkMessages');
+        const cancelMsg = `❌ ЗАКАЗ #${orderId} ОТМЕНЁН КЛИЕНТОМ\n\nКлиент передумал. Не готовьте!`;
+        const noKeyboard = { inline: true, buttons: [] };
+        await editForAll(orderId, 'barista', cancelMsg, noKeyboard);
+        await editForAll(orderId, 'courier', cancelMsg, noKeyboard);
+      } catch (e) { console.error('cancel edit vk error', e); }
     }
 
     return NextResponse.json({ success: true });

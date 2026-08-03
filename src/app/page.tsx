@@ -21,6 +21,7 @@ export default function Home() {
     { title: 'Бабл кофе', img: '/images/bablcofe.jpg', href: '/menu/coffee' },
     { title: 'Бабл лим', img: '/images/babllim.jpg', href: '/menu/lim' },
     { title: 'Бабл матча', img: '/images/bablmatcha.jpg', href: '/menu/matcha' },
+    { title: 'Десерты', img: '/images/desserts/placeholder.jpg', href: '/menu/desserts' },
   ];
 
   return (

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { handleOrderCompleted } from '@/lib/coins';
 import { notifyOrderStatus } from '@/lib/push';
+import { editForAll } from '@/lib/vkMessages';
+import { buildBaristaText, buildBaristaKeyboard, buildCourierText, buildCourierKeyboard } from '@/lib/vkOrderText';
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +19,7 @@ export async function POST(req: Request) {
 
     const { error } = await supabaseAdmin
       .from('orders')
-      .update({ status })
+      .update({ status, status_updated_at: new Date().toISOString() })
       .eq('id', orderId);
 
     if (error) {
@@ -28,6 +30,16 @@ export async function POST(req: Request) {
     if (status === 'completed') {
       await handleOrderCompleted(orderId);
     }
+
+    // Редактируем сообщения баристам/курьерам (одно сообщение, обновляется)
+    try {
+      const { data: order } = await supabaseAdmin.from('orders').select('*').eq('id', orderId).single();
+      if (order) {
+        const o: any = order;
+        await editForAll(orderId, 'barista', buildBaristaText(o), buildBaristaKeyboard(o));
+        await editForAll(orderId, 'courier', buildCourierText(o), buildCourierKeyboard(o));
+      }
+    } catch (e) { console.error('admin edit vk error', e); }
 
     // Push клиенту о смене статуса
     await notifyOrderStatus(orderId, status);
