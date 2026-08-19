@@ -73,7 +73,9 @@ export default function TeaMenu() {
 
       data.forEach(d => {
         const normalizedName = d.name.toLowerCase().trim();
-        const slug = slugMap[normalizedName] || 'default-slug';
+        const slug = slugMap[normalizedName];
+        // Нет страницы под этот напиток — не показываем (иначе битая карточка и 404)
+        if (!slug) return;
 
         let displayName = d.name;
         if (normalizedName === 'вильвет') {

@@ -327,6 +327,15 @@ export default function AdminPage() {
                   <span className="text-white font-['Arial'] font-bold text-[10px] uppercase">👥 Клиенты</span>
                 </Link>
               )}
+              {isBoss && (
+                <Link
+                  href="/admin/news"
+                  className="h-[40px] px-[14px] bg-gradient-to-r from-[#FF00EE]/30 to-[#FF008C]/30 rounded-full flex items-center justify-center active:scale-95 border border-[#FF008C]/40"
+                  title="Новости"
+                >
+                  <span className="text-white font-['Arial'] font-bold text-[10px] uppercase">📰 Новости</span>
+                </Link>
+              )}
               <button onClick={() => { fetchData(); }} className="w-[40px] h-[40px] bg-white/10 rounded-full flex items-center justify-center active:scale-95">
                 <span className="text-[16px]">🔄</span>
               </button>

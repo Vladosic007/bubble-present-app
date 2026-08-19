@@ -2,18 +2,17 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import InstallPrompt from '@/components/InstallPrompt'; 
+import InstallPrompt from '@/components/InstallPrompt';
+import NewsCarousel from '@/components/NewsCarousel';
 
 export default function Home() {
-  // Стейт для аватарки
   const [avatar, setAvatar] = useState('/images/avatar1.jpg');
+  const [isBoss, setIsBoss] = useState(false); // тестовые категории — только для босса
 
-  // Достаем фотку из памяти при загрузке страницы
   useEffect(() => {
     const savedPhoto = localStorage.getItem('bubble_user_photo');
-    if (savedPhoto) {
-      setAvatar(savedPhoto);
-    }
+    if (savedPhoto) setAvatar(savedPhoto);
+    if (localStorage.getItem('bubble_boss_pin')) setIsBoss(true);
   }, []);
 
   const categories = [
@@ -21,7 +20,10 @@ export default function Home() {
     { title: 'Бабл кофе', img: '/images/bablcofe.jpg', href: '/menu/coffee' },
     { title: 'Бабл лим', img: '/images/babllim.jpg', href: '/menu/lim' },
     { title: 'Бабл матча', img: '/images/bablmatcha.jpg', href: '/menu/matcha' },
-    { title: 'Десерты', img: '/images/desserts/placeholder.jpg', href: '/menu/desserts' },
+    // Азиатка (Латяо) — пока только боссу (тест)
+    ...(isBoss ? [
+      { title: 'Азиатка', img: '/images/aziatka/placeholder.jpg', href: '/menu/aziatka' },
+    ] : []),
   ];
 
   return (
@@ -59,6 +61,9 @@ export default function Home() {
           />
         </Link>
       </div>
+
+      {/* Карусель новостей */}
+      <NewsCarousel />
 
       {/* 2. КАРТОЧКИ КАТЕГОРИЙ */}
       <div className="flex flex-col gap-[32px] w-full items-center">

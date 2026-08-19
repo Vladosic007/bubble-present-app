@@ -4,6 +4,7 @@ import BubblikBackground from "../components/BubblikBackground";
 import ZoomBlocker from "../components/ZoomBlocker";
 import AttributionTracker from "../components/AttributionTracker";
 import PushOptIn from "../components/PushOptIn";
+import NewsPopup from "../components/NewsPopup";
 import type { Metadata } from 'next';
 
 // ❗ ЗАПРЕЩАЕМ ЗУМ (ЧТОБЫ ВЫГЛЯДЕЛО КАК НАСТОЯЩЕЕ ПРИЛОЖЕНИЕ) ❗
@@ -68,6 +69,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Регистрация SW + предложение включить push */}
         <PushOptIn />
+
+        {/* Всплывающее окно новости (1 раз на новость) */}
+        <NewsPopup />
 
         {/* Летающий баблик на фоне (виден на ПК по бокам) */}
         <BubblikBackground />

@@ -15,46 +15,64 @@ function slugify(name: string): string {
   return name.toLowerCase().split('').map(c => map[c] ?? c).join('').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-export default function DessertPage() {
+export default function AziatkaItemPage() {
   const router = useRouter();
   const params = useParams();
   const slug = String(params?.slug || '');
   const { items, addItem, changeQuantity, removeItem, orderType } = useCartStore();
 
   const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => { setIsMounted(true); }, []);
-
-  const [dessert, setDessert] = useState<any>(null);
+  const [isBoss, setIsBoss] = useState<boolean | null>(null);
+  const [product, setProduct] = useState<any>(null);
   const [notFound, setNotFound] = useState(false);
 
-  // Тянем десерт из базы по slug (сравниваем со slug'ом от названия)
   useEffect(() => {
+    setIsMounted(true);
+    setIsBoss(!!localStorage.getItem('bubble_boss_pin'));
+  }, []);
+
+  useEffect(() => {
+    if (!isBoss) return;
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch('/api/drinks?category=' + encodeURIComponent('Десерты'));
+        const pin = localStorage.getItem('bubble_boss_pin') || '';
+        const res = await fetch('/api/drinks?category=' + encodeURIComponent('Азиатка'), { headers: { 'x-boss-key': pin } });
         const json = await res.json();
         const found = (json.drinks || []).find((d: any) => slugify(d.name) === slug);
         if (cancelled) return;
         if (!found) { setNotFound(true); return; }
-        setDessert(found);
+        setProduct(found);
       } catch { if (!cancelled) setNotFound(true); }
     };
     load();
     return () => { cancelled = true; };
-  }, [slug]);
+  }, [slug, isBoss]);
+
+  if (isBoss === null) return <div className="min-h-screen bg-[#FAFAFA]" />;
+  if (!isBoss) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#FAFAFA]">
+        <span className="text-[48px] mb-4">🔒</span>
+        <span className="text-[14px] font-['Benzin'] uppercase text-[#8E8E93] mb-4 text-center">Раздел ещё в разработке</span>
+        <button onClick={() => router.push('/')} className="h-[46px] px-[24px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[12px] uppercase active:scale-95">
+          На главную
+        </button>
+      </div>
+    );
+  }
 
   if (notFound) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6">
-        <span className="text-[16px] font-['Benzin'] uppercase text-[#8E8E93] mb-4">Десерт не найден 🍰</span>
-        <button onClick={() => router.push('/menu/desserts')} className="h-[46px] px-[24px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[12px] uppercase active:scale-95">
+        <span className="text-[16px] font-['Benzin'] uppercase text-[#8E8E93] mb-4">Товар не найден 🥟</span>
+        <button onClick={() => router.push('/menu/aziatka')} className="h-[46px] px-[24px] bg-gradient-to-r from-[#FF00EE] to-[#FF008C] text-white rounded-[14px] font-['Benzin'] font-extrabold text-[12px] uppercase active:scale-95">
           К списку
         </button>
       </div>
     );
   }
-  if (!dessert) {
+  if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="text-[#FF008C] font-['Benzin'] animate-pulse uppercase text-[13px]">Загрузка...</span>
@@ -63,11 +81,10 @@ export default function DessertPage() {
   }
 
   const productId = slug;
-  const productName = dessert.name;
-  const productImg = `/images/desserts/${slug}.jpg`;
-  const price = orderType === 'delivery' ? dessert.price_delivery : dessert.price_pickup;
+  const productName = product.name;
+  const productImg = `/images/aziatka/${slug}.jpg`;
+  const price = orderType === 'delivery' ? product.price_delivery : product.price_pickup;
 
-  // Количество этого десерта в корзине
   const cartItemId = `${productId}-item`;
   const inCart = items.find((i: any) => i.cartItemId === cartItemId);
   const qty = inCart?.quantity || 0;
@@ -77,55 +94,42 @@ export default function DessertPage() {
       changeQuantity(cartItemId, 1);
     } else {
       addItem({
-        cartItemId,
-        id: 0,
-        name: productName,
-        price,
-        quantity: 1,
-        img: productImg,
-        size: 'M',
-        toppings: [],
+        cartItemId, id: 0,
+        name: productName, price, quantity: 1,
+        img: productImg, size: 'M', toppings: [],
       });
     }
   };
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pb-[140px]">
-      {/* Шапка */}
       <div className="sticky top-0 z-40 bg-[#FAFAFA]/90 backdrop-blur-xl px-4 pt-4 pb-3 flex items-center justify-between">
         <button onClick={() => router.back()} className="w-[40px] h-[40px] bg-white rounded-full flex items-center justify-center shadow-sm active:scale-90">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF008C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
-        <span className="font-['Benzin'] font-extrabold text-[12px] uppercase text-[#333]">Десерт</span>
+        <span className="font-['Benzin'] font-extrabold text-[12px] uppercase text-[#333]">Азиатка</span>
         <div className="w-[40px]" />
       </div>
 
-      {/* Фото */}
       <div className="w-full max-w-[400px] mx-auto px-4 mt-2">
         <div className="relative w-full aspect-square rounded-[30px] overflow-hidden shadow-[0_6px_20px_rgba(255,0,140,0.15)] bg-[#F2F2F7]">
           <Image
-            draggable={false}
-            src={productImg}
-            alt={productName}
-            fill
-            className="object-cover"
-            onError={(e: any) => { e.currentTarget.src = '/images/desserts/placeholder.jpg'; }}
+            draggable={false} src={productImg} alt={productName} fill className="object-cover"
+            onError={(e: any) => { e.currentTarget.src = '/images/aziatka/placeholder.jpg'; }}
             priority
           />
         </div>
       </div>
 
-      {/* Название и описание */}
       <div className="w-full max-w-[400px] mx-auto px-6 mt-6">
         <h1 className="text-[26px] leading-tight font-extrabold bg-gradient-to-r from-[#FF00EE] to-[#FF008C] bg-clip-text text-transparent uppercase mb-2">
           {productName}
         </h1>
-        {dessert.description && (
-          <p className="text-[13px] text-[#616161] leading-relaxed mt-2">{dessert.description}</p>
+        {product.description && (
+          <p className="text-[13px] text-[#616161] leading-relaxed mt-2">{product.description}</p>
         )}
       </div>
 
-      {/* Нижняя панель: количество + цена + добавить */}
       {isMounted && (
         <div className="fixed bottom-[100px] left-0 right-0 z-30 flex justify-center pointer-events-none px-4">
           <div className="w-full max-w-[400px] bg-white rounded-[24px] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] border border-black/5 p-[14px] flex items-center gap-[12px] pointer-events-auto">
