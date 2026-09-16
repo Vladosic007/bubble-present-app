@@ -17,8 +17,10 @@ export async function POST(req: Request) {
     }
 
     // Тянем цены напитков из базы
+    // Порядок как в order/create: при дублях побеждает активная строка с большим id
     const { data: drinks, error } = await supabaseAdmin
-      .from('drinks').select('name, price_pickup, price_delivery');
+      .from('drinks').select('name, price_pickup, price_delivery')
+      .order('is_active', { ascending: true, nullsFirst: true }).order('id', { ascending: true });
     if (error || !drinks) return NextResponse.json({ error: 'db' }, { status: 500 });
 
     const priceMap: Record<string, { pickup: number, delivery: number }> = {};

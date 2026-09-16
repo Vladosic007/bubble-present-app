@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { deliveryPromoPopupPending } from './DeliveryPromo';
 
 type NewsItem = {
   id: number; title: string; text: string; image: string; gradient: string; link: string; is_popup?: boolean;
@@ -14,6 +15,8 @@ export default function NewsPopup() {
 
   useEffect(() => {
     const t = setTimeout(() => {
+      // Сейчас показывается попап акции — новость покажем в следующий заход
+      if (deliveryPromoPopupPending()) return;
       fetch('/api/news')
         .then(r => r.json())
         .then(j => {

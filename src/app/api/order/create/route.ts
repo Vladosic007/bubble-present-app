@@ -26,7 +26,10 @@ async function calcTotal(
   redeemCoinsRequested: number
 ): Promise<CalcResult> {
   const empty: CalcResult = { total: 0, appliedPromo: null, levelDiscount: 0, coinsUsed: 0 };
-  const { data: drinks } = await supabaseAdmin.from('drinks').select('name, category, price_pickup, price_delivery');
+  // Порядок важен при дублях по названию: активные строки идут последними и перетирают выключенные,
+  // среди активных побеждает больший id — ровно как в корзине (/api/drinks)
+  const { data: drinks } = await supabaseAdmin.from('drinks').select('name, category, price_pickup, price_delivery')
+    .order('is_active', { ascending: true, nullsFirst: true }).order('id', { ascending: true });
   if (!drinks) return empty;
 
   const priceMap: Record<string, { pickup: number, delivery: number, category: string }> = {};

@@ -5,12 +5,12 @@ import { useCartStore, CartItem } from '../../store/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
-import { isFridayDeliveryPromoActive, FRIDAY_PROMO_MULTIPLIER, FRIDAY_PROMO_DISCOUNT } from '../../lib/promoConfig';
+import { isFridayDeliveryPromoActive, FRIDAY_PROMO_MULTIPLIER, FRIDAY_PROMO_DISCOUNT, FRIDAY_PROMO_LABEL } from '../../lib/promoConfig';
 import { isBubblikBirthday } from '../../lib/wheelConfig';
 
 const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00'); // Дата окончания акции (МСК) — поменяй если нужно
 const IS_OPENING_DAY = new Date() < OPENING_PROMO_END;
-// Пятничная акция: -25% на доставку (один день). Даты — в src/lib/promoConfig.ts
+// Акция на доставку. Даты, процент и подпись — в src/lib/promoConfig.ts
 const IS_FRIDAY_PROMO = isFridayDeliveryPromoActive();
 const IS_BUBBLIK_BIRTHDAY = isBubblikBirthday();
 
@@ -900,7 +900,7 @@ export default function CartPage() {
             {IS_FRIDAY_PROMO && !IS_OPENING_DAY && (
               <motion.div initial={{ y: -50 }} animate={{ y: 0 }} className="w-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] p-[10px] text-center z-50 shrink-0 shadow-md">
                 <span className="text-white font-['Benzin'] font-extrabold text-[10px] uppercase tracking-wider">
-                  🛵 АКЦИЯ НЕДЕЛИ! -{FRIDAY_PROMO_DISCOUNT}% НА ДОСТАВКУ 🛵
+                  🛵 {FRIDAY_PROMO_LABEL}! -{FRIDAY_PROMO_DISCOUNT}% НА ДОСТАВКУ 🛵
                 </span>
               </motion.div>
             )}

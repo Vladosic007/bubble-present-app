@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import InstallPrompt from '@/components/InstallPrompt';
 import NewsCarousel from '@/components/NewsCarousel';
+import { DeliveryPromoBanner } from '@/components/DeliveryPromo';
 
 export default function Home() {
   const [avatar, setAvatar] = useState('/images/avatar1.jpg');
@@ -61,6 +62,9 @@ export default function Home() {
           />
         </Link>
       </div>
+
+      {/* Акция на доставку (сама скрывается, когда акция закончилась) */}
+      <DeliveryPromoBanner />
 
       {/* Карусель новостей */}
       <NewsCarousel />

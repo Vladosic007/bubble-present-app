@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useDeliveryPromo } from '../../../components/DeliveryPromo';
+import { deliveryPromoPrice, FRIDAY_PROMO_DISCOUNT } from '../../../lib/promoConfig';
 import { motion } from 'framer-motion';
 import { useCartStore } from '../../../store/cartStore'; 
 import { useState, useEffect } from 'react';
@@ -172,7 +174,8 @@ export default function LimMenu() {
 // === КОМПОНЕНТ КАРТОЧКИ ===
 function DrinkCard({ drink }: { drink: any }) {
   const { orderType, items } = useCartStore();
-  const currentPrice = orderType === 'delivery' ? drink.deliveryPrice : drink.pickupPrice;
+  const promoActive = useDeliveryPromo();
+  const currentPrice = deliveryPromoPrice(orderType === 'delivery' ? drink.deliveryPrice : drink.pickupPrice, orderType, promoActive);
   const cartCount = items
     .filter((it: any) => it.cartItemId && it.cartItemId.startsWith(drink.id + '-'))
     .reduce((s: number, it: any) => s + (it.quantity || 0), 0);
@@ -202,6 +205,12 @@ function DrinkCard({ drink }: { drink: any }) {
           {(drink.temp_type === 'hot_cold' || drink.temp_type === 'cold_only') && (
             <div className="w-[22px] h-[22px] rounded-full bg-[#FFFFFF]/20 backdrop-blur-md border border-[#FFFFFF]/30 flex items-center justify-center shadow-sm">
               <Image draggable={false} src="/icons/snow.svg" alt="Снежинка" width={18} height={18} className="object-contain" />
+            </div>
+          )}
+          {/* Акция на доставку */}
+          {promoActive && orderType === 'delivery' && (
+            <div className="h-[22px] px-[6px] rounded-full bg-gradient-to-r from-[#FF00EE] to-[#FF008C] flex items-center justify-center shadow-sm">
+              <span className="text-white text-[9px] leading-none font-extrabold">-{FRIDAY_PROMO_DISCOUNT}%</span>
             </div>
           )}
         </div>
