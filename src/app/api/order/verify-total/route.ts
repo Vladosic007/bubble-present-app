@@ -8,6 +8,23 @@ const IS_OPENING_DAY = () => new Date() < OPENING_PROMO_END;
 
 const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-\.,()]/g, '');
 
+// Известные расхождения витрина→база (см. order/create)
+const NAME_ALIASES: Record<string, string> = { 'вельвет': 'вильвет' };
+
+// Находит цену напитка по имени позиции; null — если не нашли. Цену клиента не используем.
+function findBase(priceMap: Record<string, { pickup: number, delivery: number }>, rawName: string) {
+  const cleanName = normalize((rawName || '').replace(/\s*\(.+/, ''));
+  if (!cleanName) return null;
+  if (priceMap[cleanName]) return priceMap[cleanName];
+  const alias = NAME_ALIASES[cleanName];
+  if (alias && priceMap[alias]) return priceMap[alias];
+  let best: { pickup: number, delivery: number } | null = null, bestLen = 0;
+  for (const k of Object.keys(priceMap)) {
+    if (k.length >= 3 && cleanName.includes(k) && k.length > bestLen) { best = priceMap[k]; bestLen = k.length; }
+  }
+  return best;
+}
+
 // Пересчитывает сумму заказа на сервере по ценам из базы
 export async function POST(req: Request) {
   try {
@@ -33,16 +50,12 @@ export async function POST(req: Request) {
     const isFridayDelivery = isFridayDeliveryPromoActive() && order_type === 'delivery';
 
     let total = 0;
+    const unmatched: string[] = [];
     for (const it of items) {
-      const cleanName = normalize((it.name || '').replace(/\s*\(.+/, ''));
-      let base = priceMap[cleanName];
+      const base = findBase(priceMap, it.name);
       if (!base) {
-        const foundKey = Object.keys(priceMap).find(k => k.includes(cleanName) || cleanName.includes(k));
-        if (foundKey) base = priceMap[foundKey];
-      }
-      if (!base) {
-        // Если напиток не нашли в базе — используем переданную цену как fallback
-        total += (Number(it.price) || 0) * (it.qty || 1);
+        // Не нашли напиток — цену клиента НЕ используем (была дыра). Помечаем позицию.
+        unmatched.push(String(it.name || '?'));
         continue;
       }
 
@@ -59,6 +72,11 @@ export async function POST(req: Request) {
       else if (isFridayDelivery) itemPrice = Math.round(itemPrice * FRIDAY_PROMO_MULTIPLIER);
 
       total += itemPrice * (it.qty || 1);
+    }
+
+    // Есть нераспознанные позиции — считать сумму нельзя
+    if (unmatched.length) {
+      return NextResponse.json({ error: 'bad_items', unmatched }, { status: 400 });
     }
 
     // Применяем промокод (если есть и не блокируется акцией)

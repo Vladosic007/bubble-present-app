@@ -9,11 +9,33 @@ const OPENING_PROMO_END = new Date('2026-06-17T00:00:00+03:00');
 const IS_OPENING_DAY = () => new Date() < OPENING_PROMO_END;
 const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-\.,()]/g, '');
 
+// Известные расхождения витрина→база (в меню показываем одно, в базе другое имя)
+const NAME_ALIASES: Record<string, string> = { 'вельвет': 'вильвет' };
+
+// Находит цену напитка в базе по имени позиции. Возвращает null, если не нашли —
+// цену клиента НЕ используем никогда (иначе можно заказать за 11 ₽).
+function findBase<T>(priceMap: Record<string, T>, rawName: string): T | null {
+  const cleanName = normalize((rawName || '').replace(/\s*\(.+/, ''));
+  if (!cleanName) return null;
+  if (priceMap[cleanName]) return priceMap[cleanName];
+  const alias = NAME_ALIASES[cleanName];
+  if (alias && priceMap[alias]) return priceMap[alias];
+  // Безопасный фаззи: имя позиции ЦЕЛИКОМ содержит имя напитка (на случай доп. текста).
+  // Берём самое длинное совпадение. Обратное направление (напиток содержит имя позиции)
+  // убрано намеренно — короткая строка "р" матчила бы всё подряд.
+  let best: T | null = null, bestLen = 0;
+  for (const k of Object.keys(priceMap)) {
+    if (k.length >= 3 && cleanName.includes(k) && k.length > bestLen) { best = priceMap[k]; bestLen = k.length; }
+  }
+  return best;
+}
+
 type CalcResult = {
   total: number;
   appliedPromo: { id: string; used_count: number } | null;
   levelDiscount: number; // %
   coinsUsed: number;     // сколько коинов реально списано
+  unmatched?: string[];  // позиции, для которых не нашли цену в базе (заказ отклоняется)
 };
 
 // Пересчёт суммы заказа на сервере (защита от подмены цены).
@@ -60,16 +82,15 @@ async function calcTotal(
   let fullTotal = 0;   // без скидок — для потолка 50%
   let subtotal = 0;    // с акциями и промокодом
   let promoWasApplied = false;
+  const unmatched: string[] = [];
   for (const it of items) {
     const cleanName = normalize((it.name || '').replace(/\s*\(.+/, ''));
-    let base = priceMap[cleanName];
+    const base = findBase(priceMap, it.name);
     if (!base) {
-      const foundKey = Object.keys(priceMap).find(k => k.includes(cleanName) || cleanName.includes(k));
-      if (foundKey) base = priceMap[foundKey];
-    }
-    if (!base) {
-      const fb = (Number(it.price) || 0) * (it.qty || 1);
-      fullTotal += fb; subtotal += fb; continue;
+      // ❗ Не нашли напиток в базе. Цену клиента НЕ берём (это была дыра: price:11).
+      // Позицию помечаем как нераспознанную — весь заказ будет отклонён.
+      unmatched.push(String(it.name || '?'));
+      continue;
     }
 
     let itemFull = order_type === 'delivery' ? base.delivery : base.pickup;
@@ -93,6 +114,11 @@ async function calcTotal(
     }
 
     subtotal += itemPrice * (it.qty || 1);
+  }
+
+  // Хоть одна позиция не распознана — заказ не считаем (защита от подмены цены)
+  if (unmatched.length) {
+    return { total: 0, appliedPromo: null, levelDiscount: 0, coinsUsed: 0, unmatched };
   }
 
   const appliedPromo = promo && promoWasApplied ? { id: promo.id, used_count: promo.used_count || 0 } : null;
@@ -214,9 +240,31 @@ export async function POST(req: Request) {
     let itemsArr: any[] = [];
     try { itemsArr = typeof items === 'string' ? JSON.parse(items) : items; } catch {}
     const requestedCoins = Math.max(0, Math.floor(Number(redeem_coins) || 0));
-    const { total: serverTotal, appliedPromo, coinsUsed, levelDiscount } = await calcTotal(
+
+    // Заказ должен содержать хотя бы одну позицию
+    if (!Array.isArray(itemsArr) || itemsArr.length === 0) {
+      return NextResponse.json({ error: 'empty_cart', message: 'Корзина пуста' }, { status: 400 });
+    }
+
+    const calc = await calcTotal(
       itemsArr, order_type, promo_code || null, phone, requestedCoins
     );
+
+    // Не смогли распознать напиток(и) — не создаём заказ (иначе можно подсунуть цену)
+    if (calc.unmatched && calc.unmatched.length) {
+      console.warn('order/create: нераспознанные позиции', calc.unmatched);
+      return NextResponse.json({
+        error: 'bad_items',
+        message: 'Не удалось рассчитать цену. Обнови меню и собери заказ заново.',
+      }, { status: 400 });
+    }
+
+    const { total: serverTotal, appliedPromo, coinsUsed, levelDiscount } = calc;
+
+    // Итог должен быть положительным — 0 ₽ или минус недопустимы
+    if (!(serverTotal > 0)) {
+      return NextResponse.json({ error: 'bad_total', message: 'Некорректная сумма заказа' }, { status: 400 });
+    }
 
     // В тестовом режиме заказ сразу "принят" (без оплаты) — только для владельца
     const initialStatus = reallyTest ? 'accepted' : 'pending_payment';
