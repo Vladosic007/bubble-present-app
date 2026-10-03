@@ -20,7 +20,8 @@ DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$DIR" || exit 1
 
 # --- читаем токен и получателя из .env.local (без выполнения файла) ---
-getenv() { grep -E "^$1=" .env.local 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'\''\r'; }
+# tail -1: если переменная задана несколько раз — берём последнюю (как в shell).
+getenv() { grep -E "^$1=" .env.local 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '\042\047\r'; }
 VK_TOKEN="$(getenv VK_TOKEN)"
 ALERT_PEER="$(getenv VK_ALERT_PEER)"
 [ -z "$ALERT_PEER" ] && ALERT_PEER="$(getenv VK_PEER_ID | tr ',' '\n' | head -1)"   # запасной: первый из списка баристов
