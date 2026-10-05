@@ -10,17 +10,21 @@ export async function POST(req: Request) {
     const phoneNorm = normalizePhone(phone || '');
     if (!phoneNorm) return NextResponse.json({ error: 'no_phone' }, { status: 400 });
 
-    const { data: row } = await supabaseAdmin.from('coin_balances').select('*').eq('phone', phoneNorm).single();
-    if (!row || (row.balance || 0) < SPIN_COST_COINS) {
+    // АТОМАРНО: списать коины и добавить спин одной операцией.
+    // База проверит, что хватает — параллельные запросы не купят несколько спинов за одну цену.
+    const { data, error } = await supabaseAdmin.rpc('wheel_buy_spin', { p_phone: phoneNorm, p_cost: SPIN_COST_COINS });
+    if (error) {
+      console.error('wheel_buy_spin error', error);
+      return NextResponse.json({ error: 'server' }, { status: 500 });
+    }
+    const res = Array.isArray(data) ? data[0] : data;
+    if (!res) {
       return NextResponse.json({ error: 'not_enough', need: SPIN_COST_COINS }, { status: 400 });
     }
-    const newBalance = row.balance - SPIN_COST_COINS;
-    const newSpins = (row.spins || 0) + 1;
-    await supabaseAdmin.from('coin_balances').update({ balance: newBalance, spins: newSpins }).eq('phone', phoneNorm);
     await supabaseAdmin.from('coin_transactions').insert({
       phone: phoneNorm, amount: -SPIN_COST_COINS, type: 'spin_buy', order_id: null, note: 'Покупка прокрутки рулетки',
     });
-    return NextResponse.json({ ok: true, balance: newBalance, spins: newSpins });
+    return NextResponse.json({ ok: true, balance: res.balance, spins: res.spins });
   } catch {
     return NextResponse.json({ error: 'server' }, { status: 500 });
   }

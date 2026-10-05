@@ -10,21 +10,22 @@ export async function POST(req: Request) {
     const phoneNorm = normalizePhone(phone || '');
     if (!phoneNorm) return NextResponse.json({ error: 'no_phone' }, { status: 400 });
 
-    // Читаем/создаём баланс
-    const { data: existing } = await supabaseAdmin.from('coin_balances').select('*').eq('phone', phoneNorm).single();
-    let row: any = existing;
-    if (!row) {
-      const { data: created } = await supabaseAdmin
-        .from('coin_balances').insert({ phone: phoneNorm, balance: 0, spins: 0 }).select().single();
-      row = created;
-    }
-    if ((row?.spins || 0) < 1) {
-      return NextResponse.json({ error: 'no_spins' }, { status: 400 });
+    // Гарантируем, что строка баланса есть (для первого спина новичка)
+    const { data: existing } = await supabaseAdmin.from('coin_balances').select('phone').eq('phone', phoneNorm).single();
+    if (!existing) {
+      await supabaseAdmin.from('coin_balances').insert({ phone: phoneNorm, balance: 0, spins: 0 });
     }
 
-    // Списываем 1 спин
-    const newSpins = (row.spins || 0) - 1;
-    await supabaseAdmin.from('coin_balances').update({ spins: newSpins }).eq('phone', phoneNorm);
+    // АТОМАРНО списываем 1 спин. База сама проверит, что спин есть —
+    // параллельные запросы не смогут выжать несколько призов из одного спина.
+    const { data: newSpins, error: consumeErr } = await supabaseAdmin.rpc('wheel_consume_spin', { p_phone: phoneNorm });
+    if (consumeErr) {
+      console.error('wheel_consume_spin error', consumeErr);
+      return NextResponse.json({ error: 'server' }, { status: 500 });
+    }
+    if (newSpins === null || Number(newSpins) < 0) {
+      return NextResponse.json({ error: 'no_spins' }, { status: 400 });
+    }
 
     // Разыгрываем сектор
     const idx = pickSector();
@@ -37,8 +38,8 @@ export async function POST(req: Request) {
 
     if (sector.type === 'coins') {
       addedCoins = sector.amount;
-      const newBalance = (row.balance || 0) + addedCoins;
-      await supabaseAdmin.from('coin_balances').update({ balance: newBalance }).eq('phone', phoneNorm);
+      // Атомарное начисление — без гонок при параллельных запросах
+      await supabaseAdmin.rpc('coins_add', { p_phone: phoneNorm, p_delta: addedCoins });
       await supabaseAdmin.from('coin_transactions').insert({
         phone: phoneNorm, amount: addedCoins, type: 'wheel', order_id: null, note: `Рулетка: +${addedCoins} коинов`,
       });
