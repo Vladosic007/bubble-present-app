@@ -26,3 +26,19 @@ export function recordFailure(key: string): void {
 export function clearFailures(key: string): void {
   fails.delete(key);
 }
+
+// === Общий лимит частоты запросов (не про неудачи, а про частоту) ===
+// Защищает от массового перебора (например, чужих номеров телефона).
+const hits = new Map<string, { count: number; reset: number }>();
+
+// true — лимит превышен, запрос надо отклонить (429).
+export function tooManyRequests(key: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  const rec = hits.get(key);
+  if (!rec || now > rec.reset) {
+    hits.set(key, { count: 1, reset: now + windowMs });
+    return false;
+  }
+  rec.count++;
+  return rec.count > max;
+}
