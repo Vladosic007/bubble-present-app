@@ -17,21 +17,21 @@ export async function POST(req: Request) {
     if (phone && !all) {
       const phoneNorm = normalizePhone(phone);
       if (!phoneNorm) return NextResponse.json({ error: 'bad_phone' }, { status: 400 });
-      const { data: row } = await supabaseAdmin.from('coin_balances').select('spins').eq('phone', phoneNorm).single();
+      const { data: row } = await supabaseAdmin.from('coin_balances').select('phone').eq('phone', phoneNorm).single();
       if (!row) {
         await supabaseAdmin.from('coin_balances').insert({ phone: phoneNorm, balance: 0, spins: n });
       } else {
-        await supabaseAdmin.from('coin_balances').update({ spins: (row.spins || 0) + n }).eq('phone', phoneNorm);
+        await supabaseAdmin.rpc('spins_add', { p_phone: phoneNorm, p_n: n });
       }
       return NextResponse.json({ ok: true, granted: 1, spins: n });
     }
 
     // 2) Всем клиентам (у кого есть баланс = кто заходил в приложение)
     if (all) {
-      const { data: rows } = await supabaseAdmin.from('coin_balances').select('phone, spins');
+      const { data: rows } = await supabaseAdmin.from('coin_balances').select('phone');
       let updated = 0;
       for (const r of rows || []) {
-        await supabaseAdmin.from('coin_balances').update({ spins: (r.spins || 0) + n }).eq('phone', r.phone);
+        await supabaseAdmin.rpc('spins_add', { p_phone: r.phone, p_n: n });
         updated++;
       }
       return NextResponse.json({ ok: true, granted: updated, spins: n });
