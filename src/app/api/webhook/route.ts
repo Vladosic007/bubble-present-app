@@ -40,10 +40,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true }, { status: 200 });
       }
 
-      // === 1. МЕНЯЕМ СТАТУС В БАЗЕ ===
-      await supabase.from('orders').update({ status: 'accepted' }).eq('id', orderId);
-
-      // === 2. ПОЛУЧАЕМ ДАННЫЕ ЗАКАЗА ===
+      // === 1. ПОЛУЧАЕМ ЗАКАЗ (до смены статуса — нужно сверить сумму) ===
       const { data: orderData } = await supabase
         .from('orders').select('*').eq('id', orderId).single();
 
@@ -51,7 +48,28 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true }, { status: 200 });
       }
 
-      // === 3. ОТПРАВЛЯЕМ В ВК ===
+      // === 2. СВЕРЯЕМ СУММУ: оплачено не меньше суммы заказа ===
+      // Защита на случай, если сумма платежа не совпала с заказом.
+      const paid = Number(verifiedPayment.amount?.value);
+      const due = Number(orderData.total);
+      if (!Number.isFinite(paid) || paid + 0.01 < due) {
+        console.error(`Webhook: по заказу #${orderId} оплачено ${paid}₽, а нужно ${due}₽. НЕ принимаем.`);
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+
+      // === 3. МЕНЯЕМ СТАТУС (только из pending_payment — идемпотентно) ===
+      // Если вебхук придёт повторно, второй раз строка не обновится и в ВК не улетит дубль.
+      const { data: updated } = await supabase
+        .from('orders').update({ status: 'accepted' })
+        .eq('id', orderId).eq('status', 'pending_payment').select('id');
+      const firstTime = !!(updated && updated.length);
+
+      if (!firstTime) {
+        console.log(`Webhook: заказ #${orderId} уже был обработан — пропускаем.`);
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+
+      // === 4. ОТПРАВЛЯЕМ В ВК (только при первом переходе) ===
       // Заказ "ко времени" — уведомление отправит планировщик за ~35 мин до времени.
       // Заказ "как можно скорее" — шлём сразу.
       if (orderData.order_time) {

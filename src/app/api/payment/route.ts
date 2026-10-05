@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { orderId, description, email, items, isTest } = body;
+    const { orderId, description, email, items } = body;
 
     // ВАЖНО: берём сумму из БАЗЫ, а не от клиента
     const { data: order, error: orderErr } = await supabaseAdmin
@@ -15,13 +15,8 @@ export async function POST(req: Request) {
     }
     const amount = order.total;
 
-    // === 1. ЕСЛИ ЭТО РЕЖИМ "ТЕСТ" ===
-    // Возвращаем фейковый ответ, не дергая ЮKassa
-    if (isTest) {
-      return NextResponse.json({ is_test: true });
-    }
-
-    // === 2. БОЕВОЙ РЕЖИМ ЮKASSA ===
+    // === БОЕВОЙ РЕЖИМ ЮKASSA ===
+    // (Тестовый режим владельца обрабатывается в /api/order/create и сюда не доходит.)
     const SHOP_ID = process.env.YOOKASSA_SHOP_ID;
     const SECRET_KEY = process.env.YOOKASSA_SECRET_KEY;
 
